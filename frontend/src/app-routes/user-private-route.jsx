@@ -1,0 +1,48 @@
+import { Navigate, useLocation } from "react-router-dom";
+
+const UserPrivateRoute = ({ children }) => {
+  const location = useLocation();
+
+  const token = localStorage.getItem("pose-fit");
+  const userData = localStorage.getItem("pose-fit-user");
+
+  // =====================================================
+  // NOT LOGGED IN
+  // =====================================================
+
+  if (!token || !userData) {
+    return <Navigate to="/user/login" replace state={{ from: location }} />;
+  }
+
+  // =====================================================
+  // VALIDATE USER DATA
+  // =====================================================
+
+  try {
+    const user = JSON.parse(userData);
+
+    // Only USER can access user routes
+    if (user?.role !== "USER") {
+      if (user?.role === "ADMIN") {
+        return <Navigate to="/admin/dashboard" replace />;
+      }
+
+      if (user?.role === "PROFESSIONAL") {
+        return <Navigate to="/professional/dashboard" replace />;
+      }
+
+      return <Navigate to="/user/login" replace state={{ from: location }} />;
+    }
+  } catch (error) {
+    console.error("Invalid user data:", error);
+
+    localStorage.removeItem("pose-fit");
+    localStorage.removeItem("pose-fit-user");
+
+    return <Navigate to="/user/login" replace state={{ from: location }} />;
+  }
+
+  return children;
+};
+
+export default UserPrivateRoute;
