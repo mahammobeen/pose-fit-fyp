@@ -14,16 +14,16 @@ const STATUS_FILTERS = [
   "all",
   "completed",
   "pending",
-  "refunded",
   "failed",
-  "cancelled",
+  //"cancelled",
 ];
 
 export default function AdminPayments() {
   const [payments, setPayments] = useState([]);
   const [totalRevenue, setTotalRevenue] = useState(0);
   const [totalCommission, setTotalCommission] = useState(0);
-  const [totalProfessionalEarnings, setTotalProfessionalEarnings] = useState(0);
+  const [totalProfessionalEarnings, setTotalProfessionalEarnings] =
+    useState(0);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("all");
   const [search, setSearch] = useState("");
@@ -61,7 +61,7 @@ export default function AdminPayments() {
   // DELETE PAYMENT RECORD
   const handleDelete = async (paymentId) => {
     const confirmed = window.confirm(
-      "Are you sure you want to delete this payment record? This will only remove the record from the database and will NOT refund the payment."
+      "Are you sure you want to delete this payment record? This will only remove the record from the database."
     );
 
     if (!confirmed) return;
@@ -342,7 +342,7 @@ export default function AdminPayments() {
                           ${payment.professionalAmount?.toFixed(2)}
                         </td>
 
-                        {/* Status */}
+                        {/* Payment Status */}
                         <td className="px-5 py-4 whitespace-nowrap">
                           <StatusBadge status={payment.status} />
                         </td>
@@ -353,8 +353,6 @@ export default function AdminPayments() {
                             className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold border ${
                               payment.status === "completed"
                                 ? "bg-emerald-50 text-emerald-800 border-emerald-200"
-                                : payment.status === "refunded"
-                                ? "bg-sky-50 text-sky-800 border-sky-200"
                                 : "bg-stone-100 text-stone-600 border-stone-200"
                             }`}
                           >
@@ -362,8 +360,6 @@ export default function AdminPayments() {
 
                             {payment.status === "completed"
                               ? "Transferred to Connect"
-                              : payment.status === "refunded"
-                              ? "Reversed"
                               : "Pending"}
                           </span>
                         </td>

@@ -85,7 +85,7 @@ const paymentSchema = new mongoose.Schema(
         "pending",
         "completed",
         "failed",
-        "cancelled",
+        
       ],
       default: "pending",
     },

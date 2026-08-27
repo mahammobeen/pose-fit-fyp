@@ -16,9 +16,7 @@ export default function UserLogin() {
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState(null);
 
-  // =====================================================
   // TOAST
-  // =====================================================
 
   const showToast = useCallback((message, type = "success") => {
     setToast({
@@ -37,9 +35,7 @@ export default function UserLogin() {
     return () => clearTimeout(timer);
   }, [toast]);
 
-  // =====================================================
   // LOGIN
-  // =====================================================
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -61,18 +57,14 @@ export default function UserLogin() {
 
       const { success, token, user } = res.data;
 
-      // =================================================
       // VALIDATE RESPONSE
-      // =================================================
-
+    
       if (!success || !token || !user) {
         showToast("Invalid response from server.", "error");
         return;
       }
 
-      // =================================================
       // USER ID CHECK
-      // =================================================
 
       const userId = user?._id || user?.id || user?.userId;
 
@@ -83,9 +75,7 @@ export default function UserLogin() {
         return;
       }
 
-      // =================================================
       // ROLE VALIDATION
-      // =================================================
 
       const validRoles = ["USER", "ADMIN", "PROFESSIONAL"];
 
@@ -96,9 +86,8 @@ export default function UserLogin() {
         return;
       }
 
-      // =================================================
       // EMAIL VERIFICATION
-      // =================================================
+     
       // Backend handles verification for normal USER accounts.
       // ADMIN and PROFESSIONAL accounts can login directly.
 
@@ -107,25 +96,23 @@ export default function UserLogin() {
         return;
       }
 
-      // =================================================
       // NORMALIZE USER OBJECT
-      // =================================================
+
 
       const normalizedUser = {
         ...user,
         _id: user._id || user.id || user.userId,
       };
 
-      // =================================================
+  
       // CLEAR OLD LOGIN DATA
-      // =================================================
+  
 
       localStorage.removeItem("pose-fit");
       localStorage.removeItem("pose-fit-user");
 
-      // =================================================
       // SAVE NEW LOGIN DATA
-      // =================================================
+    
 
       localStorage.setItem("pose-fit", token);
 
@@ -134,18 +121,18 @@ export default function UserLogin() {
         JSON.stringify(normalizedUser)
       );
 
-      // =================================================
+    
       // DEBUG
-      // =================================================
+    
 
       console.log("SAVED TOKEN:", token);
       console.log("SAVED USER:", normalizedUser);
       console.log("SAVED USER ID:", normalizedUser._id);
       console.log("USER ROLE:", normalizedUser.role);
 
-      // =================================================
+   
       // SUCCESS TOAST
-      // =================================================
+      
 
       showToast("Login successful! Welcome to PoseFit.", "success");
 
@@ -157,9 +144,24 @@ export default function UserLogin() {
 
       if (user.role === "ADMIN") {
         redirectPath = "/admin/dashboard";
-      } else if (user.role === "PROFESSIONAL") {
-        redirectPath = "/professional/dashboard";
-      } else if (user.role === "USER") {
+      }  else if (user.role === "PROFESSIONAL") {
+  const professionalStatus = (
+    user.professionalStatus || ""
+  ).toLowerCase();
+
+  if (
+    professionalStatus === "incomplete" ||
+    professionalStatus === "invited" ||
+    professionalStatus === "pending_verification" ||
+    professionalStatus === "rejected"
+  ) {
+    redirectPath = "/professional/profile/complete";
+  } else if (professionalStatus === "approved") {
+    redirectPath = "/professional/dashboard";
+  } else {
+    redirectPath = "/professional/profile/complete";
+  }
+} else if (user.role === "USER") {
         redirectPath =
           location.state?.from?.pathname || "/user/dashboard";
       }

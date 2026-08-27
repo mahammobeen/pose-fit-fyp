@@ -17,6 +17,7 @@ const getStripe = () => {
 const createPayment = async (req, res) => {
   try {
     const stripe = getStripe();
+
     const {
       professionalId,
       amount,
@@ -26,6 +27,9 @@ const createPayment = async (req, res) => {
       notes,
     } = req.body;
 
+    // ---------------------------------------------------------
+    // 1. Basic Validation
+    // ---------------------------------------------------------
     if (!professionalId || !amount) {
       return res.status(400).json({
         success: false,
@@ -51,148 +55,351 @@ const createPayment = async (req, res) => {
       });
     }
 
-    // Fetch Professional & Verify Eligibility
+    // ---------------------------------------------------------
+    // 2. Appointment Validation
+    // ---------------------------------------------------------
+    if (!appointmentDay || !appointmentSlot || !appointmentDate) {
+      return res.status(400).json({
+        success: false,
+        message: "Appointment day, slot and date are required",
+      });
+    }
+
+    const parsedAppointmentDate = new Date(appointmentDate);
+
+    if (Number.isNaN(parsedAppointmentDate.getTime())) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid appointment date",
+      });
+    }
+
+    // ---------------------------------------------------------
+    // 3. Fetch Professional
+    // ---------------------------------------------------------
     const professional = await UserModel.findOne({
       _id: professionalId,
       role: "PROFESSIONAL",
+      professionalStatus: { $in: ["approved", "APPROVED"] },
     });
 
     if (!professional) {
       return res.status(404).json({
         success: false,
-        message: "Professional not found",
+        message: "Approved professional not found",
       });
     }
 
-    // Verify Professional Stripe Connect Account & Payout Status
+    // ---------------------------------------------------------
+    // 4. Verify Selected Slot Exists In Professional Availability
+    // ---------------------------------------------------------
+    const selectedDay = professional.availability?.find(
+      (item) =>
+        item.day?.toLowerCase() === appointmentDay.toLowerCase()
+    );
+
+    if (!selectedDay) {
+      return res.status(400).json({
+        success: false,
+        message: "The selected day is not available for this professional.",
+      });
+    }
+
+    const slotExists = selectedDay.slots?.some(
+      (slot) => slot.trim() === appointmentSlot.trim()
+    );
+
+    if (!slotExists) {
+      return res.status(400).json({
+        success: false,
+        message: "The selected appointment slot is not available.",
+      });
+    }
+
+    // ---------------------------------------------------------
+    // 5. CHECK SLOT ALREADY RESERVED / BOOKED
+    //
+    // pending    = reserved
+    // completed  = booked
+    // failed     = available
+    //
+    // cancelled is NOT used.
+    // ---------------------------------------------------------
+    const existingBooking = await PaymentModel.findOne({
+      professional: professionalId,
+      appointmentSlot: appointmentSlot.trim(),
+      appointmentDate: parsedAppointmentDate,
+      status: {
+        $in: ["pending", "completed"],
+      },
+    });
+
+    if (existingBooking) {
+      return res.status(409).json({
+        success: false,
+        message:
+          "This appointment slot is no longer available. Please select another slot.",
+      });
+    }
+
+    // ---------------------------------------------------------
+    // 6. Verify Professional Stripe Connect Account
+    // ---------------------------------------------------------
     if (!professional.stripeAccountId) {
       return res.status(400).json({
         success: false,
-        message: "Professional payout account is not connected or payouts are not enabled.",
+        message:
+          "Professional payout account is not connected or payouts are not enabled.",
       });
     }
 
-    // Verify status live with Stripe (Accounts V2)
+    // ---------------------------------------------------------
+    // 7. Verify Stripe Connect Account Status
+    // ---------------------------------------------------------
     let payoutsEnabled = professional.payoutsEnabled;
+
     try {
       let v2Account;
+
       try {
-        v2Account = await stripe.v2.core.accounts.retrieve(professional.stripeAccountId, {
-          include: ["configuration.recipient"],
-        });
+        v2Account = await stripe.v2.core.accounts.retrieve(
+          professional.stripeAccountId,
+          {
+            include: ["configuration.recipient"],
+          }
+        );
       } catch {
         v2Account = null;
       }
 
       if (v2Account) {
-        const recipientCaps = v2Account.configuration?.recipient?.capabilities?.stripe_balance;
-        const transfersActive = recipientCaps?.stripe_transfers?.status === "active";
-        const payoutsActive = recipientCaps?.payouts?.status === "active";
-        payoutsEnabled = transfersActive || payoutsActive || professional.payoutsEnabled;
+        const recipientCaps =
+          v2Account.configuration?.recipient?.capabilities
+            ?.stripe_balance;
+
+        const transfersActive =
+          recipientCaps?.stripe_transfers?.status === "active";
+
+        const payoutsActive =
+          recipientCaps?.payouts?.status === "active";
+
+        payoutsEnabled =
+          transfersActive ||
+          payoutsActive ||
+          professional.payoutsEnabled;
       } else {
-        const account = await stripe.accounts.retrieve(professional.stripeAccountId);
-        payoutsEnabled = !!account.payouts_enabled || !!account.charges_enabled;
+        const account = await stripe.accounts.retrieve(
+          professional.stripeAccountId
+        );
+
+        payoutsEnabled =
+          !!account.payouts_enabled ||
+          !!account.charges_enabled;
       }
 
-      // Update cached values in DB
+      // Update cached Stripe values
       professional.payoutsEnabled = payoutsEnabled;
       professional.chargesEnabled = payoutsEnabled;
-      professional.stripeAccountStatus = payoutsEnabled ? "active" : "pending";
+      professional.stripeAccountStatus = payoutsEnabled
+        ? "active"
+        : "pending";
+
       await professional.save();
     } catch (acctErr) {
-      console.error("Error retrieving Stripe Connect account:", acctErr);
+      console.error(
+        "Error retrieving Stripe Connect account:",
+        acctErr
+      );
     }
 
     if (!payoutsEnabled) {
       return res.status(400).json({
         success: false,
-        message: "Professional payout account is not connected or payouts are not enabled.",
+        message:
+          "Professional payout account is not connected or payouts are not enabled.",
       });
     }
 
-    // 20% PoseFit Admin Commission / 80% Professional Share
-    const adminCommission = Number((totalAmount * 0.2).toFixed(2));
-    const professionalAmount = Number((totalAmount * 0.8).toFixed(2));
+    // ---------------------------------------------------------
+    // 8. Calculate Admin Commission & Professional Amount
+    // ---------------------------------------------------------
+    const adminCommission = Number(
+      (totalAmount * 0.2).toFixed(2)
+    );
 
+    const professionalAmount = Number(
+      (totalAmount * 0.8).toFixed(2)
+    );
+
+    // ---------------------------------------------------------
+    // 9. Create Pending Payment
+    // ---------------------------------------------------------
     const payment = await PaymentModel.create({
       user: userId,
       professional: professionalId,
       amount: totalAmount,
+
       adminCommission,
       professionalAmount,
-      appointmentDay: appointmentDay || "",
-      appointmentSlot: appointmentSlot || "",
-      appointmentDate: appointmentDate ? new Date(appointmentDate) : undefined,
-      notes: notes || "",
+
+      appointmentDay: appointmentDay.trim(),
+      appointmentSlot: appointmentSlot.trim(),
+      appointmentDate: parsedAppointmentDate,
+
+      notes: notes?.trim() || "",
+
       currency: "usd",
+
+      // Slot is reserved immediately
       status: "pending",
+
       payoutStatus: "pending",
     });
 
-    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
-    const slotInfo = appointmentDay && appointmentSlot ? ` (${appointmentDay}, ${appointmentSlot})` : "";
+    // ---------------------------------------------------------
+    // 10. Stripe Checkout Configuration
+    // ---------------------------------------------------------
+    const frontendUrl =
+      process.env.FRONTEND_URL || "http://localhost:5173";
 
-    // Create Stripe Checkout Session with Direct Connect Transfer Split
-    const session = await stripe.checkout.sessions.create({
-      mode: "payment",
+    const slotInfo =
+      appointmentDay && appointmentSlot
+        ? ` (${appointmentDay}, ${appointmentSlot})`
+        : "";
 
-      line_items: [
-        {
-          price_data: {
-            currency: "usd",
-            product_data: {
-              name: `PoseFit Session with ${professional.firstName} ${professional.lastName}${slotInfo}`,
-              description: appointmentSlot ? `Appointment Slot: ${appointmentDay} ${appointmentSlot}` : "1-on-1 Fitness Session",
+    // ---------------------------------------------------------
+    // 11. Create Stripe Checkout Session
+    // ---------------------------------------------------------
+    let session;
+
+    try {
+      session = await stripe.checkout.sessions.create({
+        mode: "payment",
+
+        line_items: [
+          {
+            price_data: {
+              currency: "usd",
+
+              product_data: {
+                name: `PoseFit Session with ${professional.firstName} ${professional.lastName}${slotInfo}`,
+
+                description: appointmentSlot
+                  ? `Appointment Slot: ${appointmentDay} ${appointmentSlot}`
+                  : "1-on-1 Fitness Session",
+              },
+
+              unit_amount: Math.round(totalAmount * 100),
             },
-            unit_amount: Math.round(totalAmount * 100),
-          },
-          quantity: 1,
-        },
-      ],
 
-      // Payment Split: 20% stays on Admin Platform, 80% transferred to Professional's Connected Account
-      payment_intent_data: {
-        application_fee_amount: Math.round(adminCommission * 100),
-        transfer_data: {
-          destination: professional.stripeAccountId,
+            quantity: 1,
+          },
+        ],
+
+        // -----------------------------------------------------
+        // Payment Split
+        // 20% → PoseFit Admin
+        // 80% → Professional
+        // -----------------------------------------------------
+        payment_intent_data: {
+          application_fee_amount: Math.round(
+            adminCommission * 100
+          ),
+
+          transfer_data: {
+            destination: professional.stripeAccountId,
+          },
+
+          metadata: {
+            paymentId: payment._id.toString(),
+            professionalId: professionalId.toString(),
+            userId: userId.toString(),
+
+            appointmentDay: appointmentDay || "",
+            appointmentSlot: appointmentSlot || "",
+            appointmentDate: parsedAppointmentDate.toISOString(),
+          },
         },
+
         metadata: {
           paymentId: payment._id.toString(),
           professionalId: professionalId.toString(),
           userId: userId.toString(),
+
           appointmentDay: appointmentDay || "",
           appointmentSlot: appointmentSlot || "",
+          appointmentDate: parsedAppointmentDate.toISOString(),
         },
-      },
 
-      metadata: {
-        paymentId: payment._id.toString(),
-        professionalId: professionalId.toString(),
-        userId: userId.toString(),
-        appointmentDay: appointmentDay || "",
-        appointmentSlot: appointmentSlot || "",
-      },
+        success_url:
+          `${frontendUrl}/user/professionals/${professionalId}` +
+          `?booking_success=true`,
 
-      success_url: `${frontendUrl}/user/professionals/${professionalId}?booking_success=true`,
-      cancel_url: `${frontendUrl}/user/professionals/${professionalId}?booking_cancelled=true`,
-    });
+        cancel_url:
+          `${frontendUrl}/user/professionals/${professionalId}` +
+          `?booking_cancelled=true`,
+      });
 
-    payment.stripeSessionId = session.id;
+      // -------------------------------------------------------
+      // 12. Save Stripe Session ID
+      // -------------------------------------------------------
+      payment.stripeSessionId = session.id;
 
-    await payment.save();
+      await payment.save();
 
+    } catch (stripeError) {
+      // -------------------------------------------------------
+      // Stripe session failed
+      //
+      // Since payment was created as pending before Stripe,
+      // mark it as failed so the slot becomes available again.
+      // -------------------------------------------------------
+      console.error(
+        "Stripe checkout session creation error:",
+        stripeError
+      );
+
+      payment.status = "failed";
+      await payment.save();
+
+      return res.status(500).json({
+        success: false,
+        message:
+          stripeError.message ||
+          "Failed to create Stripe checkout session",
+      });
+    }
+
+    // ---------------------------------------------------------
+    // 13. Final Response
+    // ---------------------------------------------------------
     return res.status(201).json({
       success: true,
-      message: "Payment session created successfully",
+
+      message:
+        "Payment session created successfully. The appointment slot has been reserved.",
+
       paymentId: payment._id,
+
       checkoutUrl: session.url,
+
+      appointment: {
+        day: payment.appointmentDay,
+        slot: payment.appointmentSlot,
+        date: payment.appointmentDate,
+      },
+
+      status: payment.status,
     });
+
   } catch (error) {
     console.error("Create payment error:", error);
 
     return res.status(500).json({
       success: false,
-      message: error.message || "Something went wrong while creating payment session",
+      message:
+        error.message ||
+        "Something went wrong while creating payment session",
     });
   }
 };
@@ -587,64 +794,160 @@ const stripeWebhook = async (req, res) => {
 
     let event;
 
+    // Stripe webhook signature verification
     if (webhookSecret && sig) {
       try {
-        event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+        event = stripe.webhooks.constructEvent(
+          req.body,
+          sig,
+          webhookSecret
+        );
       } catch (err) {
-        console.error("Webhook signature verification failed:", err.message);
+        console.error(
+          "Webhook signature verification failed:",
+          err.message
+        );
+
         return res.status(400).send(`Webhook Error: ${err.message}`);
       }
     } else {
-      event = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
+      event =
+        typeof req.body === "string"
+          ? JSON.parse(req.body)
+          : req.body;
     }
 
-    // 1. Checkout Session Completed
+    // ============================================================
+    // 1. CHECKOUT SESSION COMPLETED
+    // ============================================================
     if (event.type === "checkout.session.completed") {
       const session = event.data.object;
+
       const paymentId = session.metadata?.paymentId;
 
       if (paymentId) {
-        await PaymentModel.findByIdAndUpdate(paymentId, {
-          status: "completed",
-          payoutStatus: "transferred",
-          stripePaymentIntentId: session.payment_intent,
-          paidAt: new Date(),
-        });
+        const payment = await PaymentModel.findById(paymentId);
+
+        if (payment) {
+          payment.status = "completed";
+          payment.payoutStatus = "transferred";
+
+          if (session.payment_intent) {
+            payment.stripePaymentIntentId = session.payment_intent;
+          }
+
+          payment.paidAt = new Date();
+
+          await payment.save();
+
+          console.log(
+            `Payment ${paymentId} marked as completed successfully.`
+          );
+        }
       }
     }
 
-    // 2. Checkout Session Expired / Failed
-    if (event.type === "checkout.session.expired") {
-      const session = event.data.object;
-      const paymentId = session.metadata?.paymentId;
+    // ============================================================
+    // 2. PAYMENT INTENT SUCCEEDED
+    // ============================================================
+    if (event.type === "payment_intent.succeeded") {
+      const paymentIntent = event.data.object;
+
+      const paymentId = paymentIntent.metadata?.paymentId;
 
       if (paymentId) {
-        await PaymentModel.findByIdAndUpdate(paymentId, {
-          status: "cancelled",
-        });
+        const payment = await PaymentModel.findById(paymentId);
+
+        if (payment && payment.status !== "completed") {
+          payment.status = "completed";
+          payment.payoutStatus = "transferred";
+          payment.stripePaymentIntentId = paymentIntent.id;
+          payment.paidAt = new Date();
+
+          await payment.save();
+
+          console.log(
+            `Payment ${paymentId} completed through payment_intent.succeeded.`
+          );
+        }
       }
     }
 
-    // 3. Stripe Connect Account Updated (Onboarding / Payout Capability Changes)
-    if (event.type === "account.updated" || event.type?.startsWith("v2.core.account")) {
+    // ============================================================
+    // 3. PAYMENT FAILED
+    // ============================================================
+    if (event.type === "payment_intent.payment_failed") {
+      const paymentIntent = event.data.object;
+
+      const paymentId = paymentIntent.metadata?.paymentId;
+
+      if (paymentId) {
+        const payment = await PaymentModel.findById(paymentId);
+
+        if (payment) {
+          payment.status = "failed";
+
+          if (paymentIntent.id) {
+            payment.stripePaymentIntentId = paymentIntent.id;
+          }
+
+          await payment.save();
+
+          console.log(
+            `Payment ${paymentId} marked as failed.`
+          );
+        }
+      }
+    }
+
+    // ============================================================
+    // 4. STRIPE CONNECT ACCOUNT UPDATED
+    // ============================================================
+    if (
+      event.type === "account.updated" ||
+      event.type?.startsWith("v2.core.account")
+    ) {
       const account = event.data.object;
 
-      const user = await UserModel.findOne({ stripeAccountId: account.id });
+      const user = await UserModel.findOne({
+        stripeAccountId: account.id,
+      });
+
       if (user) {
         let chargesEnabled = !!account.charges_enabled;
         let payoutsEnabled = !!account.payouts_enabled;
 
-        if (account.configuration?.recipient?.capabilities?.stripe_balance) {
-          const recipientCaps = account.configuration.recipient.capabilities.stripe_balance;
-          chargesEnabled = recipientCaps.stripe_transfers?.status === "active";
-          payoutsEnabled = recipientCaps.payouts?.status === "active" || recipientCaps.stripe_transfers?.status === "active";
+        // Stripe Connect V2 recipient capabilities
+        if (
+          account.configuration?.recipient?.capabilities
+            ?.stripe_balance
+        ) {
+          const recipientCaps =
+            account.configuration.recipient.capabilities
+              .stripe_balance;
+
+          chargesEnabled =
+            recipientCaps.stripe_transfers?.status === "active";
+
+          payoutsEnabled =
+            recipientCaps.payouts?.status === "active" ||
+            recipientCaps.stripe_transfers?.status === "active";
         }
 
-        const status = payoutsEnabled ? "active" : "pending";
+        const stripeAccountStatus = payoutsEnabled
+          ? "active"
+          : "pending";
 
+        // Get masked bank account
         let maskedBank = user.maskedBank || "";
-        if (account.external_accounts && account.external_accounts.data && account.external_accounts.data.length > 0) {
+
+        if (
+          account.external_accounts &&
+          account.external_accounts.data &&
+          account.external_accounts.data.length > 0
+        ) {
           const ext = account.external_accounts.data[0];
+
           if (ext.last4) {
             maskedBank = `****${ext.last4}`;
           }
@@ -652,17 +955,28 @@ const stripeWebhook = async (req, res) => {
 
         user.chargesEnabled = chargesEnabled;
         user.payoutsEnabled = payoutsEnabled;
-        user.stripeAccountStatus = status;
+        user.stripeAccountStatus = stripeAccountStatus;
         user.maskedBank = maskedBank;
+
         await user.save();
+
+        console.log(
+          `Stripe Connect account ${account.id} updated successfully.`
+        );
       }
     }
 
+    // ============================================================
+    // WEBHOOK RESPONSE
+    // ============================================================
     return res.status(200).json({
       received: true,
     });
   } catch (error) {
-    console.error("Stripe webhook processing error:", error);
+    console.error(
+      "Stripe webhook processing error:",
+      error
+    );
 
     return res.status(500).json({
       success: false,
@@ -671,7 +985,6 @@ const stripeWebhook = async (req, res) => {
     });
   }
 };
-
 module.exports = {
   createPayment,
   getPayment,

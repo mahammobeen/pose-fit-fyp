@@ -382,7 +382,93 @@ const updateAvailability = async (req, res) => {
       });
     }
 
+    // Convert "09:00 AM" into minutes
+    const convertToMinutes = (time) => {
+      const match = time.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+
+      if (!match) return null;
+
+      let hours = parseInt(match[1], 10);
+      const minutes = parseInt(match[2], 10);
+      const modifier = match[3].toUpperCase();
+
+      if (modifier === "AM" && hours === 12) {
+        hours = 0;
+      }
+
+      if (modifier === "PM" && hours !== 12) {
+        hours += 12;
+      }
+
+      return hours * 60 + minutes;
+    };
+
+    // Validate every day's slots
+    for (const dayItem of availability) {
+      if (!dayItem.day || !Array.isArray(dayItem.slots)) {
+        return res.status(400).json({
+          success: false,
+          message: "Each availability day must contain day and slots",
+        });
+      }
+
+      const parsedSlots = [];
+
+      for (const slot of dayItem.slots) {
+        const parts = slot.split(" - ");
+
+        if (parts.length !== 2) {
+          return res.status(400).json({
+            success: false,
+            message: `Invalid time slot format for ${dayItem.day}`,
+          });
+        }
+
+        const start = convertToMinutes(parts[0]);
+        const end = convertToMinutes(parts[1]);
+
+        if (start === null || end === null) {
+          return res.status(400).json({
+            success: false,
+            message: `Invalid time format for ${dayItem.day}`,
+          });
+        }
+
+        if (start >= end) {
+          return res.status(400).json({
+            success: false,
+            message: `Start time must be before end time for ${dayItem.day}`,
+          });
+        }
+
+        parsedSlots.push({
+          start,
+          end,
+        });
+      }
+
+      // Check overlapping slots
+      for (let i = 0; i < parsedSlots.length; i++) {
+        for (let j = i + 1; j < parsedSlots.length; j++) {
+          const slotA = parsedSlots[i];
+          const slotB = parsedSlots[j];
+
+          const overlaps =
+            slotA.start < slotB.end &&
+            slotA.end > slotB.start;
+
+          if (overlaps) {
+            return res.status(400).json({
+              success: false,
+              message: `Overlapping time slots found on ${dayItem.day}. Please choose separate time ranges.`,
+            });
+          }
+        }
+      }
+    }
+
     professional.availability = availability;
+
     await professional.save();
 
     return res.status(200).json({

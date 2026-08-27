@@ -70,37 +70,87 @@ export default function ProfessionalAvailability() {
     }));
   };
 
-  const handleAddSlot = (day) => {
-    const input = slotInputs[day] || { start: "09:00", end: "12:00" };
-    const { start, end } = input;
-
-    if (!start || !end) {
-      showToast("Please choose both start and end times.", "error");
-      return;
-    }
-
-    if (start >= end) {
-      showToast("Start time must be strictly before end time.", "error");
-      return;
-    }
-
-    const formattedSlot = `${formatTo12Hour(start)} - ${formatTo12Hour(end)}`;
-
-    const dayItem = availability.find((item) => item.day === day);
-    if (dayItem && dayItem.slots?.includes(formattedSlot)) {
-      showToast("This exact slot is already added.", "error");
-      return;
-    }
-
-    setAvailability((prev) =>
-      prev.map((item) => {
-        if (item.day === day) {
-          return { ...item, slots: [...(item.slots || []), formattedSlot] };
-        }
-        return item;
-      })
-    );
+ const handleAddSlot = (day) => {
+  const input = slotInputs[day] || {
+    start: "09:00",
+    end: "12:00",
   };
+
+  const { start, end } = input;
+
+  if (!start || !end) {
+    showToast("Please choose both start and end times.", "error");
+    return;
+  }
+
+  if (start >= end) {
+    showToast("Start time must be strictly before end time.", "error");
+    return;
+  }
+
+  const dayItem = availability.find((item) => item.day === day);
+  const existingSlots = dayItem?.slots || [];
+
+  // Convert existing "09:00 AM - 12:00 PM" into 24-hour minutes
+  const convertToMinutes = (time) => {
+    const match = time.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+
+    if (!match) return null;
+
+    let hours = parseInt(match[1], 10);
+    const minutes = parseInt(match[2], 10);
+    const modifier = match[3].toUpperCase();
+
+    if (modifier === "AM" && hours === 12) {
+      hours = 0;
+    }
+
+    if (modifier === "PM" && hours !== 12) {
+      hours += 12;
+    }
+
+    return hours * 60 + minutes;
+  };
+
+  const newStartMinutes = convertToMinutes(formatTo12Hour(start));
+  const newEndMinutes = convertToMinutes(formatTo12Hour(end));
+
+  // Check overlap
+  const hasOverlap = existingSlots.some((slot) => {
+    const [existingStart, existingEnd] = slot.split(" - ");
+
+    const existingStartMinutes = convertToMinutes(existingStart);
+    const existingEndMinutes = convertToMinutes(existingEnd);
+
+    return (
+      newStartMinutes < existingEndMinutes &&
+      newEndMinutes > existingStartMinutes
+    );
+  });
+
+  if (hasOverlap) {
+    showToast(
+      "This time slot overlaps with an existing slot.",
+      "error"
+    );
+    return;
+  }
+
+  const formattedSlot = `${formatTo12Hour(start)} - ${formatTo12Hour(end)}`;
+
+  setAvailability((prev) =>
+    prev.map((item) => {
+      if (item.day === day) {
+        return {
+          ...item,
+          slots: [...(item.slots || []), formattedSlot],
+        };
+      }
+
+      return item;
+    })
+  );
+};
 
   const handleRemoveSlot = (day, slotIndex) => {
     setAvailability((prev) =>
