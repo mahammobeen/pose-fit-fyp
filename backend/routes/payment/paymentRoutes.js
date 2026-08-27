@@ -8,7 +8,7 @@ const {
   getPayment,
   getUserPayments,
   getAdminPayments,
-  refundPayment,
+  deletePayment,
   createConnectOnboardingSession,
   getConnectStatus,
   getConnectDashboardLink,
@@ -27,6 +27,6 @@ router.post("/create", authMiddleware, createPayment);
 router.get("/my-payments", authMiddleware, getUserPayments);
 router.get("/admin/payments", authMiddleware, adminMiddleware, getAdminPayments);
 router.get("/:id", authMiddleware, getPayment);
-router.post("/refund/:id", authMiddleware, adminMiddleware, refundPayment);
+router.delete("/admin/payments/:id", authMiddleware, adminMiddleware, deletePayment);
 
 module.exports = router;

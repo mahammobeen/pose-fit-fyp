@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { httpClient } from "../../lib/http";
@@ -83,22 +84,25 @@ export default function UserLogin() {
       }
 
       // =================================================
-      // ROLE CHECK
+      // ROLE VALIDATION
       // =================================================
 
-      if (user.role !== "USER") {
-        showToast(
-          "Access denied. Admin and Professional accounts must use their respective portal.",
-          "error",
-        );
+      const validRoles = ["USER", "ADMIN", "PROFESSIONAL"];
+
+      if (!validRoles.includes(user.role)) {
+        console.error("Unknown user role:", user.role);
+
+        showToast("Invalid user role received from server.", "error");
         return;
       }
 
       // =================================================
       // EMAIL VERIFICATION
       // =================================================
+      // Backend handles verification for normal USER accounts.
+      // ADMIN and PROFESSIONAL accounts can login directly.
 
-      if (!user.isVerified) {
+      if (user.role === "USER" && !user.isVerified) {
         showToast("Please verify your email before logging in.", "error");
         return;
       }
@@ -125,7 +129,10 @@ export default function UserLogin() {
 
       localStorage.setItem("pose-fit", token);
 
-      localStorage.setItem("pose-fit-user", JSON.stringify(normalizedUser));
+      localStorage.setItem(
+        "pose-fit-user",
+        JSON.stringify(normalizedUser)
+      );
 
       // =================================================
       // DEBUG
@@ -134,6 +141,7 @@ export default function UserLogin() {
       console.log("SAVED TOKEN:", token);
       console.log("SAVED USER:", normalizedUser);
       console.log("SAVED USER ID:", normalizedUser._id);
+      console.log("USER ROLE:", normalizedUser.role);
 
       // =================================================
       // SUCCESS TOAST
@@ -142,13 +150,24 @@ export default function UserLogin() {
       showToast("Login successful! Welcome to PoseFit.", "success");
 
       // =================================================
-      // REDIRECT
+      // ROLE-BASED REDIRECT
       // =================================================
 
-      const from = location.state?.from?.pathname || "/user/dashboard";
+      let redirectPath = "/user/dashboard";
+
+      if (user.role === "ADMIN") {
+        redirectPath = "/admin/dashboard";
+      } else if (user.role === "PROFESSIONAL") {
+        redirectPath = "/professional/dashboard";
+      } else if (user.role === "USER") {
+        redirectPath =
+          location.state?.from?.pathname || "/user/dashboard";
+      }
+
+      console.log("REDIRECTING TO:", redirectPath);
 
       setTimeout(() => {
-        navigate(from, {
+        navigate(redirectPath, {
           replace: true,
         });
       }, 700);
@@ -159,7 +178,7 @@ export default function UserLogin() {
         err?.response?.data?.message ||
           err?.response?.data?.error ||
           "Login failed. Please check your email and password.",
-        "error",
+        "error"
       );
     } finally {
       setLoading(false);
@@ -178,9 +197,7 @@ export default function UserLogin() {
           "linear-gradient(135deg, #f0fdf4 0%, #f8fafc 40%, #e0f2fe 100%)",
       }}
     >
-      {/* =================================================
-          BACKGROUND DECORATION
-      ================================================= */}
+      {/* BACKGROUND DECORATION */}
 
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div
@@ -198,9 +215,7 @@ export default function UserLogin() {
         />
       </div>
 
-      {/* =================================================
-          TOAST
-      ================================================= */}
+      {/* TOAST */}
 
       {toast && (
         <div
@@ -224,21 +239,19 @@ export default function UserLogin() {
         </div>
       )}
 
-      {/* =================================================
-          LOGIN CARD
-      ================================================= */}
+      {/* LOGIN CARD */}
 
       <div className="w-full max-w-md relative z-10">
         <div className="bg-white/90 backdrop-blur-xl rounded-3xl p-8 border border-stone-200/80 shadow-xl">
-          {/* =================================================
-              LOGO / HEADER
-          ================================================= */}
+
+          {/* LOGO / HEADER */}
 
           <div className="text-center mb-8">
             <div
               className="w-16 h-16 rounded-3xl mx-auto flex items-center justify-center text-white font-black text-2xl shadow-sm mb-4"
               style={{
-                background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                background:
+                  "linear-gradient(135deg, #10b981 0%, #059669 100%)",
               }}
             >
               P
@@ -249,15 +262,14 @@ export default function UserLogin() {
             </h1>
 
             <p className="text-xs text-stone-500 font-medium mt-1">
-              Sign in to your customer account
+              Sign in to your PoseFit account
             </p>
           </div>
 
-          {/* =================================================
-              LOGIN FORM
-          ================================================= */}
+          {/* LOGIN FORM */}
 
           <form onSubmit={handleSubmit} className="space-y-5">
+
             {/* EMAIL */}
 
             <div>
@@ -269,7 +281,7 @@ export default function UserLogin() {
                 type="email"
                 required
                 autoComplete="email"
-                placeholder="customer@example.com"
+                placeholder="email@example.com"
                 value={form.email}
                 onChange={(e) => {
                   setForm((prev) => ({
@@ -322,13 +334,13 @@ export default function UserLogin() {
               disabled={loading}
               className="w-full py-3.5 rounded-2xl font-bold text-white text-sm shadow-md hover:opacity-95 active:scale-95 disabled:opacity-60 transition-all duration-200 flex items-center justify-center gap-2"
               style={{
-                background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                background:
+                  "linear-gradient(135deg, #10b981 0%, #059669 100%)",
               }}
             >
               {loading ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-
                   <span>Signing in...</span>
                 </>
               ) : (
@@ -337,9 +349,7 @@ export default function UserLogin() {
             </button>
           </form>
 
-          {/* =================================================
-              REGISTER
-          ================================================= */}
+          {/* REGISTER */}
 
           <div className="mt-8 text-center text-xs font-bold text-stone-600">
             Don't have an account?{" "}

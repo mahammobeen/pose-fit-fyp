@@ -20,12 +20,14 @@ const paymentSchema = new mongoose.Schema(
       min: 0,
     },
 
+    // 20% PoseFit platform commission
     adminCommission: {
       type: Number,
       required: true,
       min: 0,
     },
 
+    // 80% Professional share
     professionalAmount: {
       type: Number,
       required: true,
@@ -35,6 +37,7 @@ const paymentSchema = new mongoose.Schema(
     currency: {
       type: String,
       default: "usd",
+      lowercase: true,
     },
 
     // Appointment Schedule Details
@@ -57,6 +60,7 @@ const paymentSchema = new mongoose.Schema(
       trim: true,
     },
 
+    // Stripe IDs
     stripePaymentIntentId: {
       type: String,
       unique: true,
@@ -74,15 +78,27 @@ const paymentSchema = new mongoose.Schema(
       sparse: true,
     },
 
+    // Payment Status
     status: {
       type: String,
-      enum: ["pending", "completed", "failed", "refunded", "cancelled"],
+      enum: [
+        "pending",
+        "completed",
+        "failed",
+        "cancelled",
+      ],
       default: "pending",
     },
 
+    // Professional Connect Transfer Status
     payoutStatus: {
       type: String,
-      enum: ["pending", "transferred", "paid", "failed"],
+      enum: [
+        "pending",
+        "transferred",
+        "paid",
+        "failed",
+      ],
       default: "pending",
     },
 
@@ -92,10 +108,6 @@ const paymentSchema = new mongoose.Schema(
     },
 
     paidAt: {
-      type: Date,
-    },
-
-    refundedAt: {
       type: Date,
     },
   },

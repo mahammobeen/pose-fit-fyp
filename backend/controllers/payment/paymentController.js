@@ -306,59 +306,33 @@ const getAdminPayments = async (req, res) => {
   }
 };
 
-// 5. Refund a payment and reverse connected transfer
-const refundPayment = async (req, res) => {
+// 5. Delete Payment Record
+const deletePayment = async (req, res) => {
   try {
     const { id } = req.params;
-    const stripe = getStripe();
 
     const payment = await PaymentModel.findById(id);
 
     if (!payment) {
       return res.status(404).json({
         success: false,
-        message: "Payment not found",
+        message: "Payment record not found",
       });
     }
 
-    if (payment.status !== "completed") {
-      return res.status(400).json({
-        success: false,
-        message: "Only completed payments can be refunded",
-      });
-    }
-
-    if (!payment.stripePaymentIntentId) {
-      return res.status(400).json({
-        success: false,
-        message: "Stripe payment intent not found",
-      });
-    }
-
-    // Process Stripe Connect Refund with Transfer Reversal
-    const refund = await stripe.refunds.create({
-      payment_intent: payment.stripePaymentIntentId,
-      reverse_transfer: true,
-      refund_application_fee: true,
-    });
-
-    payment.status = "refunded";
-    payment.payoutStatus = "failed";
-    payment.refundedAt = new Date();
-
-    await payment.save();
+    await PaymentModel.findByIdAndDelete(id);
 
     return res.status(200).json({
       success: true,
-      message: "Payment refunded successfully and connected transfer reversed",
-      refundId: refund.id,
+      message: "Payment record deleted successfully",
     });
   } catch (error) {
-    console.error("Refund payment error:", error);
+    console.error("Delete payment error:", error);
 
     return res.status(500).json({
       success: false,
-      message: error.message || "Unable to refund payment",
+      message: "Unable to delete payment record",
+      error: error.message,
     });
   }
 };
@@ -703,7 +677,7 @@ module.exports = {
   getPayment,
   getUserPayments,
   getAdminPayments,
-  refundPayment,
+  deletePayment,
   createConnectOnboardingSession,
   getConnectStatus,
   getConnectDashboardLink,

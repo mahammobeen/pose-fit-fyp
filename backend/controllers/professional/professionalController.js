@@ -423,67 +423,147 @@ const getProfessionalEarnings = async (req, res) => {
       .populate("user", "firstName lastName email")
       .sort({ createdAt: -1 });
 
+    // Synchronize pending payments with Stripe
     await syncPendingPayments(payments);
+
+    // Fetch updated payments after synchronization
     payments = await PaymentModel.find({
       professional: professionalId,
     })
       .populate("user", "firstName lastName email")
       .sort({ createdAt: -1 });
 
-    const completedPayments = payments.filter((p) => p.status === "completed");
+    /*
+     * ONLY COMPLETED PAYMENTS ARE ACTIVE EARNINGS.
+     *
+     * Pending, cancelled and failed payments
+     * are not included in earnings.
+     */
+    const completedPayments = payments.filter(
+      (p) => p.status === "completed"
+    );
 
+    /*
+     * CURRENT MONTH
+     */
     const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const startOfMonth = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      1
+    );
 
     const monthlyPayments = completedPayments.filter((p) => {
       const paidDate = p.paidAt || p.createdAt;
+
       return new Date(paidDate) >= startOfMonth;
     });
 
+    /*
+     * TOTAL EARNINGS
+     *
+     * Only completed payments contribute to earnings.
+     */
     const totalEarnings = completedPayments.reduce(
-      (sum, p) => sum + (p.professionalAmount || 0),
+      (sum, p) => sum + Number(p.professionalAmount || 0),
       0
     );
 
+    /*
+     * CURRENT MONTH EARNINGS
+     */
     const currentMonthEarnings = monthlyPayments.reduce(
-      (sum, p) => sum + (p.professionalAmount || 0),
+      (sum, p) => sum + Number(p.professionalAmount || 0),
       0
     );
 
+    /*
+     * PENDING CLEARANCE
+     *
+     * Only pending payments are included.
+     */
     const pendingEarnings = payments
       .filter((p) => p.status === "pending")
-      .reduce((sum, p) => sum + (p.professionalAmount || 0), 0);
+      .reduce(
+        (sum, p) => sum + Number(p.professionalAmount || 0),
+        0
+      );
 
+    /*
+     * RELEASED EARNINGS
+     *
+     * Only completed payments that have actually been
+     * transferred to the professional's Stripe Connect
+     * account are included.
+     */
     const releasedEarnings = completedPayments
-      .filter((p) => p.payoutStatus === "transferred" || p.payoutStatus === "paid")
-      .reduce((sum, p) => sum + (p.professionalAmount || 0), 0);
+      .filter(
+        (p) =>
+          p.payoutStatus === "transferred" ||
+          p.payoutStatus === "paid"
+      )
+      .reduce(
+        (sum, p) => sum + Number(p.professionalAmount || 0),
+        0
+      );
 
     return res.status(200).json({
       success: true,
+
       earnings: {
         totalEarnings: Number(totalEarnings.toFixed(2)),
-        currentMonthEarnings: Number(currentMonthEarnings.toFixed(2)),
-        pendingEarnings: Number(pendingEarnings.toFixed(2)),
-        releasedEarnings: Number(releasedEarnings.toFixed(2)),
+
+        currentMonthEarnings: Number(
+          currentMonthEarnings.toFixed(2)
+        ),
+
+        pendingEarnings: Number(
+          pendingEarnings.toFixed(2)
+        ),
+
+        releasedEarnings: Number(
+          releasedEarnings.toFixed(2)
+        ),
+
         totalTransactionsCount: payments.length,
-        completedTransactionsCount: completedPayments.length,
+
+        completedTransactionsCount:
+          completedPayments.length,
       },
+
       stripeStatus: {
         connected: !!professional.stripeAccountId,
-        stripeAccountId: professional.stripeAccountId || null,
-        accountStatus: professional.stripeAccountStatus || "unconnected",
-        chargesEnabled: !!professional.chargesEnabled,
-        payoutsEnabled: !!professional.payoutsEnabled,
-        maskedBank: professional.maskedBank || "",
+
+        stripeAccountId:
+          professional.stripeAccountId || null,
+
+        accountStatus:
+          professional.stripeAccountStatus ||
+          "unconnected",
+
+        chargesEnabled:
+          !!professional.chargesEnabled,
+
+        payoutsEnabled:
+          !!professional.payoutsEnabled,
+
+        maskedBank:
+          professional.maskedBank || "",
       },
+
       paymentHistory: payments,
     });
   } catch (error) {
-    console.error("Get professional earnings error:", error);
+    console.error(
+      "Get professional earnings error:",
+      error
+    );
 
     return res.status(500).json({
       success: false,
-      message: "Internal server error while loading earnings data",
+      message:
+        "Internal server error while loading earnings data",
       error: error.message,
     });
   }

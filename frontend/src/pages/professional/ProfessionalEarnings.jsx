@@ -40,12 +40,17 @@ export default function ProfessionalEarnings() {
   const handleOpenStripeDashboard = async () => {
     setActionLoading(true);
     try {
-      const res = await httpClient.post("/payment/stripe-connect/dashboard-link");
+      const res = await httpClient.post(
+        "/payment/stripe-connect/dashboard-link",
+      );
       if (res.data?.url) {
         window.open(res.data.url, "_blank");
       }
     } catch (err) {
-      showToast(err?.response?.data?.message || "Failed to open Stripe Dashboard.", "error");
+      showToast(
+        err?.response?.data?.message || "Failed to open Stripe Dashboard.",
+        "error",
+      );
     } finally {
       setActionLoading(false);
     }
@@ -96,7 +101,9 @@ export default function ProfessionalEarnings() {
         {toast && (
           <div
             className={`fixed top-5 right-5 z-50 px-5 py-3 rounded-2xl shadow-xl text-white text-sm font-bold border transition-all ${
-              toast.type === "error" ? "bg-rose-500 border-rose-600" : "bg-emerald-600 border-emerald-700"
+              toast.type === "error"
+                ? "bg-rose-500 border-rose-600"
+                : "bg-emerald-600 border-emerald-700"
             }`}
             style={{ animation: "modalIn 0.2s ease" }}
           >
@@ -109,9 +116,12 @@ export default function ProfessionalEarnings() {
           <span className="text-xs font-extrabold uppercase tracking-widest px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
             Financial Dashboard
           </span>
-          <h1 className="text-3xl font-black text-stone-800 tracking-tight mt-2">Earnings & Payouts</h1>
+          <h1 className="text-3xl font-black text-stone-800 tracking-tight mt-2">
+            Earnings & Payouts
+          </h1>
           <p className="text-stone-500 font-medium text-sm mt-1">
-            Track your 80% payout shares, Stripe Connect transfer statuses, and session payment history.
+            Track your 80% payout shares, Stripe Connect transfer statuses, and
+            session payment history.
           </p>
         </div>
 
@@ -125,13 +135,23 @@ export default function ProfessionalEarnings() {
               <div>
                 <p className="font-extrabold text-stone-800 text-sm flex items-center gap-2">
                   Stripe Express Payout Account
-                  <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${stripe?.payoutsEnabled ? "bg-emerald-50 text-emerald-800 border-emerald-200" : "bg-amber-50 text-amber-800 border-amber-200"}`}>
-                    {stripe?.payoutsEnabled ? "Connected & Active" : "Pending Setup"}
+                  <span
+                    className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
+                      stripe?.payoutsEnabled
+                        ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                        : "bg-amber-50 text-amber-800 border-amber-200"
+                    }`}
+                  >
+                    {stripe?.payoutsEnabled
+                      ? "Connected & Active"
+                      : "Pending Setup"}
                   </span>
                 </p>
                 <p className="text-xs text-stone-500 font-medium mt-0.5">
                   {stripe?.payoutsEnabled
-                    ? `Automatic 80% session share transfers active ${stripe?.maskedBank ? `(${stripe.maskedBank})` : ""}`
+                    ? `Automatic 80% session share transfers active ${
+                        stripe?.maskedBank ? `(${stripe.maskedBank})` : ""
+                      }`
                     : "Connect bank account to receive automatic transfers."}
                 </p>
               </div>
@@ -152,17 +172,26 @@ export default function ProfessionalEarnings() {
         {/* Summary Metric Cards */}
         <div className="px-8 mb-6 grid grid-cols-2 lg:grid-cols-4 gap-4">
           {cards.map((c) => (
-            <div key={c.label} className={`rounded-3xl p-5 border shadow-xs ${c.bg} ${c.border}`}>
+            <div
+              key={c.label}
+              className={`rounded-3xl p-5 border shadow-xs ${c.bg} ${c.border}`}
+            >
               <c.Icon className={`w-6 h-6 mb-2 ${c.textColor}`} />
-              <p className={`text-2xl font-black ${c.textColor}`}>{loading ? "-" : c.value}</p>
-              <p className="text-xs font-bold text-stone-500 uppercase tracking-wider mt-1">{c.label}</p>
+              <p className={`text-2xl font-black ${c.textColor}`}>
+                {loading ? "-" : c.value}
+              </p>
+              <p className="text-xs font-bold text-stone-500 uppercase tracking-wider mt-1">
+                {c.label}
+              </p>
             </div>
           ))}
         </div>
 
         {/* Transaction History Table */}
         <div className="px-8">
-          <h2 className="text-lg font-black text-stone-800 mb-3">Session Earnings History</h2>
+          <h2 className="text-lg font-black text-stone-800 mb-3">
+            Session Earnings History
+          </h2>
           <div className="bg-white rounded-3xl shadow-xs border border-stone-200 overflow-hidden">
             {loading ? (
               <div className="flex items-center justify-center h-48">
@@ -177,31 +206,80 @@ export default function ProfessionalEarnings() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="bg-stone-50 border-b border-stone-100">
-                      {["Client", "Session Fee", "PoseFit Cut (20%)", "Your Share (80%)", "Status", "Connect Payout", "Date"].map((h) => (
-                        <th key={h} className="text-left px-5 py-4 text-xs font-bold text-stone-500 uppercase tracking-wider whitespace-nowrap">{h}</th>
+                      {[
+                        "Client",
+                        "Session Fee",
+                        "PoseFit Cut (20%)",
+                        "Your Share (80%)",
+                        "Status",
+                        "Connect Payout",
+                        "Date",
+                      ].map((h) => (
+                        <th
+                          key={h}
+                          className="text-left px-5 py-4 text-xs font-bold text-stone-500 uppercase tracking-wider whitespace-nowrap"
+                        >
+                          {h}
+                        </th>
                       ))}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-stone-100">
                     {history.map((p) => (
-                      <tr key={p._id} className="hover:bg-stone-50/70 transition-colors">
+                      <tr
+                        key={p._id}
+                        className="hover:bg-stone-50/70 transition-colors"
+                      >
                         <td className="px-5 py-4">
                           <p className="font-bold text-stone-800 whitespace-nowrap">
-                            {p.user ? `${p.user.firstName} ${p.user.lastName}` : "Client"}
+                            {p.user
+                              ? `${p.user.firstName} ${p.user.lastName}`
+                              : "Client"}
                           </p>
-                          <p className="text-xs text-stone-400 font-medium">{p.user?.email}</p>
+                          <p className="text-xs text-stone-400 font-medium">
+                            {p.user?.email}
+                          </p>
                         </td>
-                        <td className="px-5 py-4 font-bold text-stone-800 whitespace-nowrap">${p.amount?.toFixed(2)}</td>
-                        <td className="px-5 py-4 text-amber-800 font-bold whitespace-nowrap">${p.adminCommission?.toFixed(2)}</td>
-                        <td className="px-5 py-4 font-black text-emerald-700 whitespace-nowrap">${p.professionalAmount?.toFixed(2)}</td>
-                        <td className="px-5 py-4 whitespace-nowrap"><StatusBadge status={p.status} /></td>
+                        <td className="px-5 py-4 font-bold text-stone-800 whitespace-nowrap">
+                          ${p.amount?.toFixed(2)}
+                        </td>
+                        <td className="px-5 py-4 text-amber-800 font-bold whitespace-nowrap">
+                          ${p.adminCommission?.toFixed(2)}
+                        </td>
+                        <td className="px-5 py-4 font-black text-emerald-700 whitespace-nowrap">
+                          ${p.professionalAmount?.toFixed(2)}
+                        </td>
                         <td className="px-5 py-4 whitespace-nowrap">
-                          <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold border ${p.payoutStatus === "transferred" || p.status === "completed" ? "bg-emerald-50 text-emerald-800 border-emerald-200" : "bg-stone-100 text-stone-600 border-stone-200"}`}>
-                            {p.payoutStatus === "transferred" || p.status === "completed" ? "Transferred to Connect" : "Pending"}
+                          <StatusBadge status={p.status} />
+                        </td>
+                        <td className="px-5 py-4 whitespace-nowrap">
+                          <span
+                            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold border ${
+                              p.payoutStatus === "failed" ||
+                              p.status === "failed"
+                                ? "bg-rose-50 text-rose-800 border-rose-200"
+                                : p.payoutStatus === "transferred" ||
+                                  p.payoutStatus === "paid" ||
+                                  p.status === "completed"
+                                ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                                : "bg-stone-100 text-stone-600 border-stone-200"
+                            }`}
+                          >
+                            {p.payoutStatus === "failed" ||
+                            p.status === "failed"
+                              ? "Failed"
+                              : p.payoutStatus === "transferred" ||
+                                p.payoutStatus === "paid" ||
+                                p.status === "completed"
+                              ? "Transferred to Connect"
+                              : "Pending"}
                           </span>
                         </td>
                         <td className="px-5 py-4 text-xs text-stone-500 font-medium whitespace-nowrap">
-                          {new Date(p.paidAt || p.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                          {new Date(p.paidAt || p.createdAt).toLocaleDateString(
+                            "en-US",
+                            { month: "short", day: "numeric", year: "numeric" },
+                          )}
                         </td>
                       </tr>
                     ))}

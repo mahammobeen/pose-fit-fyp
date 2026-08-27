@@ -166,7 +166,7 @@ const login = async (req, res) => {
       });
     }
 
-    if (!user.isVerified) {
+    if (user.role === "USER" &&!user.isVerified) {
       return res.status(403).json({
         success: false,
         message: "Please verify your email before logging in",
