@@ -10,7 +10,7 @@ const createAdmin = async () => {
     await ConnectToDB();
 
     const email = "admin@posefit.com";
-    const password = "Admin@123";
+    const password = "admin@123";
 
     const existingAdmin = await UserModel.findOne({
       email,

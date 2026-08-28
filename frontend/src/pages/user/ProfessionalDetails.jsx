@@ -39,6 +39,37 @@ function getImageUrl(image) {
   return `http://localhost:4000/${image}`;
 }
 
+function getNextDateForDay(day) {
+  const dayIndex = DAYS_ORDER.indexOf(day);
+
+  if (dayIndex === -1) return null;
+
+  const today = new Date();
+  const todayIndex = (today.getDay() + 6) % 7;
+
+  let daysUntil = dayIndex - todayIndex;
+
+  if (daysUntil < 0) {
+    daysUntil += 7;
+  }
+
+  const result = new Date(today);
+  result.setDate(today.getDate() + daysUntil);
+  result.setHours(0, 0, 0, 0);
+
+  return result;
+}
+
+function formatDateForApi(date) {
+  if (!date) return "";
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
 export default function ProfessionalDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -47,36 +78,26 @@ export default function ProfessionalDetails() {
   const [pro, setPro] = useState(null);
   const [loading, setLoading] = useState(true);
   const [bookingLoading, setBookingLoading] = useState(false);
-
-  // =====================================================
-  // BOOKING
-  // =====================================================
+  const [bookedSlots, setBookedSlots] = useState([]);
 
   const [showBooking, setShowBooking] = useState(false);
   const [selectedDay, setSelectedDay] = useState("");
   const [selectedSlot, setSelectedSlot] = useState("");
   const [notes, setNotes] = useState("");
 
-  // =====================================================
-  // BOOKING STATUS
-  // =====================================================
-
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [bookingCancelled, setBookingCancelled] = useState(false);
 
-  // =====================================================
-  // FETCH PROFESSIONAL
-  // =====================================================
-
+  // Fetch professional profile
   const fetchPublicProfile = async () => {
     try {
       setLoading(true);
 
-      const response = await httpClient.get(`/user/public-professionals/${id}`);
+      const response = await httpClient.get(
+        `/user/public-professionals/${id}`,
+      );
 
-      const professional = response.data?.professional;
-
-      setPro(professional || null);
+      setPro(response.data?.professional || null);
     } catch (error) {
       console.error("Professional profile error:", error);
 
@@ -91,18 +112,27 @@ export default function ProfessionalDetails() {
     }
   };
 
-  // =====================================================
-  // LOAD PAGE
-  // =====================================================
+  // Fetch booked slots
+  const fetchBookedSlots = async () => {
+    try {
+      const response = await httpClient.get(
+        `/payment/professional/${id}/booked-slots`,
+      );
 
+      setBookedSlots(response.data?.bookedSlots || []);
+    } catch (error) {
+      console.error("Booked slots error:", error);
+      setBookedSlots([]);
+    }
+  };
+
+  // Load page
   useEffect(() => {
     fetchPublicProfile();
+    fetchBookedSlots();
   }, [id]);
 
-  // =====================================================
-  // STRIPE RETURN STATUS
-  // =====================================================
-
+  // Handle Stripe return
   useEffect(() => {
     const params = new URLSearchParams(location.search);
 
@@ -114,6 +144,8 @@ export default function ProfessionalDetails() {
       setBookingCancelled(false);
 
       toast.success("Booking confirmed successfully!");
+
+      fetchBookedSlots();
 
       navigate(location.pathname, {
         replace: true,
@@ -128,17 +160,43 @@ export default function ProfessionalDetails() {
 
       toast.error("Payment was cancelled.");
 
+      fetchBookedSlots();
+
       navigate(location.pathname, {
         replace: true,
       });
     }
   }, [location.search, location.pathname, navigate]);
 
-  // =====================================================
-  // OPEN BOOKING
-  // =====================================================
+  // Check whether slot is booked
+  const isSlotBooked = (day, slot) => {
+    return bookedSlots.some(
+      (booking) =>
+        booking.appointmentDay?.trim().toLowerCase() ===
+          day?.trim().toLowerCase() &&
+        booking.appointmentSlot?.trim().toLowerCase() ===
+          slot?.trim().toLowerCase(),
+    );
+  };
 
-  const openBooking = () => {
+  // Get available slots for a day
+  const getAvailableSlots = (day) => {
+    const dayData = availability.find(
+      (item) =>
+        item.day?.trim().toLowerCase() === day?.trim().toLowerCase(),
+    );
+
+    if (!dayData) return [];
+
+    return (dayData.slots || []).filter(
+      (slot) => !isSlotBooked(day, slot),
+    );
+  };
+
+  // Open booking
+  const openBooking = async () => {
+    await fetchBookedSlots();
+
     setSelectedDay("");
     setSelectedSlot("");
     setNotes("");
@@ -147,10 +205,7 @@ export default function ProfessionalDetails() {
     setShowBooking(true);
   };
 
-  // =====================================================
-  // CLOSE BOOKING
-  // =====================================================
-
+  // Close booking
   const closeBooking = () => {
     if (bookingLoading) return;
 
@@ -160,10 +215,7 @@ export default function ProfessionalDetails() {
     setNotes("");
   };
 
-  // =====================================================
-  // CONFIRM BOOKING
-  // =====================================================
-
+  // Confirm booking
   const handleConfirmBooking = async () => {
     if (!selectedDay) {
       toast.error("Please select a day.");
@@ -172,6 +224,13 @@ export default function ProfessionalDetails() {
 
     if (!selectedSlot) {
       toast.error("Please select a time slot.");
+      return;
+    }
+
+    if (isSlotBooked(selectedDay, selectedSlot)) {
+      toast.error("This slot has already been booked.");
+      setSelectedSlot("");
+      await fetchBookedSlots();
       return;
     }
 
@@ -185,14 +244,32 @@ export default function ProfessionalDetails() {
       return;
     }
 
+    const appointmentDate = getNextDateForDay(selectedDay);
+
+    if (!appointmentDate) {
+      toast.error("Invalid appointment day.");
+      return;
+    }
+
     try {
       setBookingLoading(true);
+
+      await fetchBookedSlots();
+
+      if (isSlotBooked(selectedDay, selectedSlot)) {
+        toast.error(
+          "This slot was just booked by another user. Please select another slot.",
+        );
+        setSelectedSlot("");
+        return;
+      }
 
       const response = await httpClient.post("/payment/create", {
         professionalId: pro._id,
         amount: Number(pro.sessionFee),
         appointmentDay: selectedDay,
         appointmentSlot: selectedSlot,
+        appointmentDate: formatDateForApi(appointmentDate),
         notes: notes.trim(),
       });
 
@@ -220,36 +297,43 @@ export default function ProfessionalDetails() {
         return;
       }
 
+      if (error?.response?.status === 409) {
+        toast.error(
+          error?.response?.data?.message ||
+            "This appointment slot is no longer available.",
+        );
+
+        setSelectedSlot("");
+        await fetchBookedSlots();
+
+        return;
+      }
+
       toast.error(
         error?.response?.data?.message ||
           error?.message ||
           "Failed to initiate booking payment.",
       );
+
+      await fetchBookedSlots();
     } finally {
       setBookingLoading(false);
     }
   };
 
-  // =====================================================
-  // AVAILABILITY
-  // =====================================================
-
   const availability = sortAvailability(pro?.availability || []);
 
-  const selectedDayData = availability.find((item) => item.day === selectedDay);
+  const selectedDayData = availability.find(
+    (item) =>
+      item.day?.trim().toLowerCase() ===
+      selectedDay?.trim().toLowerCase(),
+  );
 
   const daySlots = selectedDayData?.slots || [];
 
-  // =====================================================
-  // PROFILE PHOTO
-  // =====================================================
-
   const profilePhoto = getImageUrl(pro?.profilePhoto);
 
-  // =====================================================
-  // LOADING
-  // =====================================================
-
+  // Loading
   if (loading) {
     return (
       <UserLayout>
@@ -260,10 +344,7 @@ export default function ProfessionalDetails() {
     );
   }
 
-  // =====================================================
-  // PROFESSIONAL NOT FOUND
-  // =====================================================
-
+  // Professional not found
   if (!pro) {
     return (
       <UserLayout>
@@ -293,17 +374,10 @@ export default function ProfessionalDetails() {
     );
   }
 
-  // =====================================================
-  // MAIN
-  // =====================================================
-
   return (
     <UserLayout>
       <div className="pb-20">
-        {/* =====================================================
-            HEADER
-        ===================================================== */}
-
+        {/* Header */}
         <div className="flex items-center justify-between gap-4 px-8 pb-4 pt-8">
           <span className="rounded-full border border-emerald-200 bg-emerald-100 px-3 py-1 text-xs font-extrabold uppercase tracking-widest text-emerald-800">
             Professional Details
@@ -317,10 +391,7 @@ export default function ProfessionalDetails() {
           </button>
         </div>
 
-        {/* =====================================================
-            BOOKING SUCCESS
-        ===================================================== */}
-
+        {/* Booking success */}
         {bookingSuccess && (
           <div className="mx-auto mb-6 max-w-5xl px-8">
             <div className="flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
@@ -332,22 +403,19 @@ export default function ProfessionalDetails() {
                 </p>
 
                 <p className="mt-0.5 text-xs font-medium text-emerald-700">
-                  Your payment was successful. The professional will be in touch
-                  to confirm your session details.
+                  Your payment was successful. The professional will be in
+                  touch to confirm your session details.
                 </p>
               </div>
             </div>
           </div>
         )}
 
-        {/* =====================================================
-            BOOKING CANCELLED
-        ===================================================== */}
-
+        {/* Payment cancelled */}
         {bookingCancelled && (
           <div className="mx-auto mb-6 max-w-5xl px-8">
             <div className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
-              <span className="text-lg text-amber-600">⚠</span>
+              <span className="text-lg text-amber-600">!</span>
 
               <p className="text-sm font-medium text-amber-900">
                 Payment was cancelled. You can try booking again anytime.
@@ -356,19 +424,11 @@ export default function ProfessionalDetails() {
           </div>
         )}
 
-        {/* =====================================================
-            PROFESSIONAL CONTENT
-        ===================================================== */}
-
+        {/* Professional content */}
         <div className="mx-auto max-w-5xl space-y-6 px-8">
-          {/* =====================================================
-              MAIN CARD
-          ===================================================== */}
-
+          {/* Main card */}
           <div className="rounded-3xl border border-stone-200 bg-white p-8 shadow-xs">
             <div className="flex flex-wrap items-start justify-between gap-6">
-              {/* PROFILE */}
-
               <div className="flex items-start gap-5">
                 {profilePhoto ? (
                   <img
@@ -383,7 +443,8 @@ export default function ProfessionalDetails() {
                   <div
                     className="flex h-24 w-24 shrink-0 items-center justify-center rounded-3xl text-3xl font-black text-white shadow-xs"
                     style={{
-                      background: "linear-gradient(135deg, #10b981, #059669)",
+                      background:
+                        "linear-gradient(135deg, #10b981, #059669)",
                     }}
                   >
                     {pro.firstName?.charAt(0)?.toUpperCase() || "P"}
@@ -408,22 +469,18 @@ export default function ProfessionalDetails() {
                   </p>
 
                   <div className="mt-3 flex flex-wrap items-center gap-3">
-                    {/* RATING */}
-
                     <div className="rounded-xl border border-stone-200 bg-stone-50 px-3.5 py-1.5 text-xs font-extrabold text-stone-800">
                       {pro.rating?.count > 0 ? (
                         <span>
-                          ⭐ {Number(pro.rating?.average || 0).toFixed(1)} (
-                          {pro.rating.count} ratings)
+                          Rating: {Number(pro.rating?.average || 0).toFixed(1)}{" "}
+                          ({pro.rating.count})
                         </span>
                       ) : (
                         <span className="text-amber-700">
-                          ⭐ New Professional
+                          New Professional
                         </span>
                       )}
                     </div>
-
-                    {/* SESSION FEE */}
 
                     <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-1.5 text-xs font-black text-emerald-800">
                       ${Number(pro.sessionFee || 0).toFixed(2)}
@@ -433,21 +490,18 @@ export default function ProfessionalDetails() {
                 </div>
               </div>
 
-              {/* BOOK BUTTON */}
-
               <button
                 onClick={openBooking}
                 disabled={!pro.sessionFee || availability.length === 0}
                 className="rounded-2xl px-8 py-3.5 text-sm font-bold text-white shadow-md transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                 style={{
-                  background: "linear-gradient(135deg, #10b981, #059669)",
+                  background:
+                    "linear-gradient(135deg, #10b981, #059669)",
                 }}
               >
                 Book a Session
               </button>
             </div>
-
-            {/* BIO */}
 
             {pro.bio && (
               <div className="mt-8 border-t border-stone-100 pt-6">
@@ -462,10 +516,7 @@ export default function ProfessionalDetails() {
             )}
           </div>
 
-          {/* =====================================================
-              AVAILABILITY
-          ===================================================== */}
-
+          {/* Availability */}
           <div className="rounded-3xl border border-stone-200 bg-white p-8 shadow-xs">
             <h3 className="mb-4 flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-stone-400">
               <IconCalendar className="h-4 w-4 text-emerald-600" />
@@ -485,17 +536,40 @@ export default function ProfessionalDetails() {
 
                     <div className="flex flex-wrap gap-1.5">
                       {item.slots?.length > 0 ? (
-                        item.slots.map((slot) => (
-                          <span
-                            key={slot}
-                            className="flex items-center gap-1 rounded-lg border border-stone-200 bg-white px-2.5 py-1 text-xs font-bold text-stone-700"
-                          >
-                            <IconClock className="h-3 w-3 text-stone-400" />
-                            {slot}
-                          </span>
-                        ))
+                        item.slots.map((slot) => {
+                          const booked = isSlotBooked(item.day, slot);
+
+                          return (
+                            <span
+                              key={slot}
+                              className={`flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-bold ${
+                                booked
+                                  ? "border-red-200 bg-red-50 text-red-500"
+                                  : "border-stone-200 bg-white text-stone-700"
+                              }`}
+                            >
+                              <IconClock
+                                className={`h-3 w-3 ${
+                                  booked
+                                    ? "text-red-400"
+                                    : "text-stone-400"
+                                }`}
+                              />
+
+                              {slot}
+
+                              {booked && (
+                                <span className="ml-1 text-[9px] font-black uppercase">
+                                  Booked
+                                </span>
+                              )}
+                            </span>
+                          );
+                        })
                       ) : (
-                        <span className="text-xs text-stone-400">No slots</span>
+                        <span className="text-xs text-stone-400">
+                          No slots
+                        </span>
                       )}
                     </div>
                   </div>
@@ -509,10 +583,7 @@ export default function ProfessionalDetails() {
           </div>
         </div>
 
-        {/* =====================================================
-            BOOKING MODAL
-        ===================================================== */}
-
+        {/* Booking modal */}
         {showBooking && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
             <div
@@ -521,10 +592,7 @@ export default function ProfessionalDetails() {
                 maxHeight: "92vh",
               }}
             >
-              {/* =====================================================
-                  MODAL HEADER
-              ===================================================== */}
-
+              {/* Modal header */}
               <div className="flex items-start justify-between border-b border-stone-100 p-6">
                 <div>
                   <h2 className="text-lg font-black text-stone-800">
@@ -545,15 +613,12 @@ export default function ProfessionalDetails() {
                   disabled={bookingLoading}
                   className="text-xl font-bold leading-none text-stone-400 transition-colors hover:text-stone-700 disabled:opacity-40"
                 >
-                  ✕
+                  ×
                 </button>
               </div>
 
               <div className="space-y-5 p-6">
-                {/* =====================================================
-                    STEP 1
-                ===================================================== */}
-
+                {/* Step 1 */}
                 <div>
                   <label className="mb-2 block text-xs font-extrabold uppercase tracking-wider text-stone-500">
                     Step 1: Choose a Day
@@ -561,39 +626,46 @@ export default function ProfessionalDetails() {
 
                   {availability.length === 0 ? (
                     <p className="text-xs font-medium text-stone-400">
-                      No availability slots configured by this professional yet.
+                      No availability slots configured by this professional
+                      yet.
                     </p>
                   ) : (
                     <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-                      {availability.map((item) => (
-                        <button
-                          key={item.day}
-                          type="button"
-                          onClick={() => {
-                            setSelectedDay(item.day);
-                            setSelectedSlot("");
-                          }}
-                          className={`rounded-xl border px-2 py-2.5 text-xs font-bold transition-all ${
-                            selectedDay === item.day
-                              ? "border-emerald-600 bg-emerald-600 text-white shadow-md"
-                              : "border-stone-200 bg-stone-50 text-stone-700 hover:border-emerald-300 hover:bg-emerald-50"
-                          }`}
-                        >
-                          {item.day.slice(0, 3)}
+                      {availability.map((item) => {
+                        const availableSlots = getAvailableSlots(item.day);
 
-                          <span className="mt-0.5 block text-[10px] font-medium opacity-70">
-                            {item.slots?.length || 0} slots
-                          </span>
-                        </button>
-                      ))}
+                        return (
+                          <button
+                            key={item.day}
+                            type="button"
+                            disabled={availableSlots.length === 0}
+                            onClick={() => {
+                              setSelectedDay(item.day);
+                              setSelectedSlot("");
+                            }}
+                            className={`rounded-xl border px-2 py-2.5 text-xs font-bold transition-all ${
+                              selectedDay === item.day
+                                ? "border-emerald-600 bg-emerald-600 text-white shadow-md"
+                                : availableSlots.length === 0
+                                ? "cursor-not-allowed border-stone-200 bg-stone-100 text-stone-400"
+                                : "border-stone-200 bg-stone-50 text-stone-700 hover:border-emerald-300 hover:bg-emerald-50"
+                            }`}
+                          >
+                            {item.day.slice(0, 3)}
+
+                            <span className="mt-0.5 block text-[10px] font-medium opacity-70">
+                              {availableSlots.length === 0
+                                ? "Fully booked"
+                                : `${availableSlots.length} slots`}
+                            </span>
+                          </button>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
 
-                {/* =====================================================
-                    STEP 2
-                ===================================================== */}
-
+                {/* Step 2 */}
                 {selectedDay && (
                   <div>
                     <label className="mb-2 block text-xs font-extrabold uppercase tracking-wider text-stone-500">
@@ -606,41 +678,60 @@ export default function ProfessionalDetails() {
                       </p>
                     ) : (
                       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                        {daySlots.map((slot) => (
-                          <button
-                            key={slot}
-                            type="button"
-                            onClick={() => setSelectedSlot(slot)}
-                            className={`flex items-center gap-2 rounded-xl border px-4 py-3 text-xs font-bold transition-all ${
-                              selectedSlot === slot
-                                ? "border-emerald-600 bg-emerald-600 text-white shadow-md"
-                                : "border-stone-200 bg-stone-50 text-stone-700 hover:border-emerald-300 hover:bg-emerald-50"
-                            }`}
-                          >
-                            <IconClock
-                              className={`h-4 w-4 shrink-0 ${
-                                selectedSlot === slot
-                                  ? "text-white"
-                                  : "text-stone-400"
+                        {daySlots.map((slot) => {
+                          const booked = isSlotBooked(
+                            selectedDay,
+                            slot,
+                          );
+
+                          return (
+                            <button
+                              key={slot}
+                              type="button"
+                              disabled={booked}
+                              onClick={() => {
+                                if (!booked) {
+                                  setSelectedSlot(slot);
+                                }
+                              }}
+                              className={`flex items-center gap-2 rounded-xl border px-4 py-3 text-xs font-bold transition-all ${
+                                booked
+                                  ? "cursor-not-allowed border-red-200 bg-red-50 text-red-400"
+                                  : selectedSlot === slot
+                                  ? "border-emerald-600 bg-emerald-600 text-white shadow-md"
+                                  : "border-stone-200 bg-stone-50 text-stone-700 hover:border-emerald-300 hover:bg-emerald-50"
                               }`}
-                            />
+                            >
+                              <IconClock
+                                className={`h-4 w-4 shrink-0 ${
+                                  booked
+                                    ? "text-red-400"
+                                    : selectedSlot === slot
+                                    ? "text-white"
+                                    : "text-stone-400"
+                                }`}
+                              />
 
-                            {slot}
+                              <span>{slot}</span>
 
-                            {selectedSlot === slot && (
-                              <IconCheckCircle className="ml-auto h-4 w-4 text-white" />
-                            )}
-                          </button>
-                        ))}
+                              {booked && (
+                                <span className="ml-auto text-[10px] font-black uppercase">
+                                  Unavailable
+                                </span>
+                              )}
+
+                              {selectedSlot === slot && !booked && (
+                                <IconCheckCircle className="ml-auto h-4 w-4 text-white" />
+                              )}
+                            </button>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
                 )}
 
-                {/* =====================================================
-                    STEP 3
-                ===================================================== */}
-
+                {/* Step 3 */}
                 {selectedSlot && (
                   <div>
                     <label className="mb-2 block text-xs font-extrabold uppercase tracking-wider text-stone-500">
@@ -662,10 +753,7 @@ export default function ProfessionalDetails() {
                   </div>
                 )}
 
-                {/* =====================================================
-                    SUMMARY
-                ===================================================== */}
-
+                {/* Summary */}
                 {selectedDay && selectedSlot && (
                   <div className="flex flex-wrap items-start justify-between gap-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
                     <div>
@@ -680,6 +768,18 @@ export default function ProfessionalDetails() {
                       <p className="mt-0.5 text-xs font-medium text-stone-500">
                         with {pro.firstName} {pro.lastName}
                       </p>
+
+                      <p className="mt-1 text-xs font-medium text-stone-500">
+                        Date:{" "}
+                        {getNextDateForDay(selectedDay)?.toLocaleDateString(
+                          "en-US",
+                          {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          },
+                        )}
+                      </p>
                     </div>
 
                     <p className="text-xl font-black text-emerald-800">
@@ -688,10 +788,7 @@ export default function ProfessionalDetails() {
                   </div>
                 )}
 
-                {/* =====================================================
-                    ACTIONS
-                ===================================================== */}
-
+                {/* Actions */}
                 <div className="flex items-center gap-3 pt-2">
                   <button
                     type="button"
@@ -709,11 +806,13 @@ export default function ProfessionalDetails() {
                       !selectedDay ||
                       !selectedSlot ||
                       bookingLoading ||
-                      !pro.sessionFee
+                      !pro.sessionFee ||
+                      isSlotBooked(selectedDay, selectedSlot)
                     }
                     className="flex-1 rounded-2xl py-3 text-sm font-bold text-white shadow-md transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                     style={{
-                      background: "linear-gradient(135deg, #10b981, #059669)",
+                      background:
+                        "linear-gradient(135deg, #10b981, #059669)",
                     }}
                   >
                     {bookingLoading
@@ -722,6 +821,8 @@ export default function ProfessionalDetails() {
                       ? "Select a Day"
                       : !selectedSlot
                       ? "Select a Time Slot"
+                      : isSlotBooked(selectedDay, selectedSlot)
+                      ? "Slot Unavailable"
                       : "Confirm & Pay →"}
                   </button>
                 </div>

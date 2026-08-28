@@ -7,7 +7,7 @@ import {
   IconClock,
 } from "../../components/admin/Icons";
 
-const STATUS_FILTERS = ["all", "completed", "pending", "refunded", "cancelled"];
+const STATUS_FILTERS = ["all", "completed", "pending"];
 
 export default function ProfessionalBookings() {
   const [bookings, setBookings] = useState([]);
@@ -24,7 +24,9 @@ export default function ProfessionalBookings() {
   const fetchBookings = useCallback(async () => {
     try {
       setLoading(true);
+
       const res = await httpClient.get("/professional/bookings");
+
       setBookings(res.data?.bookings || []);
     } catch {
       showToast("Failed to load bookings", "error");
@@ -38,23 +40,33 @@ export default function ProfessionalBookings() {
   }, [fetchBookings]);
 
   const filtered = bookings.filter((b) => {
-    const matchStatus = statusFilter === "all" || b.status === statusFilter;
+    const matchStatus =
+      statusFilter === "all" || b.status === statusFilter;
+
     const q = search.toLowerCase();
+
     const matchSearch =
       !q ||
       b.user?.firstName?.toLowerCase().includes(q) ||
       b.user?.lastName?.toLowerCase().includes(q) ||
       b.user?.email?.toLowerCase().includes(q);
+
     return matchStatus && matchSearch;
   });
 
   return (
     <ProfessionalLayout>
-      <div className="min-h-screen pb-16" style={{ background: "#f5f7f2" }}>
+      <div
+        className="min-h-screen pb-16"
+        style={{ background: "#f5f7f2" }}
+      >
+        {/* Toast */}
         {toast && (
           <div
             className={`fixed top-5 right-5 z-50 px-5 py-3 rounded-2xl shadow-xl text-white text-sm font-bold border transition-all ${
-              toast.type === "error" ? "bg-rose-500 border-rose-600" : "bg-emerald-600 border-emerald-700"
+              toast.type === "error"
+                ? "bg-rose-500 border-rose-600"
+                : "bg-emerald-600 border-emerald-700"
             }`}
           >
             {toast.msg}
@@ -66,14 +78,20 @@ export default function ProfessionalBookings() {
           <span className="text-xs font-extrabold uppercase tracking-widest px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
             Session History
           </span>
-          <h1 className="text-3xl font-black text-stone-800 tracking-tight mt-2">My Bookings</h1>
+
+          <h1 className="text-3xl font-black text-stone-800 tracking-tight mt-2">
+            My Bookings
+          </h1>
+
           <p className="text-stone-500 font-medium text-sm mt-1">
-            View upcoming, completed, and past client session bookings with appointment slot details.
+            View upcoming, completed, and past client session bookings
+            with appointment slot details.
           </p>
         </div>
 
         {/* Filters & Search */}
         <div className="px-8 mb-4 flex items-center justify-between gap-3 flex-wrap">
+          {/* Status Filters */}
           <div className="flex items-center gap-1 bg-white rounded-2xl border border-stone-200 p-1.5 shadow-xs">
             {STATUS_FILTERS.map((s) => (
               <button
@@ -90,10 +108,12 @@ export default function ProfessionalBookings() {
             ))}
           </div>
 
+          {/* Search */}
           <div className="relative">
             <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400">
               <IconSearch className="w-4 h-4" />
             </span>
+
             <input
               type="text"
               placeholder="Search by client name or email..."
@@ -113,52 +133,83 @@ export default function ProfessionalBookings() {
               </div>
             ) : filtered.length === 0 ? (
               <div className="text-center py-16 text-stone-400 font-medium">
-                {bookings.length === 0 ? "No bookings found." : "No bookings match your filters."}
+                {bookings.length === 0
+                  ? "No bookings found."
+                  : "No bookings match your filters."}
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="bg-stone-50 border-b border-stone-100">
-                      {["Client", "Appointment Slot", "Session Fee", "Pro Share (80%)", "Status", "Date"].map((h) => (
-                        <th key={h} className="text-left px-6 py-4 text-xs font-bold text-stone-500 uppercase tracking-wider whitespace-nowrap">
+                      {[
+                        "Client",
+                        "Appointment Slot",
+                        "Session Fee",
+                        "Pro Share (80%)",
+                        "Status",
+                        "Date",
+                      ].map((h) => (
+                        <th
+                          key={h}
+                          className="text-left px-6 py-4 text-xs font-bold text-stone-500 uppercase tracking-wider whitespace-nowrap"
+                        >
                           {h}
                         </th>
                       ))}
                     </tr>
                   </thead>
+
                   <tbody className="divide-y divide-stone-100">
                     {filtered.map((b) => (
-                      <tr key={b._id} className="hover:bg-stone-50/70 transition-colors">
+                      <tr
+                        key={b._id}
+                        className="hover:bg-stone-50/70 transition-colors"
+                      >
                         {/* Client */}
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
                             <div
                               className="w-9 h-9 rounded-2xl flex items-center justify-center text-white text-xs font-black shrink-0"
-                              style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}
+                              style={{
+                                background:
+                                  "linear-gradient(135deg, #10b981, #059669)",
+                              }}
                             >
-                              {b.user?.firstName?.[0]?.toUpperCase() || "C"}
+                              {b.user?.firstName?.[0]?.toUpperCase() ||
+                                "C"}
                             </div>
+
                             <div>
                               <p className="font-bold text-stone-800 whitespace-nowrap">
-                                {b.user ? `${b.user.firstName} ${b.user.lastName}` : "Client"}
+                                {b.user
+                                  ? `${b.user.firstName} ${b.user.lastName}`
+                                  : "Client"}
                               </p>
-                              <p className="text-xs text-stone-400 font-medium">{b.user?.email}</p>
+
+                              <p className="text-xs text-stone-400 font-medium">
+                                {b.user?.email}
+                              </p>
                             </div>
                           </div>
                         </td>
 
                         {/* Appointment Slot */}
                         <td className="px-6 py-4">
-                          {b.appointmentDay && b.appointmentSlot ? (
+                          {b.appointmentDay &&
+                          b.appointmentSlot ? (
                             <div className="flex items-center gap-1.5">
                               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-800">
                                 <IconClock className="w-3 h-3 text-emerald-600" />
-                                {b.appointmentDay.slice(0, 3)} - {b.appointmentSlot}
+
+                                {b.appointmentDay.slice(0, 3)} -{" "}
+                                {b.appointmentSlot}
                               </span>
                             </div>
                           ) : (
-                            <span className="text-xs text-stone-400 font-medium italic">Not specified</span>
+                            <span className="text-xs text-stone-400 font-medium italic">
+                              Not specified
+                            </span>
                           )}
                         </td>
 
@@ -179,7 +230,9 @@ export default function ProfessionalBookings() {
 
                         {/* Date */}
                         <td className="px-6 py-4 text-stone-500 text-xs font-medium whitespace-nowrap">
-                          {new Date(b.paidAt || b.createdAt).toLocaleDateString("en-US", {
+                          {new Date(
+                            b.paidAt || b.createdAt
+                          ).toLocaleDateString("en-US", {
                             month: "short",
                             day: "numeric",
                             year: "numeric",
@@ -192,8 +245,10 @@ export default function ProfessionalBookings() {
               </div>
             )}
           </div>
+
           <p className="text-xs text-stone-400 mt-3 font-semibold">
-            Showing {filtered.length} of {bookings.length} session bookings
+            Showing {filtered.length} of {bookings.length} session
+            bookings
           </p>
         </div>
       </div>
