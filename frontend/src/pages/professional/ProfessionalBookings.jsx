@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import ProfessionalLayout from "../../components/professional/ProfessionalLayout";
 import StatusBadge from "../../components/admin/StatusBadge";
@@ -28,7 +29,8 @@ export default function ProfessionalBookings() {
       const res = await httpClient.get("/professional/bookings");
 
       setBookings(res.data?.bookings || []);
-    } catch {
+    } catch (error) {
+      console.error("Fetch bookings error:", error);
       showToast("Failed to load bookings", "error");
     } finally {
       setLoading(false);
@@ -38,6 +40,33 @@ export default function ProfessionalBookings() {
   useEffect(() => {
     fetchBookings();
   }, [fetchBookings]);
+
+  // Delete booking from professional history
+  const handleDelete = async (bookingId) => {
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this booking record? This will only remove it from your booking history."
+    );
+
+    if (!confirmed) return;
+
+    try {
+      await httpClient.delete(
+        `/payment/professional/payments/${bookingId}`
+      );
+
+      showToast("Booking record deleted successfully.");
+
+      await fetchBookings();
+    } catch (error) {
+      console.error("Delete booking error:", error);
+
+      showToast(
+        error?.response?.data?.message ||
+          "Failed to delete booking record.",
+        "error"
+      );
+    }
+  };
 
   const filtered = bookings.filter((b) => {
     const matchStatus =
@@ -60,7 +89,6 @@ export default function ProfessionalBookings() {
         className="min-h-screen pb-16"
         style={{ background: "#f5f7f2" }}
       >
-        {/* Toast */}
         {toast && (
           <div
             className={`fixed top-5 right-5 z-50 px-5 py-3 rounded-2xl shadow-xl text-white text-sm font-bold border transition-all ${
@@ -73,7 +101,6 @@ export default function ProfessionalBookings() {
           </div>
         )}
 
-        {/* Header */}
         <div className="px-8 pt-8 pb-4">
           <span className="text-xs font-extrabold uppercase tracking-widest px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
             Session History
@@ -89,9 +116,7 @@ export default function ProfessionalBookings() {
           </p>
         </div>
 
-        {/* Filters & Search */}
         <div className="px-8 mb-4 flex items-center justify-between gap-3 flex-wrap">
-          {/* Status Filters */}
           <div className="flex items-center gap-1 bg-white rounded-2xl border border-stone-200 p-1.5 shadow-xs">
             {STATUS_FILTERS.map((s) => (
               <button
@@ -108,7 +133,6 @@ export default function ProfessionalBookings() {
             ))}
           </div>
 
-          {/* Search */}
           <div className="relative">
             <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400">
               <IconSearch className="w-4 h-4" />
@@ -124,7 +148,6 @@ export default function ProfessionalBookings() {
           </div>
         </div>
 
-        {/* Bookings List */}
         <div className="px-8">
           <div className="bg-white rounded-3xl shadow-xs border border-stone-200 overflow-hidden">
             {loading ? (
@@ -149,6 +172,7 @@ export default function ProfessionalBookings() {
                         "Pro Share (80%)",
                         "Status",
                         "Date",
+                        "Action",
                       ].map((h) => (
                         <th
                           key={h}
@@ -166,7 +190,6 @@ export default function ProfessionalBookings() {
                         key={b._id}
                         className="hover:bg-stone-50/70 transition-colors"
                       >
-                        {/* Client */}
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
                             <div
@@ -194,7 +217,6 @@ export default function ProfessionalBookings() {
                           </div>
                         </td>
 
-                        {/* Appointment Slot */}
                         <td className="px-6 py-4">
                           {b.appointmentDay &&
                           b.appointmentSlot ? (
@@ -213,22 +235,18 @@ export default function ProfessionalBookings() {
                           )}
                         </td>
 
-                        {/* Session Fee */}
                         <td className="px-6 py-4 font-bold text-stone-800 whitespace-nowrap">
                           ${b.amount?.toFixed(2)}
                         </td>
 
-                        {/* Pro Share */}
                         <td className="px-6 py-4 font-black text-emerald-700 whitespace-nowrap">
                           ${b.professionalAmount?.toFixed(2)}
                         </td>
 
-                        {/* Status */}
                         <td className="px-6 py-4 whitespace-nowrap">
                           <StatusBadge status={b.status} />
                         </td>
 
-                        {/* Date */}
                         <td className="px-6 py-4 text-stone-500 text-xs font-medium whitespace-nowrap">
                           {new Date(
                             b.paidAt || b.createdAt
@@ -237,6 +255,15 @@ export default function ProfessionalBookings() {
                             day: "numeric",
                             year: "numeric",
                           })}
+                        </td>
+
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <button
+                            onClick={() => handleDelete(b._id)}
+                            className="px-3.5 py-1.5 rounded-xl text-xs font-bold text-rose-800 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-colors whitespace-nowrap"
+                          >
+                            Delete
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -255,3 +282,4 @@ export default function ProfessionalBookings() {
     </ProfessionalLayout>
   );
 }
+

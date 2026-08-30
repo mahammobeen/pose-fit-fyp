@@ -8,7 +8,9 @@ const {
   getPayment,
   getUserPayments,
   getAdminPayments,
-  deletePayment,
+  deleteAdminPayment,
+  deleteProfessionalPayment,
+  getProfessionalBookedSlots,
   createConnectOnboardingSession,
   getConnectStatus,
   getConnectDashboardLink,
@@ -24,9 +26,11 @@ router.post("/stripe-connect/dashboard-link", authMiddleware, getConnectDashboar
 
 // Core Payment Endpoints
 router.post("/create", authMiddleware, createPayment);
+router.get("/booked-slots/:id", authMiddleware, getProfessionalBookedSlots);
 router.get("/my-payments", authMiddleware, getUserPayments);
 router.get("/admin/payments", authMiddleware, adminMiddleware, getAdminPayments);
 router.get("/:id", authMiddleware, getPayment);
-router.delete("/admin/payments/:id", authMiddleware, adminMiddleware, deletePayment);
+router.delete("/admin/payments/:id", authMiddleware, adminMiddleware, deleteAdminPayment);
+router.delete("/professional/payments/:id", authMiddleware, deleteProfessionalPayment);
 
 module.exports = router;

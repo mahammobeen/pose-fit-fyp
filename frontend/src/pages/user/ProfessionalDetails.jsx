@@ -70,6 +70,155 @@ function formatDateForApi(date) {
   return `${year}-${month}-${day}`;
 }
 
+function normalizeDate(date) {
+  if (!date) return "";
+
+  if (typeof date === "string") {
+    return date.slice(0, 10);
+  }
+
+  const parsedDate = new Date(date);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return "";
+  }
+
+  return formatDateForApi(parsedDate);
+}
+
+function parseSlotTime(slot) {
+  if (!slot || typeof slot !== "string") return null;
+
+  const value = slot.trim().toLowerCase();
+
+  const match = value.match(
+    /^(\d{1,2})(?::(\d{2}))?\s*(am|pm)?(?:\s*-\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?)?$/,
+  );
+
+  if (!match) return null;
+
+  let hour = Number(match[1]);
+  const minute = Number(match[2] || 0);
+  const meridiem = match[3];
+
+  if (meridiem) {
+    if (hour < 1 || hour > 12 || minute > 59) {
+      return null;
+    }
+
+    if (meridiem === "am") {
+      if (hour === 12) hour = 0;
+    } else if (hour !== 12) {
+      hour += 12;
+    }
+  } else if (hour > 23 || minute > 59) {
+    return null;
+  }
+
+  return {
+    hour,
+    minute,
+  };
+}
+
+function getSlotEndTime(slot) {
+  if (!slot || typeof slot !== "string") return null;
+
+  const parts = slot.split("-");
+
+  if (parts.length < 2) {
+    return parseSlotTime(slot);
+  }
+
+  const endPart = parts[1].trim();
+  const startPart = parts[0].trim();
+
+  const start = parseSlotTime(startPart);
+  const end = parseSlotTime(endPart);
+
+  if (!start || !end) return null;
+
+  const startHasMeridiem = /am|pm/i.test(startPart);
+  const endHasMeridiem = /am|pm/i.test(endPart);
+
+  if (!endHasMeridiem && startHasMeridiem) {
+    const meridiemMatch = startPart.match(/(am|pm)/i);
+
+    if (meridiemMatch) {
+      const meridiem = meridiemMatch[1].toLowerCase();
+
+      let hour = Number(
+        endPart.match(/^(\d{1,2})/)?.[1] || end.hour,
+      );
+
+      const minute = Number(
+        endPart.match(/:(\d{2})/)?.[1] || end.minute,
+      );
+
+      if (meridiem === "am") {
+        if (hour === 12) hour = 0;
+      } else if (hour !== 12) {
+        hour += 12;
+      }
+
+      return {
+        hour,
+        minute,
+      };
+    }
+  }
+
+  return end;
+}
+
+function getAppointmentDateTime(date, slot) {
+  if (!date || !slot) return null;
+
+  const startTime = parseSlotTime(slot);
+
+  if (!startTime) return null;
+
+  const appointmentDate = new Date(date);
+
+  if (Number.isNaN(appointmentDate.getTime())) {
+    return null;
+  }
+
+  appointmentDate.setHours(
+    startTime.hour,
+    startTime.minute,
+    0,
+    0,
+  );
+
+  return appointmentDate;
+}
+
+function isBookingStillActive(booking) {
+  if (!booking) return false;
+
+  const status = String(booking.status || "").toLowerCase();
+
+  if (!["pending", "completed"].includes(status)) {
+    return false;
+  }
+
+  if (!booking.appointmentDate || !booking.appointmentSlot) {
+    return false;
+  }
+
+  const appointmentStart = getAppointmentDateTime(
+    booking.appointmentDate,
+    booking.appointmentSlot,
+  );
+
+  if (!appointmentStart) {
+    return true;
+  }
+
+  return appointmentStart.getTime() > Date.now();
+}
+
 export default function ProfessionalDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -88,7 +237,6 @@ export default function ProfessionalDetails() {
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [bookingCancelled, setBookingCancelled] = useState(false);
 
-  // Fetch professional profile
   const fetchPublicProfile = async () => {
     try {
       setLoading(true);
@@ -112,11 +260,10 @@ export default function ProfessionalDetails() {
     }
   };
 
-  // Fetch booked slots
   const fetchBookedSlots = async () => {
     try {
       const response = await httpClient.get(
-        `/payment/professional/${id}/booked-slots`,
+        `/payment/booked-slots/${id}`,
       );
 
       setBookedSlots(response.data?.bookedSlots || []);
@@ -126,13 +273,11 @@ export default function ProfessionalDetails() {
     }
   };
 
-  // Load page
   useEffect(() => {
     fetchPublicProfile();
     fetchBookedSlots();
   }, [id]);
 
-  // Handle Stripe return
   useEffect(() => {
     const params = new URLSearchParams(location.search);
 
@@ -168,32 +313,58 @@ export default function ProfessionalDetails() {
     }
   }, [location.search, location.pathname, navigate]);
 
-  // Check whether slot is booked
-  const isSlotBooked = (day, slot) => {
-    return bookedSlots.some(
-      (booking) =>
-        booking.appointmentDay?.trim().toLowerCase() ===
-          day?.trim().toLowerCase() &&
-        booking.appointmentSlot?.trim().toLowerCase() ===
-          slot?.trim().toLowerCase(),
-    );
+  const availability = sortAvailability(pro?.availability || []);
+
+  const isSlotBooked = (day, slot, appointmentDate = null) => {
+    const targetDate = normalizeDate(appointmentDate);
+
+    return bookedSlots.some((booking) => {
+      if (!isBookingStillActive(booking)) {
+        return false;
+      }
+
+      const bookingDay =
+        booking.appointmentDay?.trim().toLowerCase() || "";
+
+      const bookingSlot =
+        booking.appointmentSlot?.trim().toLowerCase() || "";
+
+      const bookingDate = normalizeDate(booking.appointmentDate);
+
+      const sameDay =
+        bookingDay === day?.trim().toLowerCase();
+
+      const sameSlot =
+        bookingSlot === slot?.trim().toLowerCase();
+
+      if (!sameDay || !sameSlot) {
+        return false;
+      }
+
+      if (targetDate) {
+        return bookingDate === targetDate;
+      }
+
+      return true;
+    });
   };
 
-  // Get available slots for a day
   const getAvailableSlots = (day) => {
     const dayData = availability.find(
       (item) =>
-        item.day?.trim().toLowerCase() === day?.trim().toLowerCase(),
+        item.day?.trim().toLowerCase() ===
+        day?.trim().toLowerCase(),
     );
 
     if (!dayData) return [];
 
+    const appointmentDate = getNextDateForDay(day);
+
     return (dayData.slots || []).filter(
-      (slot) => !isSlotBooked(day, slot),
+      (slot) => !isSlotBooked(day, slot, appointmentDate),
     );
   };
 
-  // Open booking
   const openBooking = async () => {
     await fetchBookedSlots();
 
@@ -205,7 +376,6 @@ export default function ProfessionalDetails() {
     setShowBooking(true);
   };
 
-  // Close booking
   const closeBooking = () => {
     if (bookingLoading) return;
 
@@ -215,7 +385,6 @@ export default function ProfessionalDetails() {
     setNotes("");
   };
 
-  // Confirm booking
   const handleConfirmBooking = async () => {
     if (!selectedDay) {
       toast.error("Please select a day.");
@@ -224,13 +393,6 @@ export default function ProfessionalDetails() {
 
     if (!selectedSlot) {
       toast.error("Please select a time slot.");
-      return;
-    }
-
-    if (isSlotBooked(selectedDay, selectedSlot)) {
-      toast.error("This slot has already been booked.");
-      setSelectedSlot("");
-      await fetchBookedSlots();
       return;
     }
 
@@ -245,9 +407,27 @@ export default function ProfessionalDetails() {
     }
 
     const appointmentDate = getNextDateForDay(selectedDay);
+    const formattedAppointmentDate =
+      formatDateForApi(appointmentDate);
 
-    if (!appointmentDate) {
-      toast.error("Invalid appointment day.");
+    if (!appointmentDate || !formattedAppointmentDate) {
+      toast.error("Invalid appointment date.");
+      return;
+    }
+
+    if (
+      isSlotBooked(
+        selectedDay,
+        selectedSlot,
+        formattedAppointmentDate,
+      )
+    ) {
+      toast.error(
+        "This session has already been booked. Please select another slot.",
+      );
+
+      setSelectedSlot("");
+      await fetchBookedSlots();
       return;
     }
 
@@ -256,10 +436,17 @@ export default function ProfessionalDetails() {
 
       await fetchBookedSlots();
 
-      if (isSlotBooked(selectedDay, selectedSlot)) {
+      if (
+        isSlotBooked(
+          selectedDay,
+          selectedSlot,
+          formattedAppointmentDate,
+        )
+      ) {
         toast.error(
-          "This slot was just booked by another user. Please select another slot.",
+          "This session was just booked by another user. Please select another slot.",
         );
+
         setSelectedSlot("");
         return;
       }
@@ -269,14 +456,17 @@ export default function ProfessionalDetails() {
         amount: Number(pro.sessionFee),
         appointmentDay: selectedDay,
         appointmentSlot: selectedSlot,
-        appointmentDate: formatDateForApi(appointmentDate),
+        appointmentDate: formattedAppointmentDate,
+        sessionDuration: 1,
         notes: notes.trim(),
       });
 
       const checkoutUrl = response.data?.checkoutUrl;
 
       if (!checkoutUrl) {
-        throw new Error("Payment checkout URL was not returned.");
+        throw new Error(
+          "Payment checkout URL was not returned.",
+        );
       }
 
       window.location.href = checkoutUrl;
@@ -300,7 +490,7 @@ export default function ProfessionalDetails() {
       if (error?.response?.status === 409) {
         toast.error(
           error?.response?.data?.message ||
-            "This appointment slot is no longer available.",
+            "This appointment session is no longer available.",
         );
 
         setSelectedSlot("");
@@ -321,8 +511,6 @@ export default function ProfessionalDetails() {
     }
   };
 
-  const availability = sortAvailability(pro?.availability || []);
-
   const selectedDayData = availability.find(
     (item) =>
       item.day?.trim().toLowerCase() ===
@@ -330,10 +518,14 @@ export default function ProfessionalDetails() {
   );
 
   const daySlots = selectedDayData?.slots || [];
-
   const profilePhoto = getImageUrl(pro?.profilePhoto);
 
-  // Loading
+  const selectedAppointmentDate =
+    getNextDateForDay(selectedDay);
+
+  const selectedAppointmentDateString =
+    formatDateForApi(selectedAppointmentDate);
+
   if (loading) {
     return (
       <UserLayout>
@@ -344,14 +536,15 @@ export default function ProfessionalDetails() {
     );
   }
 
-  // Professional not found
   if (!pro) {
     return (
       <UserLayout>
         <div className="pb-20">
           <div className="px-8 pt-8">
             <button
-              onClick={() => navigate("/user/professionals")}
+              onClick={() =>
+                navigate("/user/professionals")
+              }
               className="rounded-xl border border-stone-200 bg-stone-100 px-4 py-2 text-xs font-bold text-stone-700 transition-colors hover:bg-stone-200"
             >
               ← Back to Directory
@@ -365,7 +558,8 @@ export default function ProfessionalDetails() {
               </p>
 
               <p className="text-sm font-medium text-stone-400">
-                The requested professional profile is not available.
+                The requested professional profile is not
+                available.
               </p>
             </div>
           </div>
@@ -377,21 +571,21 @@ export default function ProfessionalDetails() {
   return (
     <UserLayout>
       <div className="pb-20">
-        {/* Header */}
         <div className="flex items-center justify-between gap-4 px-8 pb-4 pt-8">
           <span className="rounded-full border border-emerald-200 bg-emerald-100 px-3 py-1 text-xs font-extrabold uppercase tracking-widest text-emerald-800">
             Professional Details
           </span>
 
           <button
-            onClick={() => navigate("/user/professionals")}
+            onClick={() =>
+              navigate("/user/professionals")
+            }
             className="rounded-xl border border-stone-200 bg-stone-100 px-4 py-2 text-xs font-bold text-stone-700 transition-colors hover:bg-stone-200"
           >
             ← Back to Directory
           </button>
         </div>
 
-        {/* Booking success */}
         {bookingSuccess && (
           <div className="mx-auto mb-6 max-w-5xl px-8">
             <div className="flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
@@ -403,40 +597,44 @@ export default function ProfessionalDetails() {
                 </p>
 
                 <p className="mt-0.5 text-xs font-medium text-emerald-700">
-                  Your payment was successful. The professional will be in
-                  touch to confirm your session details.
+                  Your payment was successful. The
+                  professional will be in touch to confirm
+                  your session details.
                 </p>
               </div>
             </div>
           </div>
         )}
 
-        {/* Payment cancelled */}
         {bookingCancelled && (
           <div className="mx-auto mb-6 max-w-5xl px-8">
             <div className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
-              <span className="text-lg text-amber-600">!</span>
+              <span className="text-lg text-amber-600">
+                !
+              </span>
 
               <p className="text-sm font-medium text-amber-900">
-                Payment was cancelled. You can try booking again anytime.
+                Payment was cancelled. You can try booking
+                again anytime.
               </p>
             </div>
           </div>
         )}
 
-        {/* Professional content */}
         <div className="mx-auto max-w-5xl space-y-6 px-8">
-          {/* Main card */}
           <div className="rounded-3xl border border-stone-200 bg-white p-8 shadow-xs">
             <div className="flex flex-wrap items-start justify-between gap-6">
               <div className="flex items-start gap-5">
                 {profilePhoto ? (
                   <img
                     src={profilePhoto}
-                    alt={`${pro.firstName || ""} ${pro.lastName || ""}`}
+                    alt={`${pro.firstName || ""} ${
+                      pro.lastName || ""
+                    }`}
                     className="h-24 w-24 shrink-0 rounded-3xl border border-stone-200 object-cover shadow-xs"
                     onError={(event) => {
-                      event.currentTarget.style.display = "none";
+                      event.currentTarget.style.display =
+                        "none";
                     }}
                   />
                 ) : (
@@ -447,7 +645,9 @@ export default function ProfessionalDetails() {
                         "linear-gradient(135deg, #10b981, #059669)",
                     }}
                   >
-                    {pro.firstName?.charAt(0)?.toUpperCase() || "P"}
+                    {pro.firstName
+                      ?.charAt(0)
+                      ?.toUpperCase() || "P"}
                   </div>
                 )}
 
@@ -465,14 +665,18 @@ export default function ProfessionalDetails() {
 
                   <p className="mt-1 text-sm font-bold text-stone-500">
                     {pro.professionalType || "Trainer"} •{" "}
-                    {pro.specialization || "General Fitness"}
+                    {pro.specialization ||
+                      "General Fitness"}
                   </p>
 
                   <div className="mt-3 flex flex-wrap items-center gap-3">
                     <div className="rounded-xl border border-stone-200 bg-stone-50 px-3.5 py-1.5 text-xs font-extrabold text-stone-800">
                       {pro.rating?.count > 0 ? (
                         <span>
-                          Rating: {Number(pro.rating?.average || 0).toFixed(1)}{" "}
+                          Rating:{" "}
+                          {Number(
+                            pro.rating?.average || 0,
+                          ).toFixed(1)}{" "}
                           ({pro.rating.count})
                         </span>
                       ) : (
@@ -483,8 +687,11 @@ export default function ProfessionalDetails() {
                     </div>
 
                     <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-1.5 text-xs font-black text-emerald-800">
-                      ${Number(pro.sessionFee || 0).toFixed(2)}
-                      {" / session"}
+                      $
+                      {Number(
+                        pro.sessionFee || 0,
+                      ).toFixed(2)}{" "}
+                      / session
                     </div>
                   </div>
                 </div>
@@ -492,7 +699,10 @@ export default function ProfessionalDetails() {
 
               <button
                 onClick={openBooking}
-                disabled={!pro.sessionFee || availability.length === 0}
+                disabled={
+                  !pro.sessionFee ||
+                  availability.length === 0
+                }
                 className="rounded-2xl px-8 py-3.5 text-sm font-bold text-white shadow-md transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                 style={{
                   background:
@@ -516,7 +726,6 @@ export default function ProfessionalDetails() {
             )}
           </div>
 
-          {/* Availability */}
           <div className="rounded-3xl border border-stone-200 bg-white p-8 shadow-xs">
             <h3 className="mb-4 flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-stone-400">
               <IconCalendar className="h-4 w-4 text-emerald-600" />
@@ -537,7 +746,14 @@ export default function ProfessionalDetails() {
                     <div className="flex flex-wrap gap-1.5">
                       {item.slots?.length > 0 ? (
                         item.slots.map((slot) => {
-                          const booked = isSlotBooked(item.day, slot);
+                          const appointmentDate =
+                            getNextDateForDay(item.day);
+
+                          const booked = isSlotBooked(
+                            item.day,
+                            slot,
+                            appointmentDate,
+                          );
 
                           return (
                             <span
@@ -583,7 +799,6 @@ export default function ProfessionalDetails() {
           </div>
         </div>
 
-        {/* Booking modal */}
         {showBooking && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
             <div
@@ -592,7 +807,6 @@ export default function ProfessionalDetails() {
                 maxHeight: "92vh",
               }}
             >
-              {/* Modal header */}
               <div className="flex items-start justify-between border-b border-stone-100 p-6">
                 <div>
                   <h2 className="text-lg font-black text-stone-800">
@@ -604,7 +818,11 @@ export default function ProfessionalDetails() {
                     <span className="font-bold text-stone-700">
                       {pro.firstName} {pro.lastName}
                     </span>{" "}
-                    (${Number(pro.sessionFee || 0).toFixed(2)} per session)
+                    ($
+                    {Number(
+                      pro.sessionFee || 0,
+                    ).toFixed(2)}{" "}
+                    per session)
                   </p>
                 </div>
 
@@ -618,7 +836,6 @@ export default function ProfessionalDetails() {
               </div>
 
               <div className="space-y-5 p-6">
-                {/* Step 1 */}
                 <div>
                   <label className="mb-2 block text-xs font-extrabold uppercase tracking-wider text-stone-500">
                     Step 1: Choose a Day
@@ -626,19 +843,22 @@ export default function ProfessionalDetails() {
 
                   {availability.length === 0 ? (
                     <p className="text-xs font-medium text-stone-400">
-                      No availability slots configured by this professional
-                      yet.
+                      No availability slots configured by
+                      this professional yet.
                     </p>
                   ) : (
                     <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
                       {availability.map((item) => {
-                        const availableSlots = getAvailableSlots(item.day);
+                        const availableSlots =
+                          getAvailableSlots(item.day);
 
                         return (
                           <button
                             key={item.day}
                             type="button"
-                            disabled={availableSlots.length === 0}
+                            disabled={
+                              availableSlots.length === 0
+                            }
                             onClick={() => {
                               setSelectedDay(item.day);
                               setSelectedSlot("");
@@ -646,7 +866,8 @@ export default function ProfessionalDetails() {
                             className={`rounded-xl border px-2 py-2.5 text-xs font-bold transition-all ${
                               selectedDay === item.day
                                 ? "border-emerald-600 bg-emerald-600 text-white shadow-md"
-                                : availableSlots.length === 0
+                                : availableSlots.length ===
+                                    0
                                 ? "cursor-not-allowed border-stone-200 bg-stone-100 text-stone-400"
                                 : "border-stone-200 bg-stone-50 text-stone-700 hover:border-emerald-300 hover:bg-emerald-50"
                             }`}
@@ -654,7 +875,8 @@ export default function ProfessionalDetails() {
                             {item.day.slice(0, 3)}
 
                             <span className="mt-0.5 block text-[10px] font-medium opacity-70">
-                              {availableSlots.length === 0
+                              {availableSlots.length ===
+                              0
                                 ? "Fully booked"
                                 : `${availableSlots.length} slots`}
                             </span>
@@ -665,24 +887,27 @@ export default function ProfessionalDetails() {
                   )}
                 </div>
 
-                {/* Step 2 */}
                 {selectedDay && (
                   <div>
                     <label className="mb-2 block text-xs font-extrabold uppercase tracking-wider text-stone-500">
-                      Step 2: Choose a Time Slot for {selectedDay}
+                      Step 2: Choose a Time Slot for{" "}
+                      {selectedDay}
                     </label>
 
                     {daySlots.length === 0 ? (
                       <p className="text-xs font-medium text-stone-400">
-                        No time slots available for {selectedDay}.
+                        No time slots available for{" "}
+                        {selectedDay}.
                       </p>
                     ) : (
                       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                         {daySlots.map((slot) => {
-                          const booked = isSlotBooked(
-                            selectedDay,
-                            slot,
-                          );
+                          const booked =
+                            isSlotBooked(
+                              selectedDay,
+                              slot,
+                              selectedAppointmentDateString,
+                            );
 
                           return (
                             <button
@@ -706,7 +931,8 @@ export default function ProfessionalDetails() {
                                 className={`h-4 w-4 shrink-0 ${
                                   booked
                                     ? "text-red-400"
-                                    : selectedSlot === slot
+                                    : selectedSlot ===
+                                      slot
                                     ? "text-white"
                                     : "text-stone-400"
                                 }`}
@@ -720,9 +946,10 @@ export default function ProfessionalDetails() {
                                 </span>
                               )}
 
-                              {selectedSlot === slot && !booked && (
-                                <IconCheckCircle className="ml-auto h-4 w-4 text-white" />
-                              )}
+                              {selectedSlot === slot &&
+                                !booked && (
+                                  <IconCheckCircle className="ml-auto h-4 w-4 text-white" />
+                                )}
                             </button>
                           );
                         })}
@@ -731,7 +958,6 @@ export default function ProfessionalDetails() {
                   </div>
                 )}
 
-                {/* Step 3 */}
                 {selectedSlot && (
                   <div>
                     <label className="mb-2 block text-xs font-extrabold uppercase tracking-wider text-stone-500">
@@ -743,7 +969,9 @@ export default function ProfessionalDetails() {
                       maxLength={500}
                       placeholder="Any specific goals, injuries to be aware of, or questions for your professional..."
                       value={notes}
-                      onChange={(event) => setNotes(event.target.value)}
+                      onChange={(event) =>
+                        setNotes(event.target.value)
+                      }
                       className="w-full resize-none rounded-xl border border-stone-200 px-3.5 py-2.5 text-xs font-medium text-stone-800 outline-none focus:ring-2 focus:ring-emerald-300"
                     />
 
@@ -753,7 +981,6 @@ export default function ProfessionalDetails() {
                   </div>
                 )}
 
-                {/* Summary */}
                 {selectedDay && selectedSlot && (
                   <div className="flex flex-wrap items-start justify-between gap-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
                     <div>
@@ -771,7 +998,7 @@ export default function ProfessionalDetails() {
 
                       <p className="mt-1 text-xs font-medium text-stone-500">
                         Date:{" "}
-                        {getNextDateForDay(selectedDay)?.toLocaleDateString(
+                        {selectedAppointmentDate?.toLocaleDateString(
                           "en-US",
                           {
                             month: "short",
@@ -783,12 +1010,14 @@ export default function ProfessionalDetails() {
                     </div>
 
                     <p className="text-xl font-black text-emerald-800">
-                      ${Number(pro.sessionFee || 0).toFixed(2)}
+                      $
+                      {Number(
+                        pro.sessionFee || 0,
+                      ).toFixed(2)}
                     </p>
                   </div>
                 )}
 
-                {/* Actions */}
                 <div className="flex items-center gap-3 pt-2">
                   <button
                     type="button"
@@ -807,7 +1036,11 @@ export default function ProfessionalDetails() {
                       !selectedSlot ||
                       bookingLoading ||
                       !pro.sessionFee ||
-                      isSlotBooked(selectedDay, selectedSlot)
+                      isSlotBooked(
+                        selectedDay,
+                        selectedSlot,
+                        selectedAppointmentDateString,
+                      )
                     }
                     className="flex-1 rounded-2xl py-3 text-sm font-bold text-white shadow-md transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                     style={{
@@ -821,7 +1054,11 @@ export default function ProfessionalDetails() {
                       ? "Select a Day"
                       : !selectedSlot
                       ? "Select a Time Slot"
-                      : isSlotBooked(selectedDay, selectedSlot)
+                      : isSlotBooked(
+                          selectedDay,
+                          selectedSlot,
+                          selectedAppointmentDateString,
+                        )
                       ? "Slot Unavailable"
                       : "Confirm & Pay →"}
                   </button>
@@ -834,3 +1071,4 @@ export default function ProfessionalDetails() {
     </UserLayout>
   );
 }
+

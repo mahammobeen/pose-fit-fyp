@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import AdminLayout from "../../components/admin/AdminLayout";
 import StatusBadge from "../../components/admin/StatusBadge";
@@ -15,7 +16,6 @@ const STATUS_FILTERS = [
   "completed",
   "pending",
   "failed",
-  //"cancelled",
 ];
 
 export default function AdminPayments() {
@@ -58,25 +58,27 @@ export default function AdminPayments() {
     fetchPayments();
   }, [fetchPayments]);
 
-  // DELETE PAYMENT RECORD
+  // Delete payment from admin history
   const handleDelete = async (paymentId) => {
     const confirmed = window.confirm(
-      "Are you sure you want to delete this payment record? This will only remove the record from the database."
+      "Are you sure you want to delete this payment record? This will only remove it from the admin payment history."
     );
 
     if (!confirmed) return;
 
     try {
-      await httpClient.delete(`/payment/admin/payments/${paymentId}`);
+      await httpClient.delete(
+        `/payment/admin/payments/${paymentId}`
+      );
 
       showToast("Payment record deleted successfully.");
 
       await fetchPayments();
-    } catch (err) {
-      console.error("Delete payment error:", err);
+    } catch (error) {
+      console.error("Delete payment error:", error);
 
       showToast(
-        err?.response?.data?.message ||
+        error?.response?.data?.message ||
           "Failed to delete payment record.",
         "error"
       );
@@ -148,7 +150,6 @@ export default function AdminPayments() {
         className="min-h-screen pb-16"
         style={{ background: "#f5f7f2" }}
       >
-        {/* Toast */}
         {toast && (
           <div
             className={`fixed top-5 right-5 z-50 px-5 py-3 rounded-2xl shadow-xl text-white text-sm font-bold border transition-all ${
@@ -156,13 +157,11 @@ export default function AdminPayments() {
                 ? "bg-rose-500 border-rose-600"
                 : "bg-emerald-600 border-emerald-700"
             }`}
-            style={{ animation: "modalIn 0.2s ease" }}
           >
             {toast.msg}
           </div>
         )}
 
-        {/* Header */}
         <div className="px-8 pt-8 pb-4">
           <span className="text-xs font-extrabold uppercase tracking-widest px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
             Platform Payments & Stripe Connect
@@ -178,7 +177,6 @@ export default function AdminPayments() {
           </p>
         </div>
 
-        {/* Summary Cards */}
         <div className="px-8 mb-6 grid grid-cols-2 lg:grid-cols-4 gap-4">
           {summaryCards.map((card) => (
             <div
@@ -208,9 +206,7 @@ export default function AdminPayments() {
           ))}
         </div>
 
-        {/* Filters */}
         <div className="px-8 mb-4 flex items-center gap-3 flex-wrap justify-between">
-          {/* Status Filter */}
           <div className="flex items-center gap-1 bg-white rounded-2xl border border-stone-200 p-1.5 shadow-xs">
             {STATUS_FILTERS.map((s) => (
               <button
@@ -227,7 +223,6 @@ export default function AdminPayments() {
             ))}
           </div>
 
-          {/* Search */}
           <div className="relative">
             <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400">
               <IconSearch className="w-4 h-4" />
@@ -243,7 +238,6 @@ export default function AdminPayments() {
           </div>
         </div>
 
-        {/* Table */}
         <div className="px-8">
           <div className="bg-white rounded-3xl shadow-xs border border-stone-200 overflow-hidden">
             {loading ? (
@@ -287,7 +281,6 @@ export default function AdminPayments() {
                         key={payment._id}
                         className="hover:bg-stone-50/70 transition-colors"
                       >
-                        {/* User */}
                         <td className="px-5 py-4">
                           <div>
                             <p className="font-bold text-stone-800 whitespace-nowrap">
@@ -302,7 +295,6 @@ export default function AdminPayments() {
                           </div>
                         </td>
 
-                        {/* Professional */}
                         <td className="px-5 py-4">
                           <div>
                             <p className="font-bold text-stone-800 whitespace-nowrap">
@@ -324,7 +316,6 @@ export default function AdminPayments() {
                           </div>
                         </td>
 
-                        {/* Amount */}
                         <td className="px-5 py-4 font-black text-stone-900 whitespace-nowrap">
                           ${payment.amount?.toFixed(2)}{" "}
                           <span className="text-xs font-semibold text-stone-400 uppercase">
@@ -332,22 +323,18 @@ export default function AdminPayments() {
                           </span>
                         </td>
 
-                        {/* Commission */}
                         <td className="px-5 py-4 text-amber-800 font-extrabold whitespace-nowrap">
                           ${payment.adminCommission?.toFixed(2)}
                         </td>
 
-                        {/* Pro Amount */}
                         <td className="px-5 py-4 text-emerald-800 font-extrabold whitespace-nowrap">
                           ${payment.professionalAmount?.toFixed(2)}
                         </td>
 
-                        {/* Payment Status */}
                         <td className="px-5 py-4 whitespace-nowrap">
                           <StatusBadge status={payment.status} />
                         </td>
 
-                        {/* Payout Status */}
                         <td className="px-5 py-4 whitespace-nowrap">
                           <span
                             className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold border ${
@@ -364,7 +351,6 @@ export default function AdminPayments() {
                           </span>
                         </td>
 
-                        {/* Action */}
                         <td className="px-5 py-4 whitespace-nowrap">
                           <button
                             onClick={() =>
@@ -391,3 +377,4 @@ export default function AdminPayments() {
     </AdminLayout>
   );
 }
+

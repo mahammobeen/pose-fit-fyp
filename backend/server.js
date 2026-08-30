@@ -12,8 +12,13 @@ const paymentRoutes = require("./routes/payment/paymentRoutes");
 const professionalRoutes = require("./routes/professional/professionalRoutes");
 const uploadRoutes = require("./routes/upload/uploadRoutes");
 const userRoutes = require("./routes/user/userRoutes");
+const googleRoutes = require("./routes/google/googleRoutes");
+
 
 const { stripeWebhook } = require("./controllers/payment/paymentController");
+const {
+  startBookingReminderScheduler,
+} = require("./services/bookingReminderService");
 const ConnectToDB = require("./models/db");
 
 const app = express();
@@ -48,6 +53,17 @@ app.use(
 );
 
 // =====================================================
+// STRIPE WEBHOOK
+// IMPORTANT: webhook must use raw body
+// =====================================================
+
+app.post(
+  "/api/payment/webhook",
+  express.raw({ type: "application/json" }),
+  stripeWebhook,
+);
+
+// =====================================================
 // BODY PARSER
 // =====================================================
 
@@ -59,16 +75,6 @@ app.use(express.json());
 
 app.use("/uploads", express.static(uploadsPath));
 
-// =====================================================
-// STRIPE WEBHOOK
-// IMPORTANT: webhook must use raw body
-// =====================================================
-
-app.post(
-  "/api/payment/webhook",
-  express.raw({ type: "application/json" }),
-  stripeWebhook,
-);
 
 // =====================================================
 // API ROUTES
@@ -86,6 +92,7 @@ app.use("/api/upload", uploadRoutes);
 
 app.use("/api/user", userRoutes);
 
+app.use("/api/google", googleRoutes);
 // =====================================================
 // ROOT
 // =====================================================
@@ -119,6 +126,7 @@ const startServer = async () => {
 
     app.listen(PORT, () => {
       console.log(`PoseFit Backend running on port ${PORT}`);
+      startBookingReminderScheduler();
     });
   } catch (error) {
     console.error("Failed to start server:", error);
