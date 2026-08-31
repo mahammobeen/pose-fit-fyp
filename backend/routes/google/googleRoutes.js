@@ -5,6 +5,7 @@ const {
   googleCallback,
 } = require("../../controllers/google/googleController");
 
+
 const router = express.Router();
 
 router.get("/auth", googleAuth);
