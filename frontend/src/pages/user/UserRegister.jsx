@@ -1,7 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { httpClient } from "../../lib/http";
-import { IconAlertTriangle, IconCheck } from "../../components/admin/Icons";
+import {
+  IconAlertTriangle,
+  IconCheck,
+} from "../../components/admin/Icons";
 
 export default function UserRegister() {
   const navigate = useNavigate();
@@ -16,15 +19,14 @@ export default function UserRegister() {
     password: "",
   });
 
+  const [showPassword, setShowPassword] = useState(false);
+
   const [userId, setUserId] = useState("");
   const [code, setCode] = useState("");
 
   const [loading, setLoading] = useState(false);
 
-  // =====================================================
   // TOAST
-  // =====================================================
-
   const [toast, setToast] = useState(null);
 
   const showToast = useCallback((message, type = "success") => {
@@ -44,10 +46,7 @@ export default function UserRegister() {
     return () => clearTimeout(timer);
   }, [toast]);
 
-  // =====================================================
   // INPUT CHANGE
-  // =====================================================
-
   const handleChange = (e) => {
     setForm((prev) => ({
       ...prev,
@@ -55,10 +54,7 @@ export default function UserRegister() {
     }));
   };
 
-  // =====================================================
   // REGISTER
-  // =====================================================
-
   const handleRegisterSubmit = async (e) => {
     e.preventDefault();
 
@@ -90,22 +86,20 @@ export default function UserRegister() {
 
       if (!res.data?.success) {
         showToast(
-          res.data?.message || "Registration failed. Please try again.",
-          "error",
+          res.data?.message ||
+            "Registration failed. Please try again.",
+          "error"
         );
         return;
       }
 
-      // =================================================
       // SAVE USER ID FOR VERIFICATION
-      // =================================================
-
       setUserId(res.data.userId);
 
       showToast(
         res.data.message ||
           "Registration successful. Verification code sent to your email.",
-        "success",
+        "success"
       );
 
       setStep(2);
@@ -116,30 +110,23 @@ export default function UserRegister() {
         err?.response?.data?.message ||
           err?.response?.data?.error ||
           "Registration failed. Please verify your details.",
-        "error",
+        "error"
       );
     } finally {
       setLoading(false);
     }
   };
 
-  // =====================================================
   // VERIFY EMAIL
-  // =====================================================
-
   const handleVerifySubmit = async (e) => {
     e.preventDefault();
 
     const trimmedCode = code.trim();
 
-    // =================================================
-    // VALIDATION
-    // =================================================
-
     if (!userId) {
       showToast(
         "Registration session expired. Please register again.",
-        "error",
+        "error"
       );
 
       setStep(1);
@@ -152,56 +139,58 @@ export default function UserRegister() {
     }
 
     if (!/^\d{6}$/.test(trimmedCode)) {
-      showToast("Please enter the 6-digit verification code.", "error");
+      showToast(
+        "Please enter the 6-digit verification code.",
+        "error"
+      );
       return;
     }
 
     try {
       setLoading(true);
 
-      // =================================================
       // VERIFY EMAIL
-      // =================================================
-
-      const verifyRes = await httpClient.post("/auth/verify-email", {
-        userId,
-        code: trimmedCode,
-      });
+      const verifyRes = await httpClient.post(
+        "/auth/verify-email",
+        {
+          userId,
+          code: trimmedCode,
+        }
+      );
 
       if (!verifyRes.data?.success) {
         showToast(
           verifyRes.data?.message ||
             "Verification failed. Please check the code.",
-          "error",
+          "error"
         );
         return;
       }
 
-      showToast("Email verified successfully. Logging you in...", "success");
+      showToast(
+        "Email verified successfully. Logging you in...",
+        "success"
+      );
 
-      // =================================================
       // AUTO LOGIN
-      // =================================================
+      const loginEmail = form.email.trim().toLowerCase();
 
       const loginRes = await httpClient.post("/auth/login", {
-        email: form.email.trim().toLowerCase(),
+        email: loginEmail,
         password: form.password,
       });
 
       const { success, token, user } = loginRes.data;
 
-      // =================================================
       // LOGIN RESPONSE VALIDATION
-      // =================================================
-
       if (!success || !token || !user) {
         showToast(
           "Email verified successfully, but automatic login failed. Please login manually.",
-          "error",
+          "error"
         );
 
         setTimeout(() => {
-          navigate("/login", {
+          navigate("/user/login", {
             state: {
               from: location.state?.from,
             },
@@ -211,100 +200,101 @@ export default function UserRegister() {
         return;
       }
 
-      // =================================================
       // ROLE CHECK
-      // =================================================
-
       if (user.role !== "USER") {
         showToast(
           "Invalid account role. Please use the appropriate portal.",
-          "error",
+          "error"
         );
         return;
       }
 
-      // =================================================
       // NORMALIZE USER
-      // =================================================
-
       const normalizedUser = {
         ...user,
         _id: user._id || user.id || user.userId,
       };
 
-      const userIdFromResponse = user?._id || user?.id || user?.userId;
+      const userIdFromResponse =
+        user?._id || user?.id || user?.userId;
 
       if (!userIdFromResponse) {
-        showToast("User ID was not received from server.", "error");
+        showToast(
+          "User ID was not received from server.",
+          "error"
+        );
         return;
       }
 
-      // =================================================
       // CLEAR OLD LOGIN DATA
-      // =================================================
-
       localStorage.removeItem("pose-fit");
       localStorage.removeItem("pose-fit-user");
 
-      // =================================================
       // SAVE AUTH DATA
-      // =================================================
-
       localStorage.setItem("pose-fit", token);
 
-      localStorage.setItem("pose-fit-user", JSON.stringify(normalizedUser));
+      localStorage.setItem(
+        "pose-fit-user",
+        JSON.stringify(normalizedUser)
+      );
 
-      // =================================================
+      // REMEMBER EMAIL ONLY
+      localStorage.setItem("pose-fit-email", loginEmail);
+
       // DEBUG
-      // =================================================
-
-      console.log("REGISTER LOGIN RESPONSE:", loginRes.data);
+      console.log(
+        "REGISTER LOGIN RESPONSE:",
+        loginRes.data
+      );
       console.log("SAVED TOKEN:", token);
       console.log("SAVED USER:", normalizedUser);
-      console.log("SAVED USER ID:", normalizedUser._id);
+      console.log(
+        "SAVED USER ID:",
+        normalizedUser._id
+      );
 
-      // =================================================
       // REDIRECT
-      // =================================================
-
-      const from = location.state?.from?.pathname || "/user/dashboard";
+      const from =
+        location.state?.from?.pathname ||
+        "/user/dashboard";
 
       navigate(from, {
         replace: true,
       });
     } catch (err) {
-      console.error("Verification/Login error:", err);
+      console.error(
+        "Verification/Login error:",
+        err
+      );
 
       showToast(
         err?.response?.data?.message ||
           err?.response?.data?.error ||
           "Verification failed. Please check the code and try again.",
-        "error",
+        "error"
       );
     } finally {
       setLoading(false);
     }
   };
 
-  // =====================================================
   // BACK TO REGISTER
-  // =====================================================
-
   const handleBack = () => {
     setStep(1);
     setCode("");
   };
 
-  // =====================================================
   // TOAST ICON
-  // =====================================================
-
   const ToastIcon = () => {
     if (toast?.type === "error") {
-      return <IconAlertTriangle className="w-5 h-5 text-white shrink-0" />;
+      return (
+        <IconAlertTriangle className="w-5 h-5 text-white shrink-0" />
+      );
     }
 
-    return <IconCheck className="w-5 h-5 text-white shrink-0" />;
+    return (
+      <IconCheck className="w-5 h-5 text-white shrink-0" />
+    );
   };
 
   return (
@@ -315,9 +305,7 @@ export default function UserRegister() {
           "linear-gradient(135deg, #f0fdf4 0%, #f8fafc 40%, #e0f2fe 100%)",
       }}
     >
-      {/* =====================================================
-          TOAST
-      ===================================================== */}
+      {/* TOAST */}
 
       {toast && (
         <div
@@ -329,7 +317,9 @@ export default function UserRegister() {
         >
           <ToastIcon />
 
-          <span className="leading-relaxed">{toast.msg}</span>
+          <span className="leading-relaxed">
+            {toast.msg}
+          </span>
 
           <button
             type="button"
@@ -342,9 +332,7 @@ export default function UserRegister() {
         </div>
       )}
 
-      {/* =====================================================
-          BACKGROUND
-      ===================================================== */}
+      {/* BACKGROUND */}
 
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div
@@ -362,21 +350,19 @@ export default function UserRegister() {
         />
       </div>
 
-      {/* =====================================================
-          REGISTER CARD
-      ===================================================== */}
+      {/* REGISTER CARD */}
 
       <div className="w-full max-w-md relative z-10">
         <div className="bg-white/90 backdrop-blur-xl rounded-3xl p-8 border border-stone-200/80 shadow-xl">
-          {/* =================================================
-              HEADER
-          ================================================= */}
+
+          {/* HEADER */}
 
           <div className="text-center mb-8">
             <div
               className="w-16 h-16 rounded-3xl mx-auto flex items-center justify-center text-white font-black text-2xl shadow-sm mb-4"
               style={{
-                background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                background:
+                  "linear-gradient(135deg, #10b981 0%, #059669 100%)",
               }}
             >
               P
@@ -393,13 +379,15 @@ export default function UserRegister() {
             </p>
           </div>
 
-          {/* =================================================
-              STEP 1 - REGISTER
-          ================================================= */}
+          {/* STEP 1 - REGISTER */}
 
           {step === 1 ? (
-            <form onSubmit={handleRegisterSubmit} className="space-y-4">
-              {/* First + Last Name */}
+            <form
+              onSubmit={handleRegisterSubmit}
+              className="space-y-4"
+              autoComplete="on"
+            >
+              {/* FIRST + LAST NAME */}
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -437,7 +425,7 @@ export default function UserRegister() {
                 </div>
               </div>
 
-              {/* Email */}
+              {/* EMAIL */}
 
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-stone-600 mb-1.5">
@@ -456,31 +444,76 @@ export default function UserRegister() {
                 />
               </div>
 
-              {/* Password */}
+              {/* PASSWORD */}
 
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-stone-600 mb-1.5">
                   Password
                 </label>
 
-                <input
-                  type="password"
-                  name="password"
-                  required
-                  minLength={6}
-                  autoComplete="new-password"
-                  placeholder="••••••••"
-                  value={form.password}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 rounded-2xl border border-stone-200 text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-300 text-stone-800 transition-all bg-stone-50/50 focus:bg-white"
-                />
+                <div className="relative">
+                  <input
+                    type={
+                      showPassword ? "text" : "password"
+                    }
+                    name="password"
+                    required
+                    minLength={6}
+                    autoComplete="new-password"
+                    placeholder="••••••••"
+                    value={form.password}
+                    onChange={handleChange}
+                    className="w-full px-4 pr-12 py-3 rounded-2xl border border-stone-200 text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-300 text-stone-800 transition-all bg-stone-50/50 focus:bg-white"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setShowPassword((prev) => !prev)
+                    }
+                    aria-label={
+                      showPassword
+                        ? "Hide password"
+                        : "Show password"
+                    }
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 transition-colors"
+                  >
+                    {showPassword ? (
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        className="w-5 h-5"
+                      >
+                        <path d="M3 3l18 18" />
+                        <path d="M10.58 10.58a2 2 0 0 0 2.83 2.83" />
+                        <path d="M9.88 5.09A9.77 9.77 0 0 1 12 4.86c5 0 8.27 4.17 9.5 6.14a1.77 1.77 0 0 1 0 1.99 16.2 16.2 0 0 1-3.1 3.45" />
+                        <path d="M6.61 6.61A16.5 16.5 0 0 0 2.5 11a1.77 1.77 0 0 0 0 1.99C3.73 14.96 7 19.14 12 19.14a9.8 9.8 0 0 0 3.13-.51" />
+                      </svg>
+                    ) : (
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        className="w-5 h-5"
+                      >
+                        <path d="M2.5 12s3.27-7 9.5-7 9.5 7 9.5 7-3.27 7-9.5 7-9.5-7-9.5-7Z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
 
                 <p className="text-[11px] text-stone-400 mt-1.5">
                   Password must be at least 6 characters.
                 </p>
               </div>
 
-              {/* Register Button */}
+              {/* REGISTER BUTTON */}
 
               <button
                 type="submit"
@@ -503,11 +536,12 @@ export default function UserRegister() {
               </button>
             </form>
           ) : (
-            /* =================================================
-               STEP 2 - VERIFY EMAIL
-            ================================================= */
+            /* STEP 2 - VERIFY EMAIL */
 
-            <form onSubmit={handleVerifySubmit} className="space-y-5">
+            <form
+              onSubmit={handleVerifySubmit}
+              className="space-y-5"
+            >
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-stone-600 mb-2 text-center">
                   Enter 6-Digit Code
@@ -522,7 +556,9 @@ export default function UserRegister() {
                   placeholder="123456"
                   value={code}
                   onChange={(e) => {
-                    const value = e.target.value.replace(/\D/g, "").slice(0, 6);
+                    const value = e.target.value
+                      .replace(/\D/g, "")
+                      .slice(0, 6);
 
                     setCode(value);
                   }}
@@ -534,7 +570,7 @@ export default function UserRegister() {
                 </p>
               </div>
 
-              {/* Verify Button */}
+              {/* VERIFY BUTTON */}
 
               <button
                 type="submit"
@@ -556,7 +592,7 @@ export default function UserRegister() {
                 )}
               </button>
 
-              {/* Back */}
+              {/* BACK */}
 
               <button
                 type="button"
@@ -569,9 +605,7 @@ export default function UserRegister() {
             </form>
           )}
 
-          {/* =================================================
-              FOOTER
-          ================================================= */}
+          {/* FOOTER */}
 
           <div className="mt-6 text-center text-xs font-bold text-stone-600">
             Already have an account?{" "}
