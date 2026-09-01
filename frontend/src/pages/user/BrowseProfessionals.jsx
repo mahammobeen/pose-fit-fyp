@@ -431,7 +431,7 @@ export default function PublicProfessionals() {
                         onClick={() => handleViewProfile(professional._id)}
                         className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-2xl bg-gray-900 text-white font-bold text-sm hover:bg-emerald-600 transition-colors"
                       >
-                        View Profile
+                        View Profile & Availability
                         <ChevronRight className="w-4 h-4" />
                       </button>
                     </div>

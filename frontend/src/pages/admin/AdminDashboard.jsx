@@ -185,12 +185,6 @@ export default function AdminDashboard() {
                 Platform-wide operations and subscriber insights.
               </p>
             </div>
-            <div className="hidden md:flex items-center gap-3">
-              <div className="px-4 py-2 bg-white rounded-2xl border border-stone-200 shadow-xs flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-xs font-bold text-stone-700">API Live Sync</span>
-              </div>
-            </div>
           </div>
         </div>
 

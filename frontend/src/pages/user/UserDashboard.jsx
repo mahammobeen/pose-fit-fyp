@@ -8,6 +8,9 @@ import {
   Scale,
   HeartPulse,
   Moon,
+  Star,
+  CheckCircle,
+  X,
 } from "lucide-react";
 
 import { useEffect, useState } from "react";
@@ -66,6 +69,112 @@ const dietData = [
 export default function UserDashboard() {
   const [metrics, setMetrics] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Automatic Professional Rating Dialog state (single rating per professional)
+  const [activeRatingSession, setActiveRatingSession] = useState(null);
+  const [selectedRating, setSelectedRating] = useState(5);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [submittingRating, setSubmittingRating] = useState(false);
+
+  const getDismissedProIds = () => {
+    try {
+      const stored = localStorage.getItem("posefit_dismissed_pro_ratings");
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const markProDismissed = (proId) => {
+    try {
+      if (!proId) return;
+      const dismissed = getDismissedProIds();
+      if (!dismissed.includes(proId.toString())) {
+        dismissed.push(proId.toString());
+        localStorage.setItem(
+          "posefit_dismissed_pro_ratings",
+          JSON.stringify(dismissed)
+        );
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const fetchPendingRatings = async () => {
+    try {
+      const res = await httpClient.get("/reviews/pending-ratings");
+      const sessions = res.data?.pendingSessions || [];
+
+      const dismissedProIds = getDismissedProIds();
+      const eligibleToPrompt = sessions.filter((s) => {
+        const proId = s.professional?._id || s.professional;
+        return proId && !dismissedProIds.includes(proId.toString());
+      });
+
+      if (eligibleToPrompt.length > 0) {
+        // Show dialog for the first unrated completed professional
+        setActiveRatingSession(eligibleToPrompt[0]);
+        setSelectedRating(5);
+        setHoverRating(0);
+      } else {
+        setActiveRatingSession(null);
+      }
+    } catch (err) {
+      console.error("Fetch pending ratings error:", err);
+    }
+  };
+
+  const handleDismissDialog = () => {
+    if (activeRatingSession) {
+      const proId =
+        activeRatingSession.professional?._id ||
+        activeRatingSession.professional;
+      markProDismissed(proId);
+    }
+    // Dismiss completely — do not show again and no queue
+    setActiveRatingSession(null);
+  };
+
+  const handleSubmitRating = async (e) => {
+    if (e) e.preventDefault();
+    if (!activeRatingSession) return;
+
+    if (!selectedRating || selectedRating < 1 || selectedRating > 5) {
+      toast.error("Please select a rating between 1 and 5 stars.");
+      return;
+    }
+
+    try {
+      setSubmittingRating(true);
+      const res = await httpClient.post("/reviews/professional", {
+        reviewType: "PROFESSIONAL",
+        paymentId: activeRatingSession._id,
+        rating: selectedRating,
+      });
+
+      toast.success(res.data?.message || "Rating submitted successfully!");
+
+      const proId =
+        activeRatingSession.professional?._id ||
+        activeRatingSession.professional;
+      markProDismissed(proId);
+
+      // Close dialog immediately — no queue
+      setActiveRatingSession(null);
+    } catch (err) {
+      console.error("Submit session rating error:", err);
+      toast.error(
+        err?.response?.data?.message || "Failed to submit rating."
+      );
+    } finally {
+      setSubmittingRating(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPendingRatings();
+  }, []);
 
   // ===================================================
   // GET LOGGED-IN USER
@@ -888,6 +997,112 @@ export default function UserDashboard() {
           </div>
         </section>
       </main>
+
+      {/* =================================================
+          AUTOMATIC PROFESSIONAL RATING DIALOG
+      ================================================= */}
+      {activeRatingSession && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="relative w-full max-w-md overflow-hidden rounded-3xl border border-stone-200 bg-white p-7 shadow-2xl">
+            {/* Close Button (×) */}
+            <button
+              type="button"
+              onClick={handleDismissDialog}
+              disabled={submittingRating}
+              className="absolute right-5 top-5 flex h-8 w-8 items-center justify-center rounded-full bg-stone-100 text-stone-500 transition-colors hover:bg-stone-200 hover:text-stone-800 disabled:opacity-50"
+              title="Dismiss"
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            <div className="text-center">
+              <div
+                className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl text-2xl font-black text-white shadow-md"
+                style={{
+                  background: "linear-gradient(135deg, #10b981, #059669)",
+                }}
+              >
+                {activeRatingSession.professional?.firstName?.[0]?.toUpperCase() ||
+                  "P"}
+              </div>
+
+              <span className="mt-4 inline-block rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-black text-emerald-800 uppercase tracking-wider">
+                Session Completed
+              </span>
+
+              <h2 className="mt-2 text-xl font-black text-stone-900 leading-tight">
+                How was your experience with{" "}
+                <span className="text-emerald-700">
+                  {activeRatingSession.professional?.firstName}{" "}
+                  {activeRatingSession.professional?.lastName}
+                </span>
+                ?
+              </h2>
+
+              <p className="mt-1 text-xs text-stone-500 font-medium">
+                {activeRatingSession.appointmentDay} •{" "}
+                {activeRatingSession.appointmentSlot}
+              </p>
+
+              {/* Star Selector */}
+              <form onSubmit={handleSubmitRating} className="mt-6 space-y-6">
+                <div className="flex flex-col items-center">
+                  <div className="flex items-center gap-2 p-2">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setSelectedRating(star)}
+                        onMouseEnter={() => setHoverRating(star)}
+                        onMouseLeave={() => setHoverRating(0)}
+                        className="p-1 text-3xl transition-transform hover:scale-125 focus:outline-none"
+                        title={`${star} Stars`}
+                      >
+                        <span
+                          className={
+                            star <= (hoverRating || selectedRating)
+                              ? "text-amber-400 drop-shadow-xs"
+                              : "text-stone-200"
+                          }
+                        >
+                          ★
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+
+                  <p className="mt-1 text-xs font-black text-stone-700">
+                    {hoverRating || selectedRating} out of 5 Stars
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={handleDismissDialog}
+                    disabled={submittingRating}
+                    className="flex-1 rounded-2xl border border-stone-200 bg-stone-100 py-3.5 text-sm font-bold text-stone-700 transition-colors hover:bg-stone-200 disabled:opacity-50"
+                  >
+                    Maybe Later
+                  </button>
+
+                  <button
+                    type="submit"
+                    disabled={submittingRating}
+                    className="flex-1 rounded-2xl py-3.5 text-sm font-bold text-white shadow-md transition-all hover:opacity-90 disabled:opacity-50"
+                    style={{
+                      background:
+                        "linear-gradient(135deg, #10b981, #059669)",
+                    }}
+                  >
+                    {submittingRating ? "Submitting..." : "Submit Rating"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </UserLayout>
   );
 }

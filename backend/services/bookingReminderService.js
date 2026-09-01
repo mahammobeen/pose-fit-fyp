@@ -32,11 +32,7 @@ const parseAppointmentStart = (appointmentDate, appointmentSlot) => {
   const minutes = Number(match[2]);
   const meridiem = match[3]?.toUpperCase();
 
-  if (hours < 1 || hours > 12) {
-    return null;
-  }
-
-  if (minutes < 0 || minutes > 59) {
+  if (hours < 1 || hours > 12 || minutes < 0 || minutes > 59) {
     return null;
   }
 
@@ -73,7 +69,7 @@ const parseAppointmentStart = (appointmentDate, appointmentSlot) => {
 
   const pakistanTimeOffset = 5 * 60 * 60 * 1000;
 
-  const appointmentStart = new Date(
+  return new Date(
     Date.UTC(
       year,
       month - 1,
@@ -84,8 +80,6 @@ const parseAppointmentStart = (appointmentDate, appointmentSlot) => {
       0
     ) - pakistanTimeOffset
   );
-
-  return appointmentStart;
 };
 
 const processBookingReminders = async () => {
@@ -109,10 +103,7 @@ const processBookingReminders = async () => {
       },
     })
       .populate("user", "firstName lastName email")
-      .populate(
-        "professional",
-        "firstName lastName email"
-      );
+      .populate("professional", "firstName lastName email");
 
     for (const payment of payments) {
       try {
@@ -133,20 +124,41 @@ const processBookingReminders = async () => {
             REMINDER_MINUTES * 60 * 1000
         );
 
+        if (now >= appointmentStart) {
+          continue;
+        }
+
+        if (now < reminderTime) {
+          continue;
+        }
+
         if (
-          now >= reminderTime &&
-          now < appointmentStart
+          !payment.user?.email ||
+          !payment.professional?.email ||
+          !payment.meetingLink
         ) {
-          const latestPayment =
+          console.error(
+            `Missing reminder email data for payment ${payment._id}`
+          );
+          continue;
+        }
+
+        try {
+          await sendBookingReminderEmails({
+            user: payment.user,
+            professional: payment.professional,
+            appointmentDate: payment.appointmentDate,
+            appointmentDay: payment.appointmentDay,
+            appointmentSlot: payment.appointmentSlot,
+            meetingLink: payment.meetingLink,
+          });
+
+          const updatedPayment =
             await PaymentModel.findOneAndUpdate(
               {
                 _id: payment._id,
                 status: "completed",
                 meetingReminderSent: false,
-                meetingLink: {
-                  $exists: true,
-                  $ne: "",
-                },
               },
               {
                 $set: {
@@ -154,54 +166,20 @@ const processBookingReminders = async () => {
                 },
               },
               {
-                new: true,
+                returnDocument: "after",
               }
-            )
-              .populate(
-                "user",
-                "firstName lastName email"
-              )
-              .populate(
-                "professional",
-                "firstName lastName email"
-              );
+            );
 
-          if (!latestPayment) {
-            continue;
-          }
-
-          try {
-            await sendBookingReminderEmails({
-              user: latestPayment.user,
-              professional: latestPayment.professional,
-              appointmentDate:
-                latestPayment.appointmentDate,
-              appointmentDay:
-                latestPayment.appointmentDay,
-              appointmentSlot:
-                latestPayment.appointmentSlot,
-              meetingLink:
-                latestPayment.meetingLink,
-            });
-
+          if (updatedPayment) {
             console.log(
-              `Meeting reminder emails sent for payment ${latestPayment._id}`
-            );
-          } catch (emailError) {
-            await PaymentModel.findByIdAndUpdate(
-              latestPayment._id,
-              {
-                $set: {
-                  meetingReminderSent: false,
-                },
-              }
-            );
-
-            console.error(
-              `Meeting reminder email failed for payment ${latestPayment._id}:`,
-              emailError
+              `Meeting reminder emails sent for payment ${payment._id}`
             );
           }
+        } catch (emailError) {
+          console.error(
+            `Meeting reminder email failed for payment ${payment._id}:`,
+            emailError
+          );
         }
       } catch (bookingError) {
         console.error(
@@ -245,4 +223,3 @@ module.exports = {
   startBookingReminderScheduler,
   processBookingReminders,
 };
-

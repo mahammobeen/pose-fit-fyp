@@ -30,6 +30,7 @@ export default function ProfessionalProfileSettings() {
     profilePhoto: "",
     credentialDocs: [],
   });
+
   const [toast, setToast] = useState(null);
 
   const showToast = (msg, type = "success") => {
@@ -40,9 +41,12 @@ export default function ProfessionalProfileSettings() {
   const fetchProfile = useCallback(async () => {
     try {
       setLoading(true);
+
       const res = await httpClient.get("/professional/profile");
       const p = res.data?.professional;
+
       setProfile(p);
+
       if (p) {
         setForm({
           firstName: p.firstName || "",
@@ -53,6 +57,7 @@ export default function ProfessionalProfileSettings() {
           profilePhoto: p.profilePhoto || "",
           credentialDocs: p.credentialDocs || [],
         });
+
         if (p.profilePhoto) {
           setPhotoPreview(p.profilePhoto);
         }
@@ -68,6 +73,7 @@ export default function ProfessionalProfileSettings() {
     fetchProfile();
 
     const params = new URLSearchParams(window.location.search);
+
     if (params.get("stripe") === "return") {
       httpClient
         .get("/payment/stripe-connect/status")
@@ -79,13 +85,19 @@ export default function ProfessionalProfileSettings() {
     }
   }, [fetchProfile]);
 
-  // Device Photo Upload Handler
   const handlePhotoSelect = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!["image/jpeg", "image/jpg", "image/png", "image/webp"].includes(file.type)) {
-      showToast("Please select a valid image file (PNG, JPG, WEBP).", "error");
+    if (
+      !["image/jpeg", "image/jpg", "image/png", "image/webp"].includes(
+        file.type
+      )
+    ) {
+      showToast(
+        "Please select a valid image file (PNG, JPG, WEBP).",
+        "error"
+      );
       return;
     }
 
@@ -95,10 +107,12 @@ export default function ProfessionalProfileSettings() {
     }
 
     const reader = new FileReader();
+
     reader.onload = () => setPhotoPreview(reader.result);
     reader.readAsDataURL(file);
 
     setUploadingPhoto(true);
+
     const formData = new FormData();
     formData.append("photo", file);
 
@@ -106,10 +120,18 @@ export default function ProfessionalProfileSettings() {
       const res = await httpClient.post("/upload/photo", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      setForm((p) => ({ ...p, profilePhoto: res.data.fileUrl }));
+
+      setForm((p) => ({
+        ...p,
+        profilePhoto: res.data.fileUrl,
+      }));
+
       showToast("Profile photo uploaded from device!");
     } catch (err) {
-      showToast(err?.response?.data?.message || "Failed to upload photo.", "error");
+      showToast(
+        err?.response?.data?.message || "Failed to upload photo.",
+        "error"
+      );
     } finally {
       setUploadingPhoto(false);
     }
@@ -117,17 +139,29 @@ export default function ProfessionalProfileSettings() {
 
   const handleRemovePhoto = () => {
     setPhotoPreview("");
-    setForm((p) => ({ ...p, profilePhoto: "" }));
+    setForm((p) => ({
+      ...p,
+      profilePhoto: "",
+    }));
   };
 
-  // Device Document Upload Handler
   const handleDocSelect = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const allowed = ["application/pdf", "image/jpeg", "image/jpg", "image/png", "image/webp"];
+    const allowed = [
+      "application/pdf",
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "image/webp",
+    ];
+
     if (!allowed.includes(file.type)) {
-      showToast("Please select a valid document (PDF, PNG, JPG).", "error");
+      showToast(
+        "Please select a valid document (PDF, PNG, JPG).",
+        "error"
+      );
       return;
     }
 
@@ -136,9 +170,12 @@ export default function ProfessionalProfileSettings() {
       return;
     }
 
-    const title = (newDocTitle || file.name.replace(/\.[^/.]+$/, "")).trim();
+    const title = (
+      newDocTitle || file.name.replace(/\.[^/.]+$/, "")
+    ).trim();
 
     setUploadingDoc(true);
+
     const formData = new FormData();
     formData.append("document", file);
 
@@ -146,6 +183,7 @@ export default function ProfessionalProfileSettings() {
       const res = await httpClient.post("/upload/document", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
+
       setForm((prev) => ({
         ...prev,
         credentialDocs: [
@@ -158,10 +196,14 @@ export default function ProfessionalProfileSettings() {
           },
         ],
       }));
+
       setNewDocTitle("");
       showToast("Certificate document uploaded from device!");
     } catch (err) {
-      showToast(err?.response?.data?.message || "Failed to upload document.", "error");
+      showToast(
+        err?.response?.data?.message || "Failed to upload document.",
+        "error"
+      );
     } finally {
       setUploadingDoc(false);
       e.target.value = "";
@@ -175,16 +217,23 @@ export default function ProfessionalProfileSettings() {
     }));
   };
 
-  // Stripe Account Connect
   const handleConnectStripe = async () => {
     setActionLoading(true);
+
     try {
-      const res = await httpClient.post("/payment/stripe-connect/onboard");
+      const res = await httpClient.post(
+        "/payment/stripe-connect/onboard"
+      );
+
       if (res.data?.url) {
         window.location.href = res.data.url;
       }
     } catch (err) {
-      showToast(err?.response?.data?.message || "Failed to initiate Stripe Connect setup.", "error");
+      showToast(
+        err?.response?.data?.message ||
+          "Failed to initiate Stripe Connect setup.",
+        "error"
+      );
     } finally {
       setActionLoading(false);
     }
@@ -192,13 +241,21 @@ export default function ProfessionalProfileSettings() {
 
   const handleOpenStripeDashboard = async () => {
     setActionLoading(true);
+
     try {
-      const res = await httpClient.post("/payment/stripe-connect/dashboard-link");
+      const res = await httpClient.post(
+        "/payment/stripe-connect/dashboard-link"
+      );
+
       if (res.data?.url) {
         window.open(res.data.url, "_blank");
       }
     } catch (err) {
-      showToast(err?.response?.data?.message || "Failed to open Stripe Dashboard.", "error");
+      showToast(
+        err?.response?.data?.message ||
+          "Failed to open Stripe Dashboard.",
+        "error"
+      );
     } finally {
       setActionLoading(false);
     }
@@ -206,15 +263,26 @@ export default function ProfessionalProfileSettings() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     setSaving(true);
+
     try {
-      const res = await httpClient.put("/professional/profile", form);
+      const res = await httpClient.put(
+        "/professional/profile",
+        form
+      );
+
       showToast("Profile details updated successfully!");
+
       if (res.data?.professional) {
         setProfile(res.data.professional);
       }
     } catch (err) {
-      showToast(err?.response?.data?.message || "Failed to update profile.", "error");
+      showToast(
+        err?.response?.data?.message ||
+          "Failed to update profile.",
+        "error"
+      );
     } finally {
       setSaving(false);
     }
@@ -222,26 +290,35 @@ export default function ProfessionalProfileSettings() {
 
   return (
     <ProfessionalLayout>
-      <div className="min-h-screen pb-16" style={{ background: "#f5f7f2" }}>
+      <div
+        className="min-h-screen pb-16"
+        style={{ background: "#f5f7f2" }}
+      >
         {toast && (
           <div
-            className={`fixed top-5 right-5 z-50 px-5 py-3 rounded-2xl shadow-xl text-white text-sm font-bold border transition-all ${
-              toast.type === "error" ? "bg-rose-500 border-rose-600" : "bg-emerald-600 border-emerald-700"
+            className={`fixed top-5 right-5 z-50 px-5 py-3 rounded-2xl shadow-xl text-white text-sm font-bold border ${
+              toast.type === "error"
+                ? "bg-rose-500 border-rose-600"
+                : "bg-emerald-600 border-emerald-700"
             }`}
-            style={{ animation: "modalIn 0.2s ease" }}
           >
             {toast.msg}
           </div>
         )}
 
-        {/* Header */}
-        <div className="px-8 pt-8 pb-4">
-          <span className="text-xs font-extrabold uppercase tracking-widest px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+        {/* Page Header */}
+        <div className="px-8 pt-8 pb-6">
+          <span className="inline-flex items-center text-xs font-extrabold uppercase tracking-widest px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
             Account Management
           </span>
-          <h1 className="text-3xl font-black text-stone-800 tracking-tight mt-2">Profile Settings</h1>
-          <p className="text-stone-500 font-medium text-sm mt-1">
-            Update your professional information, bio, certificates, and payout connection.
+
+          <h1 className="text-3xl font-black text-stone-800 tracking-tight mt-3">
+            Profile Settings
+          </h1>
+
+          <p className="text-stone-500 font-medium text-sm mt-1 max-w-2xl">
+            Manage your professional profile, credentials, session
+            pricing, and payment connection.
           </p>
         </div>
 
@@ -250,264 +327,477 @@ export default function ProfessionalProfileSettings() {
             <div className="w-8 h-8 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" />
           </div>
         ) : (
-          <div className="px-8 max-w-4xl space-y-6">
-            {/* Status Card */}
-            <div className="bg-white rounded-3xl border border-stone-200 p-6 shadow-xs flex items-center justify-between flex-wrap gap-4">
-              <div>
-                <p className="text-xs font-bold text-stone-400 uppercase tracking-wider">Verification Status</p>
-                <div className="flex items-center gap-3 mt-1">
-                  <p className="text-lg font-black text-stone-800">
-                    {profile?.firstName} {profile?.lastName}
-                  </p>
-                  <StatusBadge status={profile?.professionalStatus || "invited"} />
-                </div>
-                <p className="text-xs text-stone-500 font-medium mt-1">Email: {profile?.email}</p>
-              </div>
+          <div className="px-8 max-w-5xl space-y-5">
+            {/* Profile Overview */}
+            <section className="bg-white rounded-3xl border border-stone-200 shadow-sm overflow-hidden">
+              <div className="p-6">
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                  <div className="flex items-center gap-4 min-w-0">
+                    <div className="w-16 h-16 rounded-2xl overflow-hidden bg-emerald-100 border border-emerald-200 flex items-center justify-center shrink-0">
+                      {photoPreview ? (
+                        <img
+                          src={photoPreview}
+                          alt="Profile"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-xl font-black text-emerald-700">
+                          {profile?.firstName?.[0]?.toUpperCase() || "P"}
+                        </span>
+                      )}
+                    </div>
 
-              {profile?.professionalStatus === "rejected" && (
-                <div className="bg-rose-50 border border-rose-200 p-3.5 rounded-2xl max-w-md">
-                  <p className="text-xs font-bold text-rose-900 flex items-center gap-1.5">
-                    <IconAlertTriangle className="w-4 h-4 text-rose-600" /> Previous Rejection Reason
-                  </p>
-                  <p className="text-xs text-rose-800 font-medium mt-1">{profile.rejectionReason}</p>
-                </div>
-              )}
-            </div>
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h2 className="text-xl font-black text-stone-800 truncate">
+                          {profile?.firstName} {profile?.lastName}
+                        </h2>
 
-            {/* Stripe Account Connection Card */}
-            <div className="bg-white rounded-3xl border border-stone-200 p-6 shadow-xs flex items-center justify-between flex-wrap gap-4">
-              <div className="flex items-center gap-3.5">
-                <div className="w-11 h-11 rounded-2xl bg-sky-50 border border-sky-200 text-sky-700 flex items-center justify-center shrink-0">
-                  <IconBuilding className="w-6 h-6" />
-                </div>
-                <div>
-                  <p className="font-extrabold text-stone-800 text-sm flex items-center gap-2">
-                    Payment Account
-                    <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${profile?.payoutsEnabled ? "bg-emerald-50 text-emerald-800 border-emerald-200" : "bg-amber-50 text-amber-800 border-amber-200"}`}>
-                      {profile?.payoutsEnabled ? "Stripe Account Connected ✓" : "Not Connected"}
-                    </span>
-                  </p>
-                  <p className="text-xs text-stone-500 font-medium mt-0.5">
-                    {profile?.payoutsEnabled
-                      ? `Connected to Stripe Express ${profile?.maskedBank ? `(${profile.maskedBank})` : ""}`
-                      : "Connect your Stripe account to receive your 80% session payouts."}
-                  </p>
-                </div>
-              </div>
+                        <StatusBadge
+                          status={
+                            profile?.professionalStatus || "invited"
+                          }
+                        />
+                      </div>
 
-              <div>
-                {profile?.payoutsEnabled ? (
-                  <button
-                    type="button"
-                    onClick={handleOpenStripeDashboard}
-                    disabled={actionLoading}
-                    className="px-4 py-2.5 rounded-xl text-xs font-bold text-sky-800 bg-sky-50 hover:bg-sky-100 border border-sky-200 transition-colors"
-                  >
-                    {actionLoading ? "Opening..." : "View / Manage Connection"}
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={handleConnectStripe}
-                    disabled={actionLoading}
-                    className="px-5 py-2.5 rounded-xl font-bold text-white text-xs shadow-xs hover:opacity-90 transition-all"
-                    style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}
-                  >
-                    {actionLoading ? "Connecting..." : "Connect Stripe"}
-                  </button>
+                      <p className="text-xs text-stone-500 font-medium mt-1 truncate">
+                        {profile?.email}
+                      </p>
+
+                      <p className="text-xs text-stone-400 font-medium mt-1">
+                        {profile?.professionalType || "Professional"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="lg:w-[360px] rounded-2xl bg-stone-50 border border-stone-200 p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-9 h-9 rounded-xl bg-sky-50 border border-sky-200 text-sky-700 flex items-center justify-center">
+                          <IconBuilding className="w-4 h-4" />
+                        </div>
+
+                        <div>
+                          <p className="text-xs font-extrabold text-stone-800">
+                            Payment Account
+                          </p>
+
+                          <p className="text-[11px] text-stone-400 font-medium mt-0.5">
+                            {profile?.payoutsEnabled
+                              ? "Ready to receive payouts"
+                              : "Connect to receive payouts"}
+                          </p>
+                        </div>
+                      </div>
+
+                      <span
+                        className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold border whitespace-nowrap ${
+                          profile?.payoutsEnabled
+                            ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                            : "bg-amber-50 text-amber-800 border-amber-200"
+                        }`}
+                      >
+                        {profile?.payoutsEnabled
+                          ? "Connected"
+                          : "Setup Required"}
+                      </span>
+                    </div>
+
+                    <div className="mt-3">
+                      {profile?.payoutsEnabled ? (
+                        <button
+                          type="button"
+                          onClick={handleOpenStripeDashboard}
+                          disabled={actionLoading}
+                          className="w-full px-4 py-2.5 rounded-xl text-xs font-bold text-sky-800 bg-white hover:bg-sky-50 border border-sky-200 transition-colors"
+                        >
+                          {actionLoading
+                            ? "Opening..."
+                            : "View / Manage Stripe"}
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={handleConnectStripe}
+                          disabled={actionLoading}
+                          className="w-full px-4 py-2.5 rounded-xl font-bold text-white text-xs shadow-sm hover:opacity-90 transition-all"
+                          style={{
+                            background:
+                              "linear-gradient(135deg, #10b981, #059669)",
+                          }}
+                        >
+                          {actionLoading
+                            ? "Connecting..."
+                            : "Connect Stripe Account"}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {profile?.professionalStatus === "rejected" && (
+                  <div className="mt-5 flex items-start gap-3 p-4 rounded-2xl bg-rose-50 border border-rose-200">
+                    <IconAlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+
+                    <div>
+                      <p className="text-xs font-extrabold text-rose-900">
+                        Previous Rejection Reason
+                      </p>
+
+                      <p className="text-xs text-rose-800 font-medium mt-1">
+                        {profile.rejectionReason}
+                      </p>
+                    </div>
+                  </div>
                 )}
               </div>
-            </div>
+            </section>
 
-            {/* Profile Edit Form */}
-            <form onSubmit={handleSubmit} className="bg-white rounded-3xl border border-stone-200 p-6 shadow-xs space-y-6">
-              <h2 className="text-base font-extrabold text-stone-800 border-b border-stone-100 pb-3">
-                Basic & Professional Details
-              </h2>
+            {/* Main Profile Form */}
+            <form
+              onSubmit={handleSubmit}
+              className="bg-white rounded-3xl border border-stone-200 shadow-sm overflow-hidden"
+            >
+              {/* Section Header */}
+              <div className="px-7 py-5 border-b border-stone-100">
+                <h2 className="text-lg font-black text-stone-800">
+                  Professional Information
+                </h2>
 
-              {/* Profile Photo Device Upload */}
-              <div>
-                <label className="block text-xs font-bold text-stone-600 uppercase tracking-wider mb-2">Profile Photo</label>
-                <div className="flex items-center gap-4">
-                  {photoPreview ? (
-                    <div className="relative w-20 h-20 rounded-2xl overflow-hidden border border-stone-200 shadow-xs">
-                      <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
+                <p className="text-xs text-stone-400 font-medium mt-1">
+                  Keep your public professional profile accurate and
+                  up to date.
+                </p>
+              </div>
+
+              <div className="p-7 space-y-7">
+                {/* Photo */}
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <h3 className="text-xs font-extrabold uppercase tracking-wider text-stone-600">
+                        Profile Photo
+                      </h3>
+
+                      <p className="text-[11px] text-stone-400 mt-1">
+                        Use a clear professional photo.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4 p-4 rounded-2xl bg-stone-50 border border-stone-200">
+                    <div className="relative w-20 h-20 rounded-2xl overflow-hidden bg-white border border-stone-200 shadow-sm shrink-0">
+                      {photoPreview ? (
+                        <img
+                          src={photoPreview}
+                          alt="Profile Preview"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-stone-400 text-xs font-bold">
+                          No Photo
+                        </div>
+                      )}
+
                       {uploadingPhoto && (
                         <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
                           <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                         </div>
                       )}
                     </div>
-                  ) : (
-                    <div className="w-20 h-20 rounded-2xl bg-stone-100 border border-dashed border-stone-300 flex items-center justify-center text-stone-400 text-xs font-bold text-center p-1">
-                      No Photo
-                    </div>
-                  )}
 
-                  <div className="space-y-1.5">
-                    <label className="cursor-pointer inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 transition-colors">
-                      <span>{photoPreview ? "Change Photo" : "Upload Photo"}</span>
+                    <div>
+                      <div className="flex flex-wrap gap-2">
+                        <label className="cursor-pointer inline-flex items-center px-4 py-2 rounded-xl text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 transition-colors">
+                          {photoPreview
+                            ? "Change Photo"
+                            : "Upload Photo"}
+
+                          <input
+                            type="file"
+                            accept="image/png,image/jpeg,image/jpg,image/webp"
+                            onChange={handlePhotoSelect}
+                            className="hidden"
+                          />
+                        </label>
+
+                        {photoPreview && (
+                          <button
+                            type="button"
+                            onClick={handleRemovePhoto}
+                            className="px-4 py-2 rounded-xl text-xs font-bold text-rose-600 bg-rose-50 border border-rose-200 hover:bg-rose-100 transition-colors"
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
+
+                      <p className="text-[10px] text-stone-400 font-medium mt-2">
+                        PNG, JPG or WEBP · Maximum 5MB
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Basic Details */}
+                <div className="border-t border-stone-100 pt-6">
+                  <div className="mb-4">
+                    <h3 className="text-xs font-extrabold uppercase tracking-wider text-stone-600">
+                      Basic Details
+                    </h3>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-stone-600 uppercase tracking-wider mb-1.5">
+                        First Name
+                      </label>
+
                       <input
-                        type="file"
-                        accept="image/png,image/jpeg,image/jpg,image/webp"
-                        onChange={handlePhotoSelect}
-                        className="hidden"
+                        type="text"
+                        value={form.firstName}
+                        onChange={(e) =>
+                          setForm((p) => ({
+                            ...p,
+                            firstName: e.target.value,
+                          }))
+                        }
+                        className="w-full px-4 py-3 rounded-xl border border-stone-200 text-sm font-medium text-stone-800 outline-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-300 transition-all"
                       />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-stone-600 uppercase tracking-wider mb-1.5">
+                        Last Name
+                      </label>
+
+                      <input
+                        type="text"
+                        value={form.lastName}
+                        onChange={(e) =>
+                          setForm((p) => ({
+                            ...p,
+                            lastName: e.target.value,
+                          }))
+                        }
+                        className="w-full px-4 py-3 rounded-xl border border-stone-200 text-sm font-medium text-stone-800 outline-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-300 transition-all"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Professional Details */}
+                <div className="border-t border-stone-100 pt-6">
+                  <div className="mb-4">
+                    <h3 className="text-xs font-extrabold uppercase tracking-wider text-stone-600">
+                      Professional Details
+                    </h3>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-stone-600 uppercase tracking-wider mb-1.5">
+                        Professional Role
+                      </label>
+
+                      <div className="px-4 py-3 rounded-xl bg-stone-100 border border-stone-200 text-sm font-bold text-stone-700 flex items-center justify-between">
+                        <span>
+                          {profile?.professionalType || "Trainer"}
+                        </span>
+
+                        <span className="text-[9px] font-extrabold uppercase bg-stone-200 text-stone-600 px-2 py-1 rounded-full">
+                          Admin Set
+                        </span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-stone-600 uppercase tracking-wider mb-1.5">
+                        Session Fee ($)
+                      </label>
+
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="e.g. 50"
+                        value={form.sessionFee}
+                        onChange={(e) =>
+                          setForm((p) => ({
+                            ...p,
+                            sessionFee: e.target.value,
+                          }))
+                        }
+                        className="w-full px-4 py-3 rounded-xl border border-stone-200 text-sm font-medium text-stone-800 outline-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-300 transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-4">
+                    <label className="block text-xs font-bold text-stone-600 uppercase tracking-wider mb-1.5">
+                      Specialization
                     </label>
 
-                    {photoPreview && (
-                      <div>
-                        <button
-                          type="button"
-                          onClick={handleRemovePhoto}
-                          className="text-xs font-bold text-rose-600 hover:underline"
-                        >
-                          Remove
-                        </button>
+                    <input
+                      type="text"
+                      placeholder="e.g. HIIT, Strength & Weight Loss"
+                      value={form.specialization}
+                      onChange={(e) =>
+                        setForm((p) => ({
+                          ...p,
+                          specialization: e.target.value,
+                        }))
+                      }
+                      className="w-full px-4 py-3 rounded-xl border border-stone-200 text-sm font-medium text-stone-800 outline-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-300 transition-all"
+                    />
+                  </div>
+
+                  <div className="mt-4">
+                    <label className="block text-xs font-bold text-stone-600 uppercase tracking-wider mb-1.5">
+                      Bio / Professional Overview
+                    </label>
+
+                    <textarea
+                      rows={4}
+                      placeholder="Describe your background, fitness philosophy, and certifications..."
+                      value={form.bio}
+                      onChange={(e) =>
+                        setForm((p) => ({
+                          ...p,
+                          bio: e.target.value,
+                        }))
+                      }
+                      className="w-full px-4 py-3 rounded-xl border border-stone-200 text-sm font-medium text-stone-800 outline-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-300 resize-none transition-all"
+                    />
+                  </div>
+                </div>
+
+                {/* Credentials */}
+                <div className="border-t border-stone-100 pt-6">
+                  <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-4">
+                    <div>
+                      <h3 className="text-xs font-extrabold uppercase tracking-wider text-stone-600">
+                        Certificates & Credentials
+                      </h3>
+
+                      <p className="text-[11px] text-stone-400 mt-1">
+                        Upload certificates that support your professional
+                        qualifications.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-stone-50 border border-stone-200">
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <input
+                        type="text"
+                        placeholder="Certificate title e.g. NASM CPT"
+                        value={newDocTitle}
+                        onChange={(e) =>
+                          setNewDocTitle(e.target.value)
+                        }
+                        className="flex-1 px-4 py-2.5 rounded-xl border border-stone-200 bg-white text-xs font-medium outline-none text-stone-800 focus:ring-2 focus:ring-emerald-300"
+                      />
+
+                      <label
+                        className={`cursor-pointer inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-emerald-800 bg-emerald-100 border border-emerald-200 hover:bg-emerald-200 transition-colors ${
+                          uploadingDoc
+                            ? "opacity-60 pointer-events-none"
+                            : ""
+                        }`}
+                      >
+                        <IconPlus className="w-3.5 h-3.5" />
+
+                        <span>
+                          {uploadingDoc
+                            ? "Uploading..."
+                            : "Upload Certificate"}
+                        </span>
+
+                        <input
+                          type="file"
+                          accept="application/pdf,image/png,image/jpeg,image/jpg,image/webp"
+                          onChange={handleDocSelect}
+                          disabled={uploadingDoc}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+
+                    {form.credentialDocs.length === 0 ? (
+                      <div className="text-center py-7">
+                        <p className="text-xs font-semibold text-stone-400">
+                          No certificates uploaded yet.
+                        </p>
+
+                        <p className="text-[10px] text-stone-400 mt-1">
+                          PDF, PNG, JPG or WEBP · Maximum 10MB
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="mt-3 space-y-2">
+                        {form.credentialDocs.map((doc, idx) => (
+                          <div
+                            key={idx}
+                            className="flex items-center justify-between gap-3 p-3 bg-white rounded-xl border border-stone-200"
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                                <IconCheckCircle className="w-4 h-4" />
+                              </div>
+
+                              <div className="min-w-0">
+                                <p className="text-xs font-bold text-stone-800 truncate">
+                                  {doc.title}
+                                </p>
+
+                                <p className="text-[10px] text-stone-400 truncate mt-0.5">
+                                  {doc.fileName ||
+                                    "Uploaded Document"}
+                                </p>
+                              </div>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleRemoveDoc(idx)
+                              }
+                              className="p-2 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors shrink-0"
+                              title="Remove certificate"
+                            >
+                              <IconTrash className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ))}
                       </div>
                     )}
                   </div>
                 </div>
-              </div>
 
-              {/* Names */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-stone-600 uppercase tracking-wider mb-1.5">First Name</label>
-                  <input
-                    type="text"
-                    value={form.firstName}
-                    onChange={(e) => setForm((p) => ({ ...p, firstName: e.target.value }))}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 text-sm font-medium text-stone-800 outline-none focus:ring-2 focus:ring-emerald-300"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-stone-600 uppercase tracking-wider mb-1.5">Last Name</label>
-                  <input
-                    type="text"
-                    value={form.lastName}
-                    onChange={(e) => setForm((p) => ({ ...p, lastName: e.target.value }))}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 text-sm font-medium text-stone-800 outline-none focus:ring-2 focus:ring-emerald-300"
-                  />
-                </div>
-              </div>
+                {/* Save */}
+                <div className="border-t border-stone-100 pt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <p className="text-[11px] text-stone-400 font-medium">
+                    Changes will be saved to your professional profile.
+                  </p>
 
-              {/* Professional Role (READ-ONLY) & Fee */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-stone-600 uppercase tracking-wider mb-1.5">
-                    Professional Role (Admin Set)
-                  </label>
-                  <div className="px-3.5 py-2.5 rounded-xl bg-stone-100 border border-stone-200 text-sm font-bold text-stone-700 flex items-center justify-between">
-                    <span>{profile?.professionalType || "Trainer"}</span>
-                    <span className="text-[10px] font-extrabold uppercase bg-stone-200 text-stone-600 px-2 py-0.5 rounded-full">
-                      Read-Only
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    className="inline-flex items-center justify-center gap-2 px-7 py-3 rounded-xl font-bold text-white text-sm shadow-sm hover:opacity-90 disabled:opacity-60 transition-all"
+                    style={{
+                      background:
+                        "linear-gradient(135deg, #10b981, #059669)",
+                    }}
+                  >
+                    <IconSave className="w-4 h-4" />
+
+                    <span>
+                      {saving
+                        ? "Saving Changes..."
+                        : "Save Profile Details"}
                     </span>
-                  </div>
+                  </button>
                 </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-stone-600 uppercase tracking-wider mb-1.5">Session Fee ($)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    placeholder="e.g. 50"
-                    value={form.sessionFee}
-                    onChange={(e) => setForm((p) => ({ ...p, sessionFee: e.target.value }))}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 text-sm font-medium text-stone-800 outline-none focus:ring-2 focus:ring-emerald-300"
-                  />
-                </div>
-              </div>
-
-              {/* Specialization */}
-              <div>
-                <label className="block text-xs font-bold text-stone-600 uppercase tracking-wider mb-1.5">Specialization</label>
-                <input
-                  type="text"
-                  placeholder="e.g. HIIT, Strength & Weight Loss"
-                  value={form.specialization}
-                  onChange={(e) => setForm((p) => ({ ...p, specialization: e.target.value }))}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 text-sm font-medium text-stone-800 outline-none focus:ring-2 focus:ring-emerald-300"
-                />
-              </div>
-
-              {/* Bio */}
-              <div>
-                <label className="block text-xs font-bold text-stone-600 uppercase tracking-wider mb-1.5">Bio / Overview</label>
-                <textarea
-                  rows={4}
-                  placeholder="Describe your background, fitness philosophy, and certifications..."
-                  value={form.bio}
-                  onChange={(e) => setForm((p) => ({ ...p, bio: e.target.value }))}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 text-sm font-medium text-stone-800 outline-none focus:ring-2 focus:ring-emerald-300 resize-none"
-                />
-              </div>
-
-              {/* Credentials / Documents Device Upload */}
-              <div className="pt-2 border-t border-stone-100">
-                <label className="block text-xs font-bold text-stone-600 uppercase tracking-wider mb-2">
-                  Certificates & Credentials
-                </label>
-
-                <div className="flex items-center gap-3 flex-wrap mb-3">
-                  <input
-                    type="text"
-                    placeholder="Certificate Title (e.g. NASM CPT)"
-                    value={newDocTitle}
-                    onChange={(e) => setNewDocTitle(e.target.value)}
-                    className="px-3.5 py-2 rounded-xl border border-stone-200 text-xs font-medium outline-none text-stone-800 flex-1 min-w-[200px]"
-                  />
-
-                  <label className="cursor-pointer inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 transition-colors">
-                    <IconPlus className="w-3.5 h-3.5" />
-                    <span>{uploadingDoc ? "Uploading..." : "Upload Certificate from Device"}</span>
-                    <input
-                      type="file"
-                      accept="application/pdf,image/png,image/jpeg,image/jpg,image/webp"
-                      onChange={handleDocSelect}
-                      disabled={uploadingDoc}
-                      className="hidden"
-                    />
-                  </label>
-                </div>
-
-                {form.credentialDocs.length === 0 ? (
-                  <p className="text-xs text-stone-400 font-medium">No certificates uploaded yet.</p>
-                ) : (
-                  <div className="space-y-2">
-                    {form.credentialDocs.map((doc, idx) => (
-                      <div key={idx} className="flex items-center justify-between p-3 bg-stone-50 rounded-2xl border border-stone-200">
-                        <div className="flex items-center gap-2">
-                          <span className="w-5 h-5 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center text-[10px] font-bold">✓</span>
-                          <div>
-                            <p className="text-xs font-bold text-stone-800">{doc.title}</p>
-                            <p className="text-[10px] text-stone-400">{doc.fileName || "Uploaded Document"}</p>
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveDoc(idx)}
-                          className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                        >
-                          <IconTrash className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Submit Button */}
-              <div className="pt-4 flex justify-end">
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-white text-sm shadow-xs hover:opacity-90 disabled:opacity-60 transition-all"
-                  style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}
-                >
-                  <IconSave className="w-4 h-4" />
-                  <span>{saving ? "Saving Changes..." : "Save Profile Details"}</span>
-                </button>
               </div>
             </form>
           </div>
@@ -516,3 +806,4 @@ export default function ProfessionalProfileSettings() {
     </ProfessionalLayout>
   );
 }
+

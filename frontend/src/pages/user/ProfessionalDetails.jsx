@@ -7,6 +7,7 @@ import {
   IconCheckCircle,
   IconClock,
   IconCalendar,
+  IconStar,
 } from "../../components/admin/Icons";
 
 const DAYS_ORDER = [
@@ -236,6 +237,15 @@ export default function ProfessionalDetails() {
 
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [bookingCancelled, setBookingCancelled] = useState(false);
+  // Reviews & Rating state
+  const [proReviews, setProReviews] = useState([]);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
+  const [pendingEligibleSessions, setPendingEligibleSessions] = useState([]);
+  const [myRating, setMyRating] = useState(null);
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [userRating, setUserRating] = useState(5);
+  const [userHoverRating, setUserHoverRating] = useState(0);
+  const [ratingSubmitting, setRatingSubmitting] = useState(false);
 
   const fetchPublicProfile = async () => {
     try {
@@ -248,13 +258,7 @@ export default function ProfessionalDetails() {
       setPro(response.data?.professional || null);
     } catch (error) {
       console.error("Professional profile error:", error);
-
-      setPro(null);
-
-      toast.error(
-        error?.response?.data?.message ||
-          "Failed to load professional profile.",
-      );
+      toast.error("Failed to load professional profile.");
     } finally {
       setLoading(false);
     }
@@ -263,7 +267,7 @@ export default function ProfessionalDetails() {
   const fetchBookedSlots = async () => {
     try {
       const response = await httpClient.get(
-        `/payment/booked-slots/${id}`,
+        `/user/professionals/${id}/booked-slots`,
       );
 
       setBookedSlots(response.data?.bookedSlots || []);
@@ -273,9 +277,128 @@ export default function ProfessionalDetails() {
     }
   };
 
+  const fetchProReviews = async () => {
+    const proId = id || pro?._id || pro?.id;
+    if (!proId) return;
+
+    try {
+      setReviewsLoading(true);
+      const [revRes, pendingRes] = await Promise.all([
+        httpClient.get(`/reviews/professional/${proId}`),
+        httpClient
+          .get("/reviews/pending-ratings")
+          .catch(() => ({ data: { pendingSessions: [] } })),
+      ]);
+
+      const reviewsList = revRes.data?.reviews || [];
+      setProReviews(reviewsList);
+
+      const storedUser = localStorage.getItem("pose-fit-user");
+      let currentUserId = null;
+      if (storedUser) {
+        try {
+          const parsed = JSON.parse(storedUser);
+          currentUserId = parsed?._id || parsed?.id;
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      const existingMyRating = reviewsList.find(
+        (r) =>
+          currentUserId &&
+          (r.user?._id?.toString() === currentUserId.toString() ||
+            r.user?.toString() === currentUserId.toString())
+      );
+      setMyRating(existingMyRating || null);
+
+      const pending = pendingRes.data?.pendingSessions || [];
+      const forThisPro = pending.filter(
+        (s) =>
+          s.professional?._id?.toString() === proId?.toString() ||
+          s.professional?.toString() === proId?.toString()
+      );
+      setPendingEligibleSessions(forThisPro);
+
+      if (revRes.data?.averageRating !== undefined) {
+        setPro((prev) =>
+          prev
+            ? {
+                ...prev,
+                rating: {
+                  average: revRes.data.averageRating,
+                  count: revRes.data.ratingCount,
+                },
+              }
+            : prev
+        );
+      }
+    } catch (error) {
+      console.error("Fetch pro reviews error:", error);
+    } finally {
+      setReviewsLoading(false);
+    }
+  };
+
+  const handleRateProfessional = async (e) => {
+    e.preventDefault();
+    const proId = id || pro?._id || pro?.id;
+
+    if (!userRating || userRating < 1 || userRating > 5) {
+      toast.error("Please choose a rating between 1 and 5 stars.");
+      return;
+    }
+
+    const targetSessionId = pendingEligibleSessions[0]?._id;
+
+    try {
+      setRatingSubmitting(true);
+      const res = await httpClient.post("/reviews/professional", {
+        reviewType: "PROFESSIONAL",
+        professionalId: proId,
+        paymentId: targetSessionId,
+        rating: userRating,
+      });
+
+      toast.success(res.data?.message || "Rating submitted successfully!");
+      setShowRatingModal(false);
+      setUserRating(5);
+
+      if (res.data?.averageRating !== undefined) {
+        setPro((prev) =>
+          prev
+            ? {
+                ...prev,
+                rating: {
+                  average: res.data.averageRating,
+                  count: res.data.ratingCount,
+                },
+              }
+            : prev
+        );
+      }
+
+      await fetchProReviews();
+    } catch (error) {
+      console.error("Rating error:", error);
+      if (error?.response?.status === 401) {
+        toast.error("Please login to rate this professional.");
+        navigate("/user/login", { state: { from: location } });
+      } else {
+        toast.error(
+          error?.response?.data?.message ||
+            "You can rate this professional after completing a scheduled session."
+        );
+      }
+    } finally {
+      setRatingSubmitting(false);
+    }
+  };
+
   useEffect(() => {
     fetchPublicProfile();
     fetchBookedSlots();
+    fetchProReviews();
   }, [id]);
 
   useEffect(() => {
@@ -697,20 +820,38 @@ export default function ProfessionalDetails() {
                 </div>
               </div>
 
-              <button
-                onClick={openBooking}
-                disabled={
-                  !pro.sessionFee ||
-                  availability.length === 0
-                }
-                className="rounded-2xl px-8 py-3.5 text-sm font-bold text-white shadow-md transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-                style={{
-                  background:
-                    "linear-gradient(135deg, #10b981, #059669)",
-                }}
-              >
-                Book a Session
-              </button>
+              <div className="flex flex-wrap items-center gap-3">
+                {myRating ? (
+                  <div className="flex items-center gap-1.5 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs font-black text-emerald-800 shadow-xs">
+                    <IconStar className="h-4 w-4 text-amber-500 fill-amber-400" />
+                    You Rated: {Number(myRating.rating).toFixed(1)} ★
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setShowRatingModal(true)}
+                    className="flex items-center gap-2 rounded-2xl border border-stone-200 bg-white px-5 py-3.5 text-sm font-bold text-stone-700 shadow-xs transition-all hover:border-emerald-300 hover:bg-stone-50"
+                  >
+                    <IconStar className="h-4 w-4 text-amber-400" />
+                    Rate Professional
+                  </button>
+                )}
+
+                <button
+                  onClick={openBooking}
+                  disabled={
+                    !pro.sessionFee ||
+                    availability.length === 0
+                  }
+                  className="rounded-2xl px-8 py-3.5 text-sm font-bold text-white shadow-md transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                  style={{
+                    background:
+                      "linear-gradient(135deg, #10b981, #059669)",
+                  }}
+                >
+                  Book a Session
+                </button>
+              </div>
             </div>
 
             {pro.bio && (
@@ -737,56 +878,26 @@ export default function ProfessionalDetails() {
                 {availability.map((item) => (
                   <div
                     key={item.day}
-                    className="rounded-2xl border border-stone-200 bg-stone-50 p-4"
+                    className="rounded-2xl border border-stone-200 bg-stone-50 p-4 transition-all hover:border-emerald-200 hover:bg-white hover:shadow-xs"
                   >
-                    <p className="mb-2 text-sm font-extrabold text-stone-800">
-                      {item.day}
-                    </p>
+                    <div className="flex items-center justify-between">
+                      <span className="font-extrabold text-stone-900 text-sm">
+                        {item.day}
+                      </span>
+                      <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-black text-emerald-800 uppercase tracking-wider">
+                        Available
+                      </span>
+                    </div>
 
-                    <div className="flex flex-wrap gap-1.5">
-                      {item.slots?.length > 0 ? (
-                        item.slots.map((slot) => {
-                          const appointmentDate =
-                            getNextDateForDay(item.day);
-
-                          const booked = isSlotBooked(
-                            item.day,
-                            slot,
-                            appointmentDate,
-                          );
-
-                          return (
-                            <span
-                              key={slot}
-                              className={`flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-bold ${
-                                booked
-                                  ? "border-red-200 bg-red-50 text-red-500"
-                                  : "border-stone-200 bg-white text-stone-700"
-                              }`}
-                            >
-                              <IconClock
-                                className={`h-3 w-3 ${
-                                  booked
-                                    ? "text-red-400"
-                                    : "text-stone-400"
-                                }`}
-                              />
-
-                              {slot}
-
-                              {booked && (
-                                <span className="ml-1 text-[9px] font-black uppercase">
-                                  Booked
-                                </span>
-                              )}
-                            </span>
-                          );
-                        })
-                      ) : (
-                        <span className="text-xs text-stone-400">
-                          No slots
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                      {item.slots.map((slot) => (
+                        <span
+                          key={slot}
+                          className="rounded-xl border border-stone-200 bg-white px-2.5 py-1 text-xs font-bold text-stone-700 shadow-2xs"
+                        >
+                          {slot}
                         </span>
-                      )}
+                      ))}
                     </div>
                   </div>
                 ))}
@@ -795,6 +906,116 @@ export default function ProfessionalDetails() {
               <p className="text-xs font-medium text-stone-400">
                 No availability schedule published yet.
               </p>
+            )}
+          </div>
+
+          {/* Client Ratings & Reviews */}
+          <div className="rounded-3xl border border-stone-200 bg-white p-8 shadow-xs">
+            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-stone-100 pb-5">
+              <div>
+                <h3 className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-stone-400">
+                  <IconStar className="h-4 w-4 text-amber-400" />
+                  Client Ratings & Reviews
+                </h3>
+                <p className="mt-1 text-xl font-black text-stone-900">
+                  {pro.rating?.count > 0
+                    ? `${Number(pro.rating.average || 0).toFixed(1)} out of 5.0`
+                    : "No Ratings Yet"}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-2 text-center">
+                  <p className="text-xs font-extrabold text-stone-800">
+                    {pro.rating?.count || 0} Total {pro.rating?.count === 1 ? "Rating" : "Ratings"}
+                  </p>
+                </div>
+
+                {myRating ? (
+                  <span className="inline-flex items-center gap-1 rounded-2xl border border-emerald-200 bg-emerald-50 px-3.5 py-2 text-xs font-bold text-emerald-800">
+                    <IconCheckCircle className="h-3.5 w-3.5 text-emerald-600" />
+                    You Rated ({Number(myRating.rating).toFixed(1)} ★)
+                  </span>
+                ) : (
+                  <button
+                    onClick={() => setShowRatingModal(true)}
+                    className="flex items-center gap-1.5 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-xs font-bold text-emerald-800 transition-colors hover:bg-emerald-100 shadow-xs"
+                  >
+                    <IconStar className="h-3.5 w-3.5 text-amber-500 fill-amber-400" />
+                    Rate Professional
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {reviewsLoading ? (
+              <div className="flex h-36 items-center justify-center">
+                <div className="h-7 w-7 animate-spin rounded-full border-4 border-emerald-200 border-t-emerald-600" />
+              </div>
+            ) : proReviews.length === 0 ? (
+              <div className="py-10 text-center">
+                <p className="text-sm font-bold text-stone-600">
+                  No client ratings yet for this professional.
+                </p>
+                <p className="mt-1 text-xs text-stone-400">
+                  Ratings become available after scheduled client sessions have ended.
+                </p>
+              </div>
+            ) : (
+              <div className="mt-6 divide-y divide-stone-100">
+                {proReviews.map((review) => (
+                  <div key={review._id} className="py-4 first:pt-0 last:pb-0">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl text-xs font-black text-white"
+                          style={{
+                            background:
+                              "linear-gradient(135deg, #10b981, #059669)",
+                          }}
+                        >
+                          {review.user?.firstName?.[0]?.toUpperCase() || "U"}
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-stone-800">
+                            {review.user
+                              ? `${review.user.firstName} ${review.user.lastName}`
+                              : "PoseFit User"}
+                          </p>
+                          <p className="text-[11px] text-stone-400">
+                            Verified Client Session •{" "}
+                            {new Date(review.createdAt).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            })}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <div className="flex text-amber-400 text-sm">
+                          {[...Array(5)].map((_, i) => (
+                            <span
+                              key={i}
+                              className={
+                                i < review.rating
+                                  ? "text-amber-400"
+                                  : "text-stone-200"
+                              }
+                            >
+                              ★
+                            </span>
+                          ))}
+                        </div>
+                        <span className="text-xs font-black text-stone-800">
+                          {review.rating}.0
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         </div>
@@ -1064,6 +1285,98 @@ export default function ProfessionalDetails() {
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {showRatingModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+            <div className="w-full max-w-md overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-2xl">
+              <div className="flex items-start justify-between border-b border-stone-100 p-6">
+                <div>
+                  <h2 className="text-lg font-black text-stone-800">
+                    Rate {pro.firstName} {pro.lastName}
+                  </h2>
+                  <p className="mt-0.5 text-xs font-medium text-stone-500">
+                    Rate your completed session with this fitness coach.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowRatingModal(false)}
+                  disabled={ratingSubmitting}
+                  className="text-xl font-bold leading-none text-stone-400 transition-colors hover:text-stone-700 disabled:opacity-40"
+                >
+                  ×
+                </button>
+              </div>
+
+              <form onSubmit={handleRateProfessional} className="space-y-5 p-6">
+                {pendingEligibleSessions[0] && (
+                  <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-3 text-xs text-emerald-800">
+                    <p className="font-bold">Completed Session:</p>
+                    <p className="mt-0.5 text-[11px] text-emerald-700">
+                      {pendingEligibleSessions[0].appointmentDay} •{" "}
+                      {pendingEligibleSessions[0].appointmentSlot}
+                    </p>
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-stone-500">
+                    Star Rating (1 to 5)
+                  </label>
+                  <div className="mt-3 flex items-center justify-center gap-3 rounded-2xl bg-stone-50 p-4 border border-stone-200">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setUserRating(star)}
+                        onMouseEnter={() => setUserHoverRating(star)}
+                        onMouseLeave={() => setUserHoverRating(0)}
+                        className="p-1 text-3xl transition-transform hover:scale-125 focus:outline-none"
+                      >
+                        <span
+                          className={
+                            star <= (userHoverRating || userRating)
+                              ? "text-amber-400 drop-shadow-xs"
+                              : "text-stone-200"
+                          }
+                        >
+                          ★
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                  <p className="mt-2 text-center text-xs font-bold text-stone-700">
+                    {userHoverRating || userRating} out of 5 Stars
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowRatingModal(false)}
+                    disabled={ratingSubmitting}
+                    className="flex-1 rounded-2xl border border-stone-200 bg-stone-100 py-3 text-sm font-bold text-stone-700 transition-colors hover:bg-stone-200 disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    type="submit"
+                    disabled={ratingSubmitting}
+                    className="flex-1 rounded-2xl py-3 text-sm font-bold text-white shadow-md transition-all hover:opacity-90 disabled:opacity-50"
+                    style={{
+                      background:
+                        "linear-gradient(135deg, #10b981, #059669)",
+                    }}
+                  >
+                    {ratingSubmitting ? "Submitting..." : "Submit Rating"}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}
