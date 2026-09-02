@@ -5,6 +5,7 @@ import {
   IconDashboard,
   IconProfessional,
   IconLogOut,
+  IconReview,
 } from "../admin/Icons";
 
 import { FiMessageSquare } from "react-icons/fi";
@@ -37,6 +38,12 @@ const NAV_ITEMS = [
     Icon: IconProfessional,
     label: "Browse Professionals",
   },
+  {
+    path: "/user/reviews",
+    Icon: IconReview,
+    label: "Reviews",
+  },
+
 ];
 
 export default function UserLayout({ children }) {

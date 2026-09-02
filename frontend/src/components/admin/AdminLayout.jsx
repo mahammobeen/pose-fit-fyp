@@ -8,6 +8,7 @@ import {
   IconProfessional,
   IconClipboard,
   IconPayment,
+  IconReview,
   IconSettings,
   IconLogOut,
 } from "./Icons";
@@ -39,10 +40,16 @@ const NAV_ITEMS = [
     label: "Payments",
   },
   {
+    path: "/admin/reviews",
+    Icon: IconReview,
+    label: "Reviews",
+  },
+  {
     path: "/admin/settings",
     Icon: IconSettings,
     label: "Settings",
   },
+  
 ];
 
 export default function AdminLayout({ children }) {
