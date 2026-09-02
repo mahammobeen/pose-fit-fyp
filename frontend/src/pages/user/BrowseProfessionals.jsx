@@ -183,7 +183,7 @@ export default function PublicProfessionals() {
         ===================================================== */}
 
         <section className="bg-white border-b border-stone-200">
-          <div className="max-w-7xl mx-auto px-6 py-12">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
             <div className="max-w-3xl">
               <div className="flex items-center gap-2 mb-4">
                 <ShieldCheck className="w-5 h-5 text-emerald-600" />
@@ -193,12 +193,12 @@ export default function PublicProfessionals() {
                 </span>
               </div>
 
-              <h1 className="text-4xl md:text-5xl font-black text-gray-900">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-gray-900">
                 Find Your Perfect
                 <span className="text-emerald-600"> Fitness Professional</span>
               </h1>
 
-              <p className="mt-4 text-gray-500 text-lg">
+              <p className="mt-4 text-gray-500 text-base sm:text-lg">
                 Connect with certified trainers and fitness professionals who
                 can help you achieve your goals.
               </p>
@@ -218,7 +218,7 @@ export default function PublicProfessionals() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search professionals..."
-                  className="w-full pl-12 pr-4 py-4 bg-stone-50 border border-stone-200 rounded-2xl outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                  className="w-full pl-12 pr-4 py-3.5 sm:py-4 bg-stone-50 border border-stone-200 rounded-2xl outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 text-sm sm:text-base"
                 />
               </div>
 
@@ -226,7 +226,7 @@ export default function PublicProfessionals() {
               <select
                 value={filter}
                 onChange={(e) => setFilter(e.target.value)}
-                className="px-5 py-4 bg-stone-50 border border-stone-200 rounded-2xl outline-none focus:border-emerald-500"
+                className="px-5 py-3.5 sm:py-4 bg-stone-50 border border-stone-200 rounded-2xl outline-none focus:border-emerald-500 text-sm sm:text-base"
               >
                 <option value="all">All Professionals</option>
 
@@ -242,7 +242,7 @@ export default function PublicProfessionals() {
             PROFESSIONALS
         ===================================================== */}
 
-        <main className="max-w-7xl mx-auto px-6 py-10">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
           {/* Results Header */}
 
           <div className="flex items-center justify-between mb-6">

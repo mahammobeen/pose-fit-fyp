@@ -172,13 +172,13 @@ export default function AdminDashboard() {
     <AdminLayout>
       <div className="min-h-screen pb-16" style={{ background: "#f5f7f2" }}>
         {/* Header Banner */}
-        <div className="px-8 pt-8 pb-4">
+        <div className="px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 pb-4">
           <div className="flex items-center justify-between">
             <div>
               <span className="text-xs font-extrabold uppercase tracking-widest px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
                 Dashboard Overview
               </span>
-              <h1 className="text-3xl font-black text-stone-800 tracking-tight mt-2">
+              <h1 className="text-2xl sm:text-3xl font-black text-stone-800 tracking-tight mt-2">
                 PoseFit Admin Dashboard
               </h1>
               <p className="text-stone-500 font-medium text-sm mt-1">
@@ -189,16 +189,16 @@ export default function AdminDashboard() {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 px-8 py-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 px-4 sm:px-6 lg:px-8 py-4">
           {statCards.map((card, i) => (
             <StatCard key={i} {...card} />
           ))}
         </div>
 
         {/* Analytics */}
-        <div className="px-8 mt-4">
-          <div className="bg-white rounded-3xl p-7 shadow-xs border border-stone-200/80">
-            <div className="flex items-center justify-between mb-6">
+        <div className="px-4 sm:px-6 lg:px-8 mt-4">
+          <div className="bg-white rounded-3xl p-5 sm:p-7 shadow-xs border border-stone-200/80">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
               <div>
                 <h2 className="text-lg font-black text-stone-800 flex items-center gap-2">
                   <IconTrendingUp className="w-5 h-5 text-emerald-700" />
@@ -208,7 +208,7 @@ export default function AdminDashboard() {
                   Daily signups tracked over the last 7 days.
                 </p>
               </div>
-              <span className="text-xs font-bold text-stone-500 bg-stone-100 px-3 py-1.5 rounded-full border border-stone-200">
+              <span className="text-xs font-bold text-stone-500 bg-stone-100 px-3 py-1.5 rounded-full border border-stone-200 self-start sm:self-auto">
                 Last 7 Days
               </span>
             </div>
@@ -216,8 +216,8 @@ export default function AdminDashboard() {
             {analytics.length > 0 ? (
               <div className="space-y-3.5">
                 {analytics.map((item, i) => (
-                  <div key={i} className="flex items-center gap-4">
-                    <div className="w-20 text-xs font-bold text-stone-500 shrink-0">{item.date}</div>
+                  <div key={i} className="flex items-center gap-3 sm:gap-4">
+                    <div className="w-16 sm:w-20 text-xs font-bold text-stone-500 shrink-0">{item.date}</div>
                     <div className="flex-1 h-8 bg-stone-100/80 rounded-2xl overflow-hidden relative border border-stone-200/50">
                       <div
                         className="h-full rounded-2xl transition-all duration-700"
@@ -232,7 +232,7 @@ export default function AdminDashboard() {
                         </span>
                       )}
                     </div>
-                    <div className="w-10 text-right text-sm font-black text-stone-700 shrink-0">
+                    <div className="w-8 sm:w-10 text-right text-sm font-black text-stone-700 shrink-0">
                       {item.registrations || 0}
                     </div>
                   </div>
@@ -248,4 +248,4 @@ export default function AdminDashboard() {
       </div>
     </AdminLayout>
   );
-}
+}

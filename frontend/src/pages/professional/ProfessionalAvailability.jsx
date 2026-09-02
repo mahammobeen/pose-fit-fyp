@@ -384,13 +384,13 @@ export default function ProfessionalAvailability() {
         )}
 
         {/* Header */}
-        <div className="px-8 pt-8 pb-4 flex items-center justify-between flex-wrap gap-4">
+        <div className="px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 pb-4 flex items-center justify-between flex-wrap gap-4">
           <div>
             <span className="text-xs font-extrabold uppercase tracking-widest px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
               Schedule Management
             </span>
 
-            <h1 className="text-3xl font-black text-stone-800 tracking-tight mt-2">
+            <h1 className="text-2xl sm:text-3xl font-black text-stone-800 tracking-tight mt-2">
               Availability Schedule
             </h1>
 
@@ -420,7 +420,7 @@ export default function ProfessionalAvailability() {
         </div>
 
         {/* Duration Rule */}
-        <div className="px-8 mb-5 max-w-4xl">
+        <div className="px-4 sm:px-6 lg:px-8 mb-5 max-w-4xl">
           <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
             <p className="text-xs font-bold text-emerald-800">
               Session Slot Rule
@@ -439,7 +439,7 @@ export default function ProfessionalAvailability() {
             <div className="w-8 h-8 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" />
           </div>
         ) : (
-          <div className="px-8 max-w-4xl space-y-4">
+          <div className="px-4 sm:px-6 lg:px-8 max-w-4xl space-y-4">
             <div className="grid gap-4">
               {DAYS_OF_WEEK.map((day) => {
                 const dayItem = availability.find(

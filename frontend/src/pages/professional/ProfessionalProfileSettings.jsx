@@ -307,12 +307,12 @@ export default function ProfessionalProfileSettings() {
         )}
 
         {/* Page Header */}
-        <div className="px-8 pt-8 pb-6">
+        <div className="px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 pb-6">
           <span className="inline-flex items-center text-xs font-extrabold uppercase tracking-widest px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
             Account Management
           </span>
 
-          <h1 className="text-3xl font-black text-stone-800 tracking-tight mt-3">
+          <h1 className="text-2xl sm:text-3xl font-black text-stone-800 tracking-tight mt-3">
             Profile Settings
           </h1>
 
@@ -327,7 +327,7 @@ export default function ProfessionalProfileSettings() {
             <div className="w-8 h-8 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" />
           </div>
         ) : (
-          <div className="px-8 max-w-5xl space-y-5">
+          <div className="px-4 sm:px-6 lg:px-8 max-w-5xl space-y-5">
             {/* Profile Overview */}
             <section className="bg-white rounded-3xl border border-stone-200 shadow-sm overflow-hidden">
               <div className="p-6">

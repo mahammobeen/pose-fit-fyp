@@ -162,12 +162,12 @@ export default function AdminPayments() {
           </div>
         )}
 
-        <div className="px-8 pt-8 pb-4">
+        <div className="px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 pb-4">
           <span className="text-xs font-extrabold uppercase tracking-widest px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
             Platform Payments & Stripe Connect
           </span>
 
-          <h1 className="text-3xl font-black text-stone-800 tracking-tight mt-2">
+          <h1 className="text-2xl sm:text-3xl font-black text-stone-800 tracking-tight mt-2">
             Payments & Earnings
           </h1>
 
@@ -177,7 +177,7 @@ export default function AdminPayments() {
           </p>
         </div>
 
-        <div className="px-8 mb-6 grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="px-4 sm:px-6 lg:px-8 mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {summaryCards.map((card) => (
             <div
               key={card.label}
@@ -206,13 +206,13 @@ export default function AdminPayments() {
           ))}
         </div>
 
-        <div className="px-8 mb-4 flex items-center gap-3 flex-wrap justify-between">
-          <div className="flex items-center gap-1 bg-white rounded-2xl border border-stone-200 p-1.5 shadow-xs">
+        <div className="px-4 sm:px-6 lg:px-8 mb-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 justify-between">
+          <div className="flex items-center gap-1 bg-white rounded-2xl border border-stone-200 p-1.5 shadow-xs overflow-x-auto">
             {STATUS_FILTERS.map((s) => (
               <button
                 key={s}
                 onClick={() => setStatusFilter(s)}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold capitalize transition-all ${
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold capitalize transition-all whitespace-nowrap ${
                   statusFilter === s
                     ? "bg-emerald-700 text-white shadow-xs"
                     : "text-stone-500 hover:text-stone-800 hover:bg-stone-100"
@@ -223,7 +223,7 @@ export default function AdminPayments() {
             ))}
           </div>
 
-          <div className="relative">
+          <div className="relative w-full sm:w-72">
             <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400">
               <IconSearch className="w-4 h-4" />
             </span>
@@ -233,12 +233,12 @@ export default function AdminPayments() {
               placeholder="Search user, professional..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-10 pr-4 py-2.5 rounded-2xl border border-stone-200 bg-white text-sm outline-none focus:ring-2 focus:ring-emerald-300 text-stone-700 font-medium w-72 shadow-xs"
+              className="pl-10 pr-4 py-2.5 rounded-2xl border border-stone-200 bg-white text-sm outline-none focus:ring-2 focus:ring-emerald-300 text-stone-700 font-medium w-full shadow-xs"
             />
           </div>
         </div>
 
-        <div className="px-8">
+        <div className="px-4 sm:px-6 lg:px-8">
           <div className="bg-white rounded-3xl shadow-xs border border-stone-200 overflow-hidden">
             {loading ? (
               <div className="flex items-center justify-center h-52">

@@ -93,11 +93,11 @@ export default function AdminReviews() {
     <AdminLayout>
       <div className="min-h-screen pb-16" style={{ background: "#f5f7f2" }}>
         {/* Header */}
-        <div className="px-8 pt-8 pb-4">
+        <div className="px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 pb-4">
           <span className="rounded-full border border-emerald-200 bg-emerald-100 px-3 py-1 text-xs font-extrabold uppercase tracking-widest text-emerald-800">
             Platform Management
           </span>
-          <h1 className="mt-2 text-3xl font-black tracking-tight text-stone-800">
+          <h1 className="mt-2 text-2xl sm:text-3xl font-black tracking-tight text-stone-800">
             Reviews & Ratings
           </h1>
           <p className="mt-1 text-sm font-medium text-stone-500">
@@ -107,7 +107,7 @@ export default function AdminReviews() {
         </div>
 
         {/* Metric Summary Cards */}
-        <div className="px-8 mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="px-4 sm:px-6 lg:px-8 mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div className="rounded-3xl border border-stone-200 bg-white p-5 shadow-xs">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold uppercase tracking-wider text-stone-400">
@@ -161,13 +161,13 @@ export default function AdminReviews() {
         </div>
 
         {/* Filters & Search */}
-        <div className="px-8 mb-4 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-1 rounded-2xl border border-stone-200 bg-white p-1.5 shadow-xs">
+        <div className="px-4 sm:px-6 lg:px-8 mb-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-1 rounded-2xl border border-stone-200 bg-white p-1.5 shadow-xs overflow-x-auto">
             {TYPE_FILTERS.map((item) => (
               <button
                 key={item.key}
                 onClick={() => setTypeFilter(item.key)}
-                className={`rounded-xl px-3.5 py-1.5 text-xs font-extrabold transition-all ${
+                className={`rounded-xl px-3.5 py-1.5 text-xs font-extrabold transition-all whitespace-nowrap ${
                   typeFilter === item.key
                     ? "bg-emerald-700 text-white shadow-xs"
                     : "text-stone-500 hover:bg-stone-100 hover:text-stone-800"
@@ -178,7 +178,7 @@ export default function AdminReviews() {
             ))}
           </div>
 
-          <div className="relative">
+          <div className="relative w-full sm:w-72">
             <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400">
               <IconSearch className="h-4 w-4" />
             </span>
@@ -187,13 +187,13 @@ export default function AdminReviews() {
               placeholder="Search reviewer, pro, comment..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-72 rounded-2xl border border-stone-200 bg-white py-2.5 pl-10 pr-4 text-sm font-medium text-stone-700 shadow-xs outline-none focus:ring-2 focus:ring-emerald-300"
+              className="w-full rounded-2xl border border-stone-200 bg-white py-2.5 pl-10 pr-4 text-sm font-medium text-stone-700 shadow-xs outline-none focus:ring-2 focus:ring-emerald-300"
             />
           </div>
         </div>
 
         {/* Table Content */}
-        <div className="px-8">
+        <div className="px-4 sm:px-6 lg:px-8">
           <div className="overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-xs">
             {loading ? (
               <div className="flex h-52 items-center justify-center">

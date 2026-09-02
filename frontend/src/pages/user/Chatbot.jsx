@@ -131,19 +131,19 @@ function Chatbot() {
 
   return (
     <UserLayout>
-      <div className="min-h-full bg-gray-50/50 p-4 md:p-8">
+      <div className="min-h-full bg-gray-50/50 p-4 sm:p-6 md:p-8">
         {/* =====================================================
             HEADER
         ===================================================== */}
 
-        <header className="max-w-4xl mx-auto mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <header className="max-w-4xl mx-auto mb-6 sm:mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
           <div>
-            <h1 className="text-3xl md:text-4xl font-black text-gray-900 tracking-tight flex items-center gap-3">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-gray-900 tracking-tight flex items-center gap-3">
               AI Fitness Assistant
-              <Sparkles className="text-indigo-500 h-7 w-7 animate-pulse" />
+              <Sparkles className="text-indigo-500 h-6 w-6 sm:h-7 sm:w-7 animate-pulse" />
             </h1>
 
-            <p className="text-gray-500 font-medium mt-2">
+            <p className="text-gray-500 font-medium mt-1 sm:mt-2 text-sm sm:text-base">
               Your 24/7 fitness and nutrition assistant.
             </p>
           </div>
@@ -153,7 +153,7 @@ function Chatbot() {
               type="button"
               onClick={clearChat}
               disabled={loading}
-              className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 font-bold text-xs uppercase tracking-widest transition-all disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 sm:py-3 rounded-2xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 font-bold text-xs uppercase tracking-widest transition-all disabled:opacity-50 self-start md:self-auto"
             >
               <Trash2 size={16} />
               Clear Chat
@@ -165,12 +165,12 @@ function Chatbot() {
             CHAT CONTAINER
         ===================================================== */}
 
-        <div className="max-w-4xl mx-auto h-[550px] flex flex-col bg-white rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden">
+        <div className="max-w-4xl mx-auto h-[calc(100vh-14rem)] min-h-[460px] flex flex-col bg-white rounded-3xl sm:rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden">
           {/* =====================================================
               CHAT HISTORY
           ===================================================== */}
 
-          <div className="flex-1 overflow-y-auto p-5 md:p-8 space-y-7 bg-gray-50/30">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 space-y-6 sm:space-y-7 bg-gray-50/30">
             {/* =====================================================
                 EMPTY STATE
             ===================================================== */}

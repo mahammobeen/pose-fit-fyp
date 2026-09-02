@@ -42,54 +42,21 @@ const NAV_ITEMS = [
 export default function ProfessionalLayout({ children }) {
   const navigate = useNavigate();
   const user = getUser();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // =====================================================
-  // SIDEBAR STATE
+  // DESKTOP SIDEBAR STATE
   // =====================================================
-  // Desktop:
-  //   - Remembers user's choice
-  //   - First time = OPEN
-  //
-  // Mobile:
-  //   - Always starts COLLAPSED
-  //   - Sidebar never disappears
-  //   - Icons remain visible
-  // =====================================================
-
   const [sidebarOpen, setSidebarOpen] = useState(() => {
-    // Mobile should always start collapsed
-    if (window.innerWidth < 1024) {
-      return false;
-    }
-
-    // Desktop remembers user's preference
-    const savedState = localStorage.getItem(
-      "professional-sidebar-open"
-    );
-
-    if (savedState === null) {
-      return true;
-    }
-
+    const savedState = localStorage.getItem("professional-sidebar-open");
+    if (savedState === null) return true;
     return savedState === "true";
   });
-
-  // =====================================================
-  // MANUAL TOGGLE
-  // =====================================================
 
   const toggleSidebar = () => {
     setSidebarOpen((previousState) => {
       const newState = !previousState;
-
-      // Only remember state for desktop
-      if (window.innerWidth >= 1024) {
-        localStorage.setItem(
-          "professional-sidebar-open",
-          String(newState)
-        );
-      }
-
+      localStorage.setItem("professional-sidebar-open", String(newState));
       return newState;
     });
   };
@@ -97,41 +64,121 @@ export default function ProfessionalLayout({ children }) {
   // =====================================================
   // LOGOUT
   // =====================================================
-
   const handleLogout = () => {
     deleteToken();
     localStorage.removeItem("pose-fit-user");
-
     navigate("/professional/login");
   };
 
   return (
-    <div
-      className="flex h-screen overflow-hidden"
-      style={{ background: "#f8fafc" }}
-    >
+    <div className="flex h-screen overflow-hidden bg-stone-50">
       {/* =====================================================
-          SIDEBAR
+          MOBILE BACKDROP
       ===================================================== */}
+      {mobileMenuOpen && (
+        <div
+          onClick={() => setMobileMenuOpen(false)}
+          className="fixed inset-0 bg-black/40 backdrop-blur-xs z-40 lg:hidden transition-opacity"
+        />
+      )}
 
+      {/* =====================================================
+          MOBILE DRAWER (SLIDE-OVER)
+      ===================================================== */}
+      <div
+        className={`fixed inset-y-0 left-0 z-50 w-72 bg-white flex flex-col shadow-2xl lg:hidden transform transition-transform duration-300 ease-in-out ${
+          mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        {/* Mobile Header */}
+        <div className="flex items-center justify-between px-5 py-5 border-b border-stone-100">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-[#B7E4C7] shadow-xs shrink-0">
+              <MdFitnessCenter className="w-5 h-5 text-[#16845b]" />
+            </div>
+            <div>
+              <p className="font-bold text-base tracking-tight leading-none text-gray-800">
+                Pose<span className="text-[#53b889]">Fit</span>
+              </p>
+              <p className="text-[10px] font-extrabold mt-1 uppercase tracking-widest text-[#16845b]">
+                Professional Portal
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(false)}
+            className="p-1.5 rounded-lg text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition-colors"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Mobile Nav Links */}
+        <nav className="flex-1 py-4 px-3 space-y-1.5 overflow-y-auto">
+          <p className="text-[10px] font-extrabold uppercase tracking-widest px-3 mb-2 text-stone-400">
+            Professional Menu
+          </p>
+          {NAV_ITEMS.map(({ path, Icon, label }) => (
+            <NavLink
+              key={path}
+              to={path}
+              onClick={() => setMobileMenuOpen(false)}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-sm font-bold transition-all ${
+                  isActive
+                    ? "bg-[#B7E4C7]/30 text-[#16845b] border border-[#B7E4C7] shadow-2xs"
+                    : "text-stone-600 hover:text-stone-900 hover:bg-stone-100/70 border border-transparent"
+                }`
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-[#16845b]" : "text-stone-400"}`} />
+                  <span>{label}</span>
+                </>
+              )}
+            </NavLink>
+          ))}
+        </nav>
+
+        {/* Mobile Footer */}
+        <div className="border-t border-stone-100 bg-stone-50/60 p-4">
+          <div className="flex items-center gap-3 mb-3">
+            <div
+              className="w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm text-white shrink-0 shadow-sm"
+              style={{ background: "linear-gradient(135deg, #fb923c, #f97316)" }}
+            >
+              {user?.firstName?.[0] || user?.name?.[0] || "P"}
+            </div>
+            <div className="min-w-0 overflow-hidden">
+              <p className="text-sm font-bold truncate text-stone-800">
+                {user?.name || (user?.firstName ? `${user.firstName} ${user.lastName || ""}`.trim() : "Professional")}
+              </p>
+              <p className="text-xs font-medium truncate text-stone-400">
+                {user?.professionalType || "Trainer"} • {user?.email || ""}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200/60 transition-all shadow-sm"
+          >
+            <IconLogOut className="w-3.5 h-3.5 shrink-0" />
+            <span>Logout</span>
+          </button>
+        </div>
+      </div>
+
+      {/* =====================================================
+          DESKTOP SIDEBAR
+      ===================================================== */}
       <aside
-        className={`
-          relative
-          flex-shrink-0
-          flex flex-col
-          bg-white
-          border-r border-stone-200/80
-          shadow-sm
-          transition-all
-          duration-300
-          ease-in-out
-
-          ${
-            sidebarOpen
-              ? "w-64"
-              : "w-20"
-          }
-        `}
+        className={`hidden lg:flex flex-col flex-shrink-0 bg-white border-r border-stone-200/80 shadow-sm transition-all duration-300 ease-in-out ${
+          sidebarOpen ? "w-64" : "w-20"
+        }`}
       >
         {/* =================================================
             SIDEBAR HEADER
@@ -511,21 +558,41 @@ export default function ProfessionalLayout({ children }) {
       </aside>
 
       {/* =====================================================
-          MAIN CONTENT
+          MAIN CONTENT AREA
       ===================================================== */}
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0 w-full">
+        {/* Mobile Header Bar */}
+        <header className="lg:hidden h-16 flex-shrink-0 bg-white border-b border-stone-200 px-4 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(true)}
+              className="p-2 rounded-xl text-stone-600 hover:bg-stone-100 hover:text-stone-900 transition-colors"
+              aria-label="Open navigation menu"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+            <p className="font-bold text-sm text-stone-800">
+              Professional Portal
+            </p>
+          </div>
 
-      <main
-        className="
-          flex-1
-          overflow-y-auto
-          min-w-0
-        "
-        style={{
-          background: "#f8fafc",
-        }}
-      >
-        {children}
-      </main>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="p-2 rounded-xl text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-colors flex items-center gap-1.5"
+          >
+            <IconLogOut className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Logout</span>
+          </button>
+        </header>
+
+        <main className="flex-1 overflow-y-auto overflow-x-hidden min-w-0 bg-[#f8fafc]">
+          {children}
+        </main>
+      </div>
     </div>
   );
 }

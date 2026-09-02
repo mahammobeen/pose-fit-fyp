@@ -2,6 +2,11 @@ import { useNavigate } from "react-router-dom";
 import { Play, Target, Compass } from "lucide-react";
 import UserLayout from "../../components/user/UserLayout";
 
+import squatImage from "../../assets/squate.png";
+import plankImage from "../../assets/plank.png";
+import armRaiseImage from "../../assets/arm_raise.png";
+import sideBendImage from "../../assets/side_bend.png";
+
 const EXERCISES = [
   {
     id: "squats",
@@ -11,8 +16,7 @@ const EXERCISES = [
     target: "Quads, Glutes & Hamstrings",
     description:
       "Real-time knee flexion & depth analysis. Ensures thighs break parallel while protecting knee joints and lumbar spine.",
-    image:
-      "https://images.unsplash.com/photo-1434608519344-49d77a699e1d?q=80&w=1000&auto=format&fit=crop",
+    image: squatImage,
     badgeColor: "bg-blue-50 text-blue-600 border-blue-100",
   },
   {
@@ -23,8 +27,7 @@ const EXERCISES = [
     target: "Core & Lower Back",
     description:
       "Monitors shoulder-hip-ankle line to prevent hip sagging or excessive elevation for maximum core activation.",
-    image:
-      "https://images.unsplash.com/photo-1566241477600-ac026ad43874?q=80&w=1000&auto=format&fit=crop",
+    image: plankImage,
     badgeColor: "bg-emerald-50 text-emerald-600 border-emerald-100",
   },
   {
@@ -35,8 +38,7 @@ const EXERCISES = [
     target: "Deltoids & Shoulders",
     description:
       "Tracks bilateral arm elevation symmetry and range of motion without compensatory torso leaning or shoulder shrugging.",
-    image:
-      "https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?q=80&w=1000&auto=format&fit=crop",
+    image: armRaiseImage,
     badgeColor: "bg-purple-50 text-purple-600 border-purple-100",
   },
   {
@@ -47,8 +49,7 @@ const EXERCISES = [
     target: "Obliques & Lateral Spine",
     description:
       "Measures precise lateral torso tilt and flags rotational twist to maximize oblique engagement with strict angle gating.",
-    image:
-      "https://images.unsplash.com/photo-1518611012118-696072aa579a?q=80&w=1000&auto=format&fit=crop",
+    image: sideBendImage,
     badgeColor: "bg-amber-50 text-amber-700 border-amber-100",
   },
 ];
@@ -58,15 +59,16 @@ export default function PostureDetection() {
 
   return (
     <UserLayout>
-      <div className="min-h-screen bg-white px-6 py-4 md:px-8 space-y-6 pb-16">
+      <div className="min-h-screen bg-white px-4 sm:px-6 md:px-8 py-4 md:py-6 space-y-6 pb-16">
         {/* Title */}
         <div className="max-w-6xl mx-auto">
-          <h1 className="text-3xl font-black text-gray-900 tracking-tight flex flex-wrap items-center gap-2">
-            Select an exercise for a
-            <span className="bg-blue-50 text-[#3b82f6] px-4 py-1 rounded-xl">
+          <h1 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight flex flex-wrap items-center gap-2">
+            Select an exercise for
+            <span className="bg-blue-50 text-[#3b82f6] px-3 sm:px-4 py-1 rounded-xl">
               posture check
             </span>
           </h1>
+
           <p className="text-gray-400 text-xs md:text-sm mt-1 font-medium">
             Choose an exercise to start real-time AI posture analysis, rep
             counting, and audio coaching.
@@ -87,7 +89,8 @@ export default function PostureDetection() {
                   alt={ex.title}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
-                <div className="absolute inset-0  from-black/60 via-transparent to-transparent" />
+
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
 
                 {/* Category Badge Floating on Image */}
                 <div className="absolute top-4 left-4">
@@ -101,6 +104,7 @@ export default function PostureDetection() {
                   <h3 className="text-2xl font-black text-white tracking-tight drop-shadow-sm">
                     {ex.title}
                   </h3>
+
                   <p className="text-xs font-bold text-gray-200 flex items-center gap-1.5 mt-0.5">
                     <Target size={13} className="text-blue-400" />
                     <span>{ex.target}</span>
@@ -129,7 +133,9 @@ export default function PostureDetection() {
                 {/* Action Button */}
                 <div className="pt-2">
                   <button
-                    onClick={() => navigate(`/user/workout/session/${ex.id}`)}
+                    onClick={() =>
+                      navigate(`/user/workout/session/${ex.id}`)
+                    }
                     className="w-full py-4 bg-[#fde2c4] hover:bg-[#ffd0a5] text-gray-900 font-bold uppercase tracking-widest text-xs rounded-2xl transition-all shadow-sm flex items-center justify-center gap-2"
                   >
                     <span>Start Detection</span>

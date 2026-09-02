@@ -239,7 +239,7 @@ export default function WorkoutSession() {
   const percentage = Math.min(100, Math.round((absAngle / 90) * 100));
 
   return (
-    <div className="p-6 md:p-8 bg-white min-h-screen space-y-6">
+    <div className="p-4 sm:p-6 md:p-8 bg-white min-h-screen space-y-6">
       {/* Header */}
       <div className="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
@@ -250,10 +250,10 @@ export default function WorkoutSession() {
             <ArrowLeft size={20} />
           </button>
           <div>
-            <h1 className="text-3xl font-black text-gray-900 tracking-tight flex items-center gap-2">
-              <Dumbbell className="h-7 w-7 text-indigo-500" />
+            <h1 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight flex flex-wrap items-center gap-2">
+              <Dumbbell className="h-6 w-6 sm:h-7 sm:w-7 text-indigo-500" />
               {currentEx.name}
-              <span className="bg-blue-50 text-[#3b82f6] px-4 py-1 rounded-xl text-lg font-bold">
+              <span className="bg-blue-50 text-[#3b82f6] px-3 sm:px-4 py-1 rounded-xl text-base sm:text-lg font-bold">
                 Posture Check
               </span>
             </h1>

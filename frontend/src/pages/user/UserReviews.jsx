@@ -108,12 +108,12 @@ export default function UserReviews() {
     <UserLayout>
       <div className="min-h-screen bg-stone-50 pb-20">
         {/* Header */}
-        <div className="border-b border-stone-200 bg-white px-8 py-8">
+        <div className="border-b border-stone-200 bg-white px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
           <div className="max-w-6xl">
             <span className="rounded-full border border-emerald-200 bg-emerald-100 px-3 py-1 text-xs font-extrabold uppercase tracking-widest text-emerald-800">
               Reviews & Ratings
             </span>
-            <h1 className="mt-2 text-3xl font-black tracking-tight text-stone-900">
+            <h1 className="mt-2 text-2xl sm:text-3xl font-black tracking-tight text-stone-900">
               Platform Reviews & Professional Ratings
             </h1>
             <p className="mt-1 text-sm font-medium text-stone-500">
@@ -122,10 +122,10 @@ export default function UserReviews() {
           </div>
 
           {/* Navigation Tabs */}
-          <div className="mt-8 flex gap-3 border-b border-stone-100 pb-px">
+          <div className="mt-6 sm:mt-8 flex gap-3 border-b border-stone-100 pb-px overflow-x-auto">
             <button
               onClick={() => setActiveTab("platform")}
-              className={`flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-bold transition-all ${
+              className={`flex items-center gap-2 border-b-2 px-3 sm:px-4 py-3 text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${
                 activeTab === "platform"
                   ? "border-emerald-600 text-emerald-700 font-black"
                   : "border-transparent text-stone-500 hover:text-stone-800"
@@ -140,7 +140,7 @@ export default function UserReviews() {
 
             <button
               onClick={() => setActiveTab("professional")}
-              className={`flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-bold transition-all ${
+              className={`flex items-center gap-2 border-b-2 px-3 sm:px-4 py-3 text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${
                 activeTab === "professional"
                   ? "border-emerald-600 text-emerald-700 font-black"
                   : "border-transparent text-stone-500 hover:text-stone-800"
@@ -155,7 +155,7 @@ export default function UserReviews() {
           </div>
         </div>
 
-        <div className="mx-auto max-w-6xl px-8 py-8">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
           {/* TAB 1: PLATFORM REVIEWS */}
           {activeTab === "platform" && (
             <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">

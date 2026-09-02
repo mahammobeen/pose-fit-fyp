@@ -100,18 +100,18 @@ export default function AdminProfessionalRequests() {
         )}
 
         {/* Header */}
-        <div className="px-8 pt-8 pb-4">
+        <div className="px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 pb-4">
           <span className="text-xs font-extrabold uppercase tracking-widest px-3 py-1 rounded-full bg-amber-100 text-amber-900 border border-amber-200">
             Final Verification Stage
           </span>
-          <h1 className="text-3xl font-black text-stone-800 tracking-tight mt-2">Pending Applications Review</h1>
+          <h1 className="text-2xl sm:text-3xl font-black text-stone-800 tracking-tight mt-2">Pending Applications Review</h1>
           <p className="text-stone-500 font-medium text-sm mt-1">
             Review submitted profile details, credential documents, availability, and Stripe Connect status to Approve or Reject.
           </p>
         </div>
 
         {/* Count badge */}
-        <div className="px-8 mb-6">
+        <div className="px-4 sm:px-6 lg:px-8 mb-6">
           <div className="inline-flex items-center gap-3 bg-amber-50 border border-amber-200/80 rounded-2xl px-4 py-2.5 shadow-xs">
             <span className="w-8 h-8 rounded-xl bg-amber-100 text-amber-800 font-black text-sm flex items-center justify-center">
               {requests.length}
@@ -125,7 +125,7 @@ export default function AdminProfessionalRequests() {
             <div className="w-8 h-8 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" />
           </div>
         ) : requests.length === 0 ? (
-          <div className="px-8">
+          <div className="px-4 sm:px-6 lg:px-8">
             <div className="bg-white rounded-3xl border border-stone-200 shadow-xs p-16 text-center">
               <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto mb-4">
                 <IconCheckCircle className="w-8 h-8" />
@@ -135,7 +135,7 @@ export default function AdminProfessionalRequests() {
             </div>
           </div>
         ) : (
-          <div className="px-8 grid gap-5">
+          <div className="px-4 sm:px-6 lg:px-8 grid gap-5">
             {requests.map((pro) => (
               <div key={pro._id} className="bg-white rounded-3xl border border-stone-200 shadow-xs p-6 hover:shadow-md transition-shadow">
                 <div className="flex items-start justify-between gap-4 flex-wrap">

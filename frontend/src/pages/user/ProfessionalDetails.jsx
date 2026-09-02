@@ -694,7 +694,7 @@ export default function ProfessionalDetails() {
   return (
     <UserLayout>
       <div className="pb-20">
-        <div className="flex items-center justify-between gap-4 px-8 pb-4 pt-8">
+        <div className="flex items-center justify-between gap-4 px-4 sm:px-6 lg:px-8 pb-4 pt-6 sm:pt-8">
           <span className="rounded-full border border-emerald-200 bg-emerald-100 px-3 py-1 text-xs font-extrabold uppercase tracking-widest text-emerald-800">
             Professional Details
           </span>
@@ -710,7 +710,7 @@ export default function ProfessionalDetails() {
         </div>
 
         {bookingSuccess && (
-          <div className="mx-auto mb-6 max-w-5xl px-8">
+          <div className="mx-auto mb-6 max-w-5xl px-4 sm:px-6 lg:px-8">
             <div className="flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
               <IconCheckCircle className="h-5 w-5 shrink-0 text-emerald-600" />
 
@@ -730,7 +730,7 @@ export default function ProfessionalDetails() {
         )}
 
         {bookingCancelled && (
-          <div className="mx-auto mb-6 max-w-5xl px-8">
+          <div className="mx-auto mb-6 max-w-5xl px-4 sm:px-6 lg:px-8">
             <div className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
               <span className="text-lg text-amber-600">
                 !
@@ -744,8 +744,8 @@ export default function ProfessionalDetails() {
           </div>
         )}
 
-        <div className="mx-auto max-w-5xl space-y-6 px-8">
-          <div className="rounded-3xl border border-stone-200 bg-white p-8 shadow-xs">
+        <div className="mx-auto max-w-5xl space-y-6 px-4 sm:px-6 lg:px-8">
+          <div className="rounded-3xl border border-stone-200 bg-white p-5 sm:p-8 shadow-xs">
             <div className="flex flex-wrap items-start justify-between gap-6">
               <div className="flex items-start gap-5">
                 {profilePhoto ? (

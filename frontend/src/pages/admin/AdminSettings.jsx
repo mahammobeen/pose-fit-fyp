@@ -133,14 +133,14 @@ export default function AdminSettings() {
         )}
 
         {/* Header */}
-        <div className="px-8 pt-8 pb-6">
+        <div className="px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 pb-6">
           <span className="inline-flex items-center text-xs font-extrabold uppercase tracking-widest px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
             Account Settings
           </span>
 
           <div className="flex items-end justify-between gap-4 mt-3">
             <div>
-              <h1 className="text-3xl font-black text-stone-800 tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-black text-stone-800 tracking-tight">
                 Admin Settings
               </h1>
 
@@ -152,7 +152,7 @@ export default function AdminSettings() {
         </div>
 
         {/* Content */}
-        <div className="px-8 max-w-5xl space-y-6">
+        <div className="px-4 sm:px-6 lg:px-8 max-w-5xl space-y-6">
           {/* Profile Card */}
           <section className="bg-white rounded-3xl border border-stone-200 shadow-sm overflow-hidden">
             {/* Profile Header */}

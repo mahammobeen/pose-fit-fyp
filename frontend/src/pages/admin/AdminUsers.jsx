@@ -111,18 +111,18 @@ export default function AdminUsers() {
         )}
 
         {/* Header */}
-        <div className="px-8 pt-8 pb-4 flex items-center justify-between flex-wrap gap-4">
+        <div className="px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 pb-4 flex items-center justify-between flex-wrap gap-4">
           <div>
             <span className="text-xs font-extrabold uppercase tracking-widest px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
               User Directory
             </span>
-            <h1 className="text-3xl font-black text-stone-800 tracking-tight mt-2">Users</h1>
+            <h1 className="text-2xl sm:text-3xl font-black text-stone-800 tracking-tight mt-2">Users</h1>
             <p className="text-stone-500 font-medium text-sm mt-1">View, search, edit, and manage registered users on the platform.</p>
           </div>
         </div>
 
         {/* Search */}
-        <div className="px-8 mb-4">
+        <div className="px-4 sm:px-6 lg:px-8 mb-4">
           <div className="relative max-w-sm">
             <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400">
               <IconSearch className="w-4 h-4" />
@@ -138,7 +138,7 @@ export default function AdminUsers() {
         </div>
 
         {/* Table */}
-        <div className="px-8">
+        <div className="px-4 sm:px-6 lg:px-8">
           <div className="bg-white rounded-3xl shadow-xs border border-stone-200 overflow-hidden">
             {loading ? (
               <div className="flex items-center justify-center h-52">
