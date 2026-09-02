@@ -37,22 +37,13 @@ const reviewSchema = new mongoose.Schema(
       maxlength: 1000,
       default: "",
     },
-
-    isDeleted: {
-      type: Boolean,
-      default: false,
-    },
-
-    deletedAt: {
-      type: Date,
-    },
   },
   {
     timestamps: true,
   }
 );
 
-// Enforce unique review per professional for professional ratings (user can rate each professional only once overall)
+// One professional rating per user while the review exists
 reviewSchema.index(
   { user: 1, professional: 1 },
   {
@@ -76,22 +67,36 @@ reviewSchema.index({
 
 const ReviewModel = mongoose.model("Review", reviewSchema);
 
-// Safely drop any legacy unique indexes (e.g. user_1_payment_1) if present
+// Remove old legacy unique index if it still exists
 ReviewModel.collection
   .indexes()
   .then(async (indexes) => {
     for (const idx of indexes) {
       if (idx.name === "user_1_payment_1") {
         try {
-          await ReviewModel.collection.dropIndex("user_1_payment_1");
-          console.log("Dropped legacy user_1_payment_1 index.");
+          await ReviewModel.collection.dropIndex(
+            "user_1_payment_1"
+          );
+
+          console.log(
+            "Dropped legacy user_1_payment_1 index."
+          );
         } catch (err) {
-          console.error("Index cleanup error:", err.message);
+          console.error(
+            "Index cleanup error:",
+            err.message
+          );
         }
       }
     }
+
     await ReviewModel.syncIndexes();
   })
-  .catch(() => {});
+  .catch((err) => {
+    console.error(
+      "Review index sync error:",
+      err.message
+    );
+  });
 
-module.exports = ReviewModel;
+module.exports = ReviewModel;
