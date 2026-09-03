@@ -1,11 +1,7 @@
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 
-import {
-  IconDashboard,
-  IconProfessional,
-  IconLogOut,
-} from "../admin/Icons";
+import { IconDashboard, IconProfessional, IconLogOut } from "../admin/Icons";
 
 import { FiMessageSquare } from "react-icons/fi";
 import { GiMeal } from "react-icons/gi";
@@ -21,6 +17,11 @@ const NAV_ITEMS = [
     path: "/user/chatbot",
     Icon: FiMessageSquare,
     label: "Chatbot",
+  },
+  {
+    path: "/user/review",
+    Icon: FiMessageSquare,
+    label: "Review",
   },
   {
     path: "/user/dietplan",
@@ -81,10 +82,7 @@ export default function UserLayout({ children }) {
 
       // Only remember state for desktop
       if (window.innerWidth >= 1024) {
-        localStorage.setItem(
-          "user-sidebar-open",
-          String(newState)
-        );
+        localStorage.setItem("user-sidebar-open", String(newState));
       }
 
       return newState;
@@ -105,10 +103,7 @@ export default function UserLayout({ children }) {
 
       return JSON.parse(storedUser);
     } catch (error) {
-      console.error(
-        "Failed to read user from localStorage:",
-        error
-      );
+      console.error("Failed to read user from localStorage:", error);
 
       return null;
     }
@@ -161,11 +156,7 @@ export default function UserLayout({ children }) {
           duration-300
           ease-in-out
 
-          ${
-            sidebarOpen
-              ? "w-64"
-              : "w-20"
-          }
+          ${sidebarOpen ? "w-64" : "w-20"}
         `}
       >
         {/* =================================================
@@ -179,11 +170,7 @@ export default function UserLayout({ children }) {
             transition-all
             duration-300
 
-            ${
-              sidebarOpen
-                ? "px-6 py-6 h-24"
-                : "px-2 py-3 h-24"
-            }
+            ${sidebarOpen ? "px-6 py-6 h-24" : "px-2 py-3 h-24"}
           `}
         >
           {/* =================================================
@@ -193,11 +180,7 @@ export default function UserLayout({ children }) {
           <button
             type="button"
             onClick={toggleSidebar}
-            title={
-              sidebarOpen
-                ? "Close sidebar"
-                : "Open sidebar"
-            }
+            title={sidebarOpen ? "Close sidebar" : "Open sidebar"}
             className={`
               absolute
               top-3
@@ -214,11 +197,7 @@ export default function UserLayout({ children }) {
               duration-200
               z-50
 
-              ${
-                sidebarOpen
-                  ? "right-3"
-                  : "right-1"
-              }
+              ${sidebarOpen ? "right-3" : "right-1"}
             `}
           >
             <svg
@@ -231,28 +210,12 @@ export default function UserLayout({ children }) {
               strokeLinecap="round"
               strokeLinejoin="round"
             >
-              <rect
-                x="3"
-                y="4"
-                width="18"
-                height="16"
-                rx="2"
-              />
+              <rect x="3" y="4" width="18" height="16" rx="2" />
 
               {sidebarOpen ? (
-                <line
-                  x1="9"
-                  y1="4"
-                  x2="9"
-                  y2="20"
-                />
+                <line x1="9" y1="4" x2="9" y2="20" />
               ) : (
-                <line
-                  x1="15"
-                  y1="4"
-                  x2="15"
-                  y2="20"
-                />
+                <line x1="15" y1="4" x2="15" y2="20" />
               )}
             </svg>
           </button>
@@ -268,11 +231,7 @@ export default function UserLayout({ children }) {
               transition-all
               duration-300
 
-              ${
-                sidebarOpen
-                  ? "gap-3 mt-4"
-                  : "justify-center mt-8"
-              }
+              ${sidebarOpen ? "gap-3 mt-4" : "justify-center mt-8"}
             `}
           >
             {/* Logo */}
@@ -292,8 +251,7 @@ export default function UserLayout({ children }) {
                 flex-shrink-0
               "
               style={{
-                background:
-                  "linear-gradient(135deg, #10b981, #059669)",
+                background: "linear-gradient(135deg, #10b981, #059669)",
               }}
             >
               P
@@ -328,11 +286,7 @@ export default function UserLayout({ children }) {
             transition-all
             duration-300
 
-            ${
-              sidebarOpen
-                ? "px-3.5"
-                : "px-2"
-            }
+            ${sidebarOpen ? "px-3.5" : "px-2"}
           `}
         >
           {/* Menu Heading */}
@@ -397,11 +351,7 @@ export default function UserLayout({ children }) {
                       h-5
                       shrink-0
 
-                      ${
-                        isActive
-                          ? "text-emerald-700"
-                          : "text-stone-400"
-                      }
+                      ${isActive ? "text-emerald-700" : "text-stone-400"}
                     `}
                   />
 
@@ -430,11 +380,7 @@ export default function UserLayout({ children }) {
             transition-all
             duration-300
 
-            ${
-              sidebarOpen
-                ? "p-4"
-                : "p-2"
-            }
+            ${sidebarOpen ? "p-4" : "p-2"}
           `}
         >
           {/* User Information */}
@@ -446,11 +392,7 @@ export default function UserLayout({ children }) {
               transition-all
               duration-300
 
-              ${
-                sidebarOpen
-                  ? "gap-3 px-1 mb-3"
-                  : "justify-center mb-2"
-              }
+              ${sidebarOpen ? "gap-3 px-1 mb-3" : "justify-center mb-2"}
             `}
           >
             {/* Avatar */}
@@ -470,8 +412,7 @@ export default function UserLayout({ children }) {
                 shadow-sm
               "
               style={{
-                background:
-                  "linear-gradient(135deg, #10b981, #059669)",
+                background: "linear-gradient(135deg, #10b981, #059669)",
               }}
             >
               {user?.firstName?.[0]?.toUpperCase() || "U"}
@@ -483,9 +424,7 @@ export default function UserLayout({ children }) {
               <div className="min-w-0 overflow-hidden">
                 <p className="text-sm font-bold truncate text-stone-800">
                   {user
-                    ? `${user.firstName || ""} ${
-                        user.lastName || ""
-                      }`.trim()
+                    ? `${user.firstName || ""} ${user.lastName || ""}`.trim()
                     : "User"}
                 </p>
 
@@ -526,9 +465,7 @@ export default function UserLayout({ children }) {
           >
             <IconLogOut className="w-3.5 h-3.5 shrink-0" />
 
-            {sidebarOpen && (
-              <span>Logout</span>
-            )}
+            {sidebarOpen && <span>Logout</span>}
           </button>
         </div>
       </aside>
@@ -558,8 +495,7 @@ export default function UserLayout({ children }) {
 
           <div className="flex items-center gap-3 min-w-0">
             <h2 className="text-sm font-bold text-stone-700 truncate">
-              Welcome, {user?.firstName || "User"}{" "}
-              {user?.lastName || ""}
+              Welcome, {user?.firstName || "User"} {user?.lastName || ""}
             </h2>
           </div>
 
@@ -613,9 +549,7 @@ export default function UserLayout({ children }) {
             PAGE CONTENT
         ================================================= */}
 
-        <main className="flex-1 overflow-y-auto bg-stone-50">
-          {children}
-        </main>
+        <main className="flex-1 overflow-y-auto bg-stone-50">{children}</main>
       </div>
     </div>
   );

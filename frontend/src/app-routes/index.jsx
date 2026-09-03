@@ -36,6 +36,7 @@ import PrivateRoute from "./private-route";
 import ForgotPassword from "../pages/user/ForgotPassword";
 import ResetPassword from "../pages/user/ResetPassword";
 import WorkoutSession from "../pages/user/WorkoutSession";
+import UserReviews from "../pages/user/UserReview";
 
 const AppRoutes = () => {
   return (
@@ -86,6 +87,15 @@ const AppRoutes = () => {
           element={
             <UserPrivateRoute>
               <DietPlan />
+            </UserPrivateRoute>
+          }
+        />
+
+        <Route
+          path="/user/review"
+          element={
+            <UserPrivateRoute>
+              <UserReviews />
             </UserPrivateRoute>
           }
         />
