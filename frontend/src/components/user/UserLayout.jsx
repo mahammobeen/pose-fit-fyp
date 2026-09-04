@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
+import posefit_logo from "../../assets/posefit_logo.png";
 
 import { IconDashboard, IconProfessional, IconLogOut } from "../admin/Icons";
 
@@ -42,48 +43,25 @@ const NAV_ITEMS = [
 
 export default function UserLayout({ children }) {
   const navigate = useNavigate();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // =====================================================
-  // SIDEBAR STATE
-  // =====================================================
-  // Desktop:
-  // - First time = OPEN
-  // - Remembers user's choice
-  //
-  // Mobile:
-  // - Starts COLLAPSED
-  // - Remains visible as icon-only sidebar
-  // - Does NOT disappear
+  // DESKTOP SIDEBAR STATE
   // =====================================================
 
   const [sidebarOpen, setSidebarOpen] = useState(() => {
-    // Mobile starts collapsed
-    if (window.innerWidth < 1024) {
-      return false;
-    }
-
-    // Desktop remembers user's preference
     const savedState = localStorage.getItem("user-sidebar-open");
 
-    if (savedState === null) {
-      return true;
-    }
+    if (savedState === null) return true;
 
     return savedState === "true";
   });
-
-  // =====================================================
-  // ADMIN-STYLE SIDEBAR TOGGLE
-  // =====================================================
 
   const toggleSidebar = () => {
     setSidebarOpen((previousState) => {
       const newState = !previousState;
 
-      // Only remember state for desktop
-      if (window.innerWidth >= 1024) {
-        localStorage.setItem("user-sidebar-open", String(newState));
-      }
+      localStorage.setItem("user-sidebar-open", String(newState));
 
       return newState;
     });
@@ -97,9 +75,7 @@ export default function UserLayout({ children }) {
     try {
       const storedUser = localStorage.getItem("pose-fit-user");
 
-      if (!storedUser) {
-        return null;
-      }
+      if (!storedUser) return null;
 
       return JSON.parse(storedUser);
     } catch (error) {
@@ -118,87 +94,182 @@ export default function UserLayout({ children }) {
   const handleLogout = () => {
     localStorage.removeItem("pose-fit");
     localStorage.removeItem("pose-fit-user");
-
-    // Remove old keys if they exist
     localStorage.removeItem("posefit-token");
     localStorage.removeItem("posefit-user");
 
-    navigate("/user/login", { replace: true });
-  };
-
-  // =====================================================
-  // NAVIGATION
-  // =====================================================
-
-  const handleNavigation = () => {
-    // Sidebar stays in current state.
-    // Mobile remains visible in collapsed mode.
+    navigate("/user/login", {
+      replace: true,
+    });
   };
 
   return (
-    <div
-      className="flex h-screen overflow-hidden"
-      style={{ background: "#f8fafc" }}
-    >
+    <div className="relative flex h-screen overflow-hidden bg-surface font-sans">
       {/* =================================================
-          SIDEBAR
+          BACKGROUND THEME
+      ================================================= */}
+
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        {/* Green */}
+        <div className="absolute -left-32 -top-32 h-80 w-80 rounded-full bg-brand-light/35 blur-3xl" />
+
+        {/* Blue */}
+        <div className="absolute right-[-100px] top-[15%] h-72 w-72 rounded-full bg-accent-blue/35 blur-3xl" />
+
+        {/* Orange */}
+        <div className="absolute bottom-[-120px] left-[35%] h-80 w-80 rounded-full bg-accent-orange/25 blur-3xl" />
+
+        {/* Soft White Glow */}
+        <div className="absolute left-[45%] top-[20%] h-72 w-72 rounded-full bg-white/40 blur-3xl" />
+      </div>
+
+      {/* =================================================
+          MOBILE BACKDROP
+      ================================================= */}
+
+      {mobileMenuOpen && (
+        <div
+          onClick={() => setMobileMenuOpen(false)}
+          className="dashboard-mobile-backdrop"
+        />
+      )}
+
+      {/* =================================================
+          MOBILE DRAWER
+      ================================================= */}
+
+      <div
+        className={`dashboard-mobile-drawer border-r border-brand-light/50 bg-surface/95 backdrop-blur-xl ${
+          mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        {/* Mobile Drawer Header */}
+
+        <div className="dashboard-mobile-header border-brand-light/50">
+          <div className="dashboard-brand-wrapper gap-3">
+            <div className="dashboard-logo border border-brand-light/60 bg-white/80 shadow-card">
+              <img
+                src={posefit_logo}
+                alt="PoseFit"
+                className="h-10 w-10 object-contain"
+              />
+            </div>
+
+            <div>
+              <p className="dashboard-brand-name">
+                Pose
+                <span className="dashboard-brand-highlight">Fit</span>
+              </p>
+
+              <p className="dashboard-portal-name">Customer Portal</p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(false)}
+            className="dashboard-mobile-close"
+            aria-label="Close menu"
+          >
+            <span className="material-symbols-outlined">close</span>
+          </button>
+        </div>
+
+        {/* Mobile Navigation Links */}
+
+        <nav className="dashboard-nav px-4">
+          <p className="dashboard-menu-title">User Menu</p>
+
+          {NAV_ITEMS.map(({ path, Icon, label }) => (
+            <NavLink
+              key={path}
+              to={path}
+              end={path === "/user/dashboard"}
+              onClick={() => setMobileMenuOpen(false)}
+              className={({ isActive }) =>
+                `dashboard-nav-link gap-3 px-4 py-3 ${
+                  isActive
+                    ? "dashboard-nav-link-active"
+                    : "dashboard-nav-link-inactive"
+                }`
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  <Icon
+                    className={`dashboard-nav-icon h-5 w-5 ${
+                      isActive
+                        ? "dashboard-nav-icon-active"
+                        : "dashboard-nav-icon-inactive"
+                    }`}
+                  />
+
+                  <span>{label}</span>
+                </>
+              )}
+            </NavLink>
+          ))}
+        </nav>
+
+        {/* Mobile Drawer Footer User Section */}
+
+        <div className="dashboard-sidebar-footer border-brand-light/50 bg-white/30 p-4">
+          <div className="dashboard-user-wrapper mb-3 gap-3">
+            <div className="dashboard-logo h-10 w-10 border border-brand-light/60 bg-white/80 shadow-card">
+              <img
+                src={posefit_logo}
+                alt="PoseFit"
+                className="h-9 w-9 object-contain"
+              />
+            </div>
+
+            <div className="min-w-0 flex-1 overflow-hidden">
+              <p className="dashboard-user-name">
+                {user
+                  ? `${user.firstName || ""} ${user.lastName || ""}`.trim()
+                  : "User"}
+              </p>
+
+              <p className="dashboard-user-email">{user?.email || ""}</p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="dashboard-logout w-full justify-center gap-2 px-4 py-2"
+          >
+            <IconLogOut className="h-3.5 w-3.5 shrink-0" />
+
+            <span>Logout</span>
+          </button>
+        </div>
+      </div>
+
+      {/* =================================================
+          DESKTOP SIDEBAR
       ================================================= */}
 
       <aside
-        className={`
-          relative
-          flex-shrink-0
-          flex flex-col
-          bg-white
-          border-r border-stone-200/80
-          shadow-sm
-          transition-all
-          duration-300
-          ease-in-out
-
-          ${sidebarOpen ? "w-64" : "w-20"}
-        `}
+        className={`dashboard-sidebar relative z-10 border-r border-brand-light/50 bg-surface/85 backdrop-blur-xl ${
+          sidebarOpen ? "w-64" : "w-20"
+        }`}
       >
-        {/* =================================================
-            SIDEBAR HEADER
-        ================================================= */}
+        {/* Header */}
 
         <div
-          className={`
-            relative
-            border-b border-stone-100
-            transition-all
-            duration-300
-
-            ${sidebarOpen ? "px-6 py-6 h-24" : "px-2 py-3 h-24"}
-          `}
+          className={`dashboard-sidebar-header border-brand-light/40 ${
+            sidebarOpen ? "h-24 px-6 py-6" : "h-24 px-2 py-3"
+          }`}
         >
-          {/* =================================================
-              EXACT ADMIN TOGGLE BUTTON
-          ================================================= */}
+          {/* Sidebar Toggle */}
 
           <button
             type="button"
             onClick={toggleSidebar}
             title={sidebarOpen ? "Close sidebar" : "Open sidebar"}
-            className={`
-              absolute
-              top-3
-              w-7
-              h-7
-              rounded-lg
-              flex
-              items-center
-              justify-center
-              text-stone-500
-              hover:text-stone-800
-              hover:bg-stone-100
-              transition-all
-              duration-200
-              z-50
-
-              ${sidebarOpen ? "right-3" : "right-1"}
-            `}
+            className={`dashboard-sidebar-toggle ${
+              sidebarOpen ? "right-3" : "right-1"
+            }`}
           >
             <svg
               width="17"
@@ -220,145 +291,67 @@ export default function UserLayout({ children }) {
             </svg>
           </button>
 
-          {/* =================================================
-              LOGO
-          ================================================= */}
+          {/* Brand */}
 
           <div
-            className={`
-              flex
-              items-center
-              transition-all
-              duration-300
-
-              ${sidebarOpen ? "gap-3 mt-4" : "justify-center mt-8"}
-            `}
+            className={`dashboard-brand-wrapper ${
+              sidebarOpen ? "mt-4 gap-3" : "mt-8 justify-center"
+            }`}
           >
-            {/* Logo */}
-
-            <div
-              className="
-                w-10
-                h-10
-                rounded-2xl
-                flex
-                items-center
-                justify-center
-                text-xl
-                font-black
-                text-white
-                shadow-sm
-                flex-shrink-0
-              "
-              style={{
-                background: "linear-gradient(135deg, #10b981, #059669)",
-              }}
-            >
-              P
+            <div className="dashboard-logo border border-brand-light/60 bg-white/80 shadow-card">
+              <img
+                src={posefit_logo}
+                alt="PoseFit"
+                className="h-10 w-10 object-contain"
+              />
             </div>
 
-            {/* Logo Text */}
-
             {sidebarOpen && (
-              <div className="overflow-hidden whitespace-nowrap">
-                <p className="font-black text-lg tracking-tight leading-none text-stone-800">
-                  PoseFit
+              <div className="min-w-0 overflow-hidden whitespace-nowrap">
+                <p className="dashboard-brand-name">
+                  Pose
+                  <span className="dashboard-brand-highlight">Fit</span>
                 </p>
 
-                <p className="text-xs font-bold mt-0.5 text-emerald-600">
-                  Customer Portal
-                </p>
+                <p className="dashboard-portal-name">Customer Portal</p>
               </div>
             )}
           </div>
         </div>
 
-        {/* =================================================
-            NAVIGATION
-        ================================================= */}
+        {/* Desktop Navigation */}
 
-        <nav
-          className={`
-            flex-1
-            py-5
-            space-y-1.5
-            overflow-y-auto
-            transition-all
-            duration-300
-
-            ${sidebarOpen ? "px-3.5" : "px-2"}
-          `}
-        >
-          {/* Menu Heading */}
-
-          {sidebarOpen && (
-            <p
-              className="
-                text-[11px]
-                font-extrabold
-                uppercase
-                tracking-widest
-                px-3
-                mb-2
-                text-stone-400
-                whitespace-nowrap
-              "
-            >
-              User Menu
-            </p>
-          )}
-
-          {/* Navigation Items */}
+        <nav className={`dashboard-nav ${sidebarOpen ? "px-3" : "px-2"}`}>
+          {sidebarOpen && <p className="dashboard-menu-title">User Menu</p>}
 
           {NAV_ITEMS.map(({ path, Icon, label }) => (
             <NavLink
               key={path}
               to={path}
               end={path === "/user/dashboard"}
-              onClick={handleNavigation}
               title={!sidebarOpen ? label : ""}
               className={({ isActive }) =>
-                `
-                  flex
-                  items-center
-                  rounded-2xl
-                  text-sm
-                  font-bold
-                  transition-all
-                  duration-200
-
-                  ${
-                    sidebarOpen
-                      ? "gap-3 px-3.5 py-2.5"
-                      : "justify-center px-2 py-3"
-                  }
-
-                  ${
-                    isActive
-                      ? "bg-emerald-50 text-emerald-800 border border-emerald-200/80 shadow-sm"
-                      : "text-stone-600 hover:text-stone-900 hover:bg-stone-100/70 border border-transparent"
-                  }
-                `
+                `dashboard-nav-link ${
+                  sidebarOpen ? "gap-3 px-3 py-3" : "justify-center px-2 py-3"
+                } ${
+                  isActive
+                    ? "dashboard-nav-link-active"
+                    : "dashboard-nav-link-inactive"
+                }`
               }
             >
               {({ isActive }) => (
                 <>
-                  {/* Icon */}
-
                   <Icon
-                    className={`
-                      w-5
-                      h-5
-                      shrink-0
-
-                      ${isActive ? "text-emerald-700" : "text-stone-400"}
-                    `}
+                    className={`dashboard-nav-icon h-5 w-5 ${
+                      isActive
+                        ? "dashboard-nav-icon-active"
+                        : "dashboard-nav-icon-inactive"
+                    }`}
                   />
 
-                  {/* Label */}
-
                   {sidebarOpen && (
-                    <span className="whitespace-nowrap overflow-hidden">
+                    <span className="overflow-hidden whitespace-nowrap">
                       {label}
                     </span>
                   )}
@@ -368,102 +361,50 @@ export default function UserLayout({ children }) {
           ))}
         </nav>
 
-        {/* =================================================
-            USER SECTION
-        ================================================= */}
+        {/* Desktop Footer User Section */}
 
         <div
-          className={`
-            border-t
-            border-stone-100
-            bg-stone-50/60
-            transition-all
-            duration-300
-
-            ${sidebarOpen ? "p-4" : "p-2"}
-          `}
+          className={`dashboard-sidebar-footer border-brand-light/50 bg-white/30 ${
+            sidebarOpen ? "p-3" : "p-2"
+          }`}
         >
-          {/* User Information */}
-
           <div
-            className={`
-              flex
-              items-center
-              transition-all
-              duration-300
-
-              ${sidebarOpen ? "gap-3 px-1 mb-3" : "justify-center mb-2"}
-            `}
+            className={`dashboard-user-wrapper transition-all duration-300 ${
+              sidebarOpen ? "mb-3 gap-3 px-1" : "mb-2 justify-center"
+            }`}
           >
-            {/* Avatar */}
-
-            <div
-              className="
-                w-9
-                h-9
-                rounded-xl
-                flex
-                items-center
-                justify-center
-                font-black
-                text-sm
-                text-white
-                shrink-0
-                shadow-sm
-              "
-              style={{
-                background: "linear-gradient(135deg, #10b981, #059669)",
-              }}
-            >
-              {user?.firstName?.[0]?.toUpperCase() || "U"}
+            <div className="dashboard-logo h-10 w-10 border border-brand-light/60 bg-white/80 shadow-card">
+              <img
+                src={posefit_logo}
+                alt="PoseFit"
+                className="h-9 w-9 object-contain"
+              />
             </div>
 
-            {/* User Details */}
-
             {sidebarOpen && (
-              <div className="min-w-0 overflow-hidden">
-                <p className="text-sm font-bold truncate text-stone-800">
+              <div className="min-w-0 flex-1 overflow-hidden">
+                <p className="dashboard-user-name">
                   {user
                     ? `${user.firstName || ""} ${user.lastName || ""}`.trim()
                     : "User"}
                 </p>
 
-                <p className="text-xs font-medium truncate text-stone-400">
-                  {user?.email || ""}
-                </p>
+                <p className="dashboard-user-email">{user?.email || ""}</p>
               </div>
             )}
           </div>
-
-          {/* Logout */}
 
           <button
             type="button"
             onClick={handleLogout}
             title={!sidebarOpen ? "Logout" : ""}
-            className={`
-              flex
-              items-center
-              rounded-xl
-              text-xs
-              font-bold
-              text-rose-700
-              bg-rose-50
-              hover:bg-rose-100
-              border
-              border-rose-200/60
-              transition-all
-              duration-200
-              shadow-sm
-
-              ${
-                sidebarOpen
-                  ? "w-full justify-center gap-2 px-4 py-2"
-                  : "w-full justify-center py-2"
-              }
-            `}
+            className={`dashboard-logout ${
+              sidebarOpen
+                ? "w-full justify-center gap-2 px-4 py-2"
+                : "w-full justify-center py-2"
+            }`}
           >
-            <IconLogOut className="w-3.5 h-3.5 shrink-0" />
+            <IconLogOut className="h-3.5 w-3.5 shrink-0" />
 
             {sidebarOpen && <span>Logout</span>}
           </button>
@@ -474,82 +415,12 @@ export default function UserLayout({ children }) {
           MAIN AREA
       ================================================= */}
 
-      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-        {/* =================================================
-            HEADER
-        ================================================= */}
+      <div className="dashboard-main-wrapper relative z-10">
+        {/* Top Header REMOVED */}
 
-        <header
-          className="
-            h-16
-            flex-shrink-0
-            bg-white
-            border-b border-stone-200
-            px-4 lg:px-6
-            flex items-center
-            justify-between
-            gap-4
-          "
-        >
-          {/* LEFT SIDE */}
+        {/* Page Content */}
 
-          <div className="flex items-center gap-3 min-w-0">
-            <h2 className="text-sm font-bold text-stone-700 truncate">
-              Welcome, {user?.firstName || "User"} {user?.lastName || ""}
-            </h2>
-          </div>
-
-          {/* RIGHT SIDE */}
-
-          <div className="flex items-center gap-3 flex-shrink-0">
-            <span
-              className="
-                hidden sm:inline-flex
-                text-xs
-                font-extrabold
-                uppercase
-                tracking-widest
-                px-3
-                py-1
-                rounded-full
-                bg-emerald-100
-                text-emerald-800
-                border border-emerald-200
-              "
-            >
-              Customer Account
-            </span>
-
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="
-                hidden sm:flex
-                px-3.5
-                py-1.5
-                rounded-xl
-                text-xs
-                font-bold
-                text-rose-700
-                bg-rose-50
-                hover:bg-rose-100
-                border border-rose-200
-                transition-colors
-                items-center
-                gap-1.5
-              "
-            >
-              <IconLogOut className="w-3.5 h-3.5" />
-              Logout
-            </button>
-          </div>
-        </header>
-
-        {/* =================================================
-            PAGE CONTENT
-        ================================================= */}
-
-        <main className="flex-1 overflow-y-auto bg-stone-50">{children}</main>
+        <main className="dashboard-content bg-transparent">{children}</main>
       </div>
     </div>
   );

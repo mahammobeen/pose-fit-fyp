@@ -18,13 +18,16 @@ export default function ProfessionalEarnings() {
 
   const showToast = (msg, type = "success") => {
     setToast({ msg, type });
+
     setTimeout(() => setToast(null), 3500);
   };
 
   const fetchEarnings = useCallback(async () => {
     try {
       setLoading(true);
+
       const res = await httpClient.get("/professional/earnings");
+
       setEarningsData(res.data || null);
     } catch {
       showToast("Failed to load earnings metrics", "error");
@@ -39,10 +42,12 @@ export default function ProfessionalEarnings() {
 
   const handleOpenStripeDashboard = async () => {
     setActionLoading(true);
+
     try {
       const res = await httpClient.post(
         "/payment/stripe-connect/dashboard-link",
       );
+
       if (res.data?.url) {
         window.open(res.data.url, "_blank");
       }
@@ -65,45 +70,46 @@ export default function ProfessionalEarnings() {
       label: "Total Earnings (80%)",
       value: `$${metrics?.totalEarnings?.toFixed(2) || "0.00"}`,
       Icon: IconDollarSign,
-      bg: "bg-emerald-50/70",
-      border: "border-emerald-200",
-      textColor: "text-emerald-900",
+      iconBg: "bg-brand-light/40",
+      iconColor: "text-brand-dark",
+      valueColor: "text-brand-dark",
     },
     {
       label: "Current Month",
       value: `$${metrics?.currentMonthEarnings?.toFixed(2) || "0.00"}`,
       Icon: IconTrendingUp,
-      bg: "bg-sky-50/70",
-      border: "border-sky-200",
-      textColor: "text-sky-900",
+      iconBg: "bg-accent-blue/50",
+      iconColor: "text-sky-700",
+      valueColor: "text-gray-800",
     },
     {
       label: "Released to Connect",
       value: `$${metrics?.releasedEarnings?.toFixed(2) || "0.00"}`,
       Icon: IconCheckCircle,
-      bg: "bg-teal-50/70",
-      border: "border-teal-200",
-      textColor: "text-teal-900",
+      iconBg: "bg-brand-light/40",
+      iconColor: "text-brand-dark",
+      valueColor: "text-brand-dark",
     },
     {
       label: "Pending Clearance",
       value: `$${metrics?.pendingEarnings?.toFixed(2) || "0.00"}`,
       Icon: IconClock,
-      bg: "bg-amber-50/70",
-      border: "border-amber-200",
-      textColor: "text-amber-900",
+      iconBg: "bg-amber-50",
+      iconColor: "text-amber-700",
+      valueColor: "text-amber-800",
     },
   ];
 
   return (
     <ProfessionalLayout>
-      <div className="min-h-screen pb-16" style={{ background: "#f5f7f2" }}>
+      <div className="min-h-screen bg-transparent pb-16 font-sans">
+        {/* Toast */}
         {toast && (
           <div
-            className={`fixed top-5 right-5 z-50 px-5 py-3 rounded-2xl shadow-xl text-white text-sm font-bold border transition-all ${
+            className={`fixed right-5 top-5 z-50 rounded-2xl border px-5 py-3 text-sm font-bold text-white shadow-card-hover transition-all ${
               toast.type === "error"
-                ? "bg-rose-500 border-rose-600"
-                : "bg-emerald-600 border-emerald-700"
+                ? "border-rose-600 bg-rose-500"
+                : "border-brand-dark bg-brand-dark"
             }`}
             style={{ animation: "modalIn 0.2s ease" }}
           >
@@ -112,34 +118,37 @@ export default function ProfessionalEarnings() {
         )}
 
         {/* Header */}
-        <div className="px-8 pt-8 pb-4">
-          <span className="text-xs font-extrabold uppercase tracking-widest px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+        <div className="px-4 pb-4 pt-6 sm:px-6 sm:pt-8 lg:px-8">
+          <span className="inline-flex rounded-full border border-brand-light/70 bg-brand-light/40 px-3 py-1 text-xs font-extrabold uppercase tracking-widest text-brand-dark">
             Financial Dashboard
           </span>
-          <h1 className="text-3xl font-black text-stone-800 tracking-tight mt-2">
+
+          <h1 className="mt-2 text-2xl font-extrabold tracking-tight text-gray-800 sm:text-3xl">
             Earnings & Payouts
           </h1>
-          <p className="text-stone-500 font-medium text-sm mt-1">
+
+          <p className="mt-1 text-sm font-medium text-gray-500">
             Track your 80% payout shares, Stripe Connect transfer statuses, and
             session payment history.
           </p>
         </div>
 
         {/* Stripe Payout Status Card */}
-        <div className="px-8 mb-6">
-          <div className="bg-white rounded-3xl border border-stone-200 p-5 shadow-xs flex items-center justify-between flex-wrap gap-4">
+        <div className="mb-6 px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-wrap items-center justify-between gap-4 rounded-card border border-brand-light/50 bg-surface/80 p-5 shadow-card backdrop-blur-xl">
             <div className="flex items-center gap-3.5">
-              <div className="w-11 h-11 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-700 flex items-center justify-center shrink-0">
-                <IconBuilding className="w-6 h-6" />
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-brand-light bg-brand-light/30 text-brand-dark">
+                <IconBuilding className="h-6 w-6" />
               </div>
+
               <div>
-                <p className="font-extrabold text-stone-800 text-sm flex items-center gap-2">
+                <p className="flex items-center gap-2 text-sm font-extrabold text-gray-800">
                   Stripe Express Payout Account
                   <span
-                    className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
+                    className={`rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${
                       stripe?.payoutsEnabled
-                        ? "bg-emerald-50 text-emerald-800 border-emerald-200"
-                        : "bg-amber-50 text-amber-800 border-amber-200"
+                        ? "border-brand-light bg-brand-light/30 text-brand-dark"
+                        : "border-amber-200 bg-amber-50 text-amber-800"
                     }`}
                   >
                     {stripe?.payoutsEnabled
@@ -147,7 +156,8 @@ export default function ProfessionalEarnings() {
                       : "Pending Setup"}
                   </span>
                 </p>
-                <p className="text-xs text-stone-500 font-medium mt-0.5">
+
+                <p className="mt-0.5 text-xs font-medium text-gray-500">
                   {stripe?.payoutsEnabled
                     ? `Automatic 80% session share transfers active ${
                         stripe?.maskedBank ? `(${stripe.maskedBank})` : ""
@@ -161,7 +171,7 @@ export default function ProfessionalEarnings() {
               <button
                 onClick={handleOpenStripeDashboard}
                 disabled={actionLoading}
-                className="px-4 py-2 rounded-xl text-xs font-bold text-sky-800 bg-sky-50 hover:bg-sky-100 border border-sky-200 transition-colors shadow-xs"
+                className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-2 text-xs font-bold text-sky-800 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-sky-100 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {actionLoading ? "Opening..." : "Launch Stripe Dashboard"}
               </button>
@@ -170,17 +180,23 @@ export default function ProfessionalEarnings() {
         </div>
 
         {/* Summary Metric Cards */}
-        <div className="px-8 mb-6 grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="mb-6 grid grid-cols-1 gap-4 px-4 sm:grid-cols-2 sm:px-6 lg:grid-cols-4 lg:px-8">
           {cards.map((c) => (
             <div
               key={c.label}
-              className={`rounded-3xl p-5 border shadow-xs ${c.bg} ${c.border}`}
+              className="rounded-card border border-brand-light/50 bg-surface/80 p-5 shadow-card transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover"
             >
-              <c.Icon className={`w-6 h-6 mb-2 ${c.textColor}`} />
-              <p className={`text-2xl font-black ${c.textColor}`}>
+              <div
+                className={`mb-2 flex h-9 w-9 items-center justify-center rounded-2xl ${c.iconBg} ${c.iconColor}`}
+              >
+                <c.Icon className="h-5 w-5" />
+              </div>
+
+              <p className={`text-2xl font-extrabold ${c.valueColor}`}>
                 {loading ? "-" : c.value}
               </p>
-              <p className="text-xs font-bold text-stone-500 uppercase tracking-wider mt-1">
+
+              <p className="mt-1 text-xs font-bold uppercase tracking-wider text-gray-500">
                 {c.label}
               </p>
             </div>
@@ -188,24 +204,25 @@ export default function ProfessionalEarnings() {
         </div>
 
         {/* Transaction History Table */}
-        <div className="px-8">
-          <h2 className="text-lg font-black text-stone-800 mb-3">
+        <div className="px-4 sm:px-6 lg:px-8">
+          <h2 className="mb-3 text-lg font-extrabold tracking-tight text-gray-800">
             Session Earnings History
           </h2>
-          <div className="bg-white rounded-3xl shadow-xs border border-stone-200 overflow-hidden">
+
+          <div className="overflow-hidden rounded-card border border-brand-light/50 bg-surface/80 shadow-card backdrop-blur-xl">
             {loading ? (
-              <div className="flex items-center justify-center h-48">
-                <div className="w-8 h-8 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" />
+              <div className="flex h-48 items-center justify-center">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-light border-t-brand-dark" />
               </div>
             ) : history.length === 0 ? (
-              <div className="text-center py-16 text-stone-400 font-medium">
+              <div className="py-16 text-center font-medium text-gray-400">
                 No session earnings transactions recorded yet.
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="bg-stone-50 border-b border-stone-100">
+                    <tr className="border-b border-brand-light/40 bg-brand-light/10">
                       {[
                         "Client",
                         "Session Fee",
@@ -217,52 +234,65 @@ export default function ProfessionalEarnings() {
                       ].map((h) => (
                         <th
                           key={h}
-                          className="text-left px-5 py-4 text-xs font-bold text-stone-500 uppercase tracking-wider whitespace-nowrap"
+                          className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-wider text-gray-500"
                         >
                           {h}
                         </th>
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-stone-100">
+
+                  <tbody className="divide-y divide-brand-light/30">
                     {history.map((p) => (
                       <tr
                         key={p._id}
-                        className="hover:bg-stone-50/70 transition-colors"
+                        className="transition-colors hover:bg-brand-light/10"
                       >
+                        {/* Client */}
                         <td className="px-5 py-4">
-                          <p className="font-bold text-stone-800 whitespace-nowrap">
+                          <p className="whitespace-nowrap font-bold text-gray-800">
                             {p.user
                               ? `${p.user.firstName} ${p.user.lastName}`
                               : "Client"}
                           </p>
-                          <p className="text-xs text-stone-400 font-medium">
+
+                          <p className="text-xs font-medium text-gray-400">
                             {p.user?.email}
                           </p>
                         </td>
-                        <td className="px-5 py-4 font-bold text-stone-800 whitespace-nowrap">
+
+                        {/* Session Fee */}
+                        <td className="whitespace-nowrap px-5 py-4 font-bold text-gray-800">
                           ${p.amount?.toFixed(2)}
                         </td>
-                        <td className="px-5 py-4 text-amber-800 font-bold whitespace-nowrap">
+
+                        {/* PoseFit Cut */}
+                        <td className="whitespace-nowrap px-5 py-4 font-bold text-amber-800">
                           ${p.adminCommission?.toFixed(2)}
                         </td>
-                        <td className="px-5 py-4 font-black text-emerald-700 whitespace-nowrap">
+
+                        {/* Professional Share */}
+                        <td className="whitespace-nowrap px-5 py-4 font-extrabold text-brand-dark">
                           ${p.professionalAmount?.toFixed(2)}
                         </td>
-                        <td className="px-5 py-4 whitespace-nowrap">
+
+                        {/* Status */}
+                        <td className="whitespace-nowrap px-5 py-4">
                           <StatusBadge status={p.status} />
                         </td>
-                        <td className="px-5 py-4 whitespace-nowrap">
+
+                        {/* Connect Payout */}
+                        <td className="whitespace-nowrap px-5 py-4">
                           <span
-                            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold border ${
+                            className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-bold ${
                               p.payoutStatus === "failed" ||
                               p.status === "failed"
-                                ? "bg-rose-50 text-rose-800 border-rose-200"
+                                ? "border-rose-200 bg-rose-50 text-rose-800"
                                 : p.payoutStatus === "transferred" ||
                                   p.payoutStatus === "paid" ||
                                   p.status === "completed"
-                                ? "bg-emerald-50 text-emerald-800 border-emerald-200"
-                                : "bg-stone-100 text-stone-600 border-stone-200"
+                                ? "border-brand-light bg-brand-light/30 text-brand-dark"
+                                : "border-gray-200 bg-gray-100 text-gray-600"
                             }`}
                           >
                             {p.payoutStatus === "failed" ||
@@ -275,10 +305,16 @@ export default function ProfessionalEarnings() {
                               : "Pending"}
                           </span>
                         </td>
-                        <td className="px-5 py-4 text-xs text-stone-500 font-medium whitespace-nowrap">
+
+                        {/* Date */}
+                        <td className="whitespace-nowrap px-5 py-4 text-xs font-medium text-gray-500">
                           {new Date(p.paidAt || p.createdAt).toLocaleDateString(
                             "en-US",
-                            { month: "short", day: "numeric", year: "numeric" },
+                            {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            },
                           )}
                         </td>
                       </tr>
@@ -288,7 +324,8 @@ export default function ProfessionalEarnings() {
               </div>
             )}
           </div>
-          <p className="text-xs text-stone-400 mt-3 font-semibold">
+
+          <p className="mt-3 text-xs font-semibold text-gray-400">
             Showing {history.length} transactions
           </p>
         </div>

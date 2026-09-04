@@ -9,8 +9,8 @@ const transporter = nodemailer.createTransport({
   port: 465,
   secure: true,
   auth: {
-    user: process.env.USER_EMAIL,
-    pass: process.env.USER_PASS,
+     user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASSWORD,
   },
 });
 
@@ -65,7 +65,7 @@ const signup = async (req, res) => {
 
     // Send verification email
     await transporter.sendMail({
-      from: `"PoseFit" <${process.env.USER_EMAIL}>`,
+      from: `"PoseFit" <${process.env.EMAIL_USER}>`,
       to: email,
       subject: "PoseFit Email Verification",
       text:
@@ -229,8 +229,8 @@ const forgotPassword = async (req, res) => {
       port: 465,
       secure: true, // true for 465, false for other ports
       auth: {
-        user: process.env.USER_EMAIL,
-        pass: process.env.USER_PASS,
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASSWORD,
       },
     });
 

@@ -1,5 +1,7 @@
-import React, { useRef } from "react";
+import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
+
+import posefit_logo from "../../assets/posefit_logo.png";
 
 export default function LandingPage() {
   const heroRef = useRef(null);
@@ -8,128 +10,55 @@ export default function LandingPage() {
   const communityRef = useRef(null);
   const contactRef = useRef(null);
 
-  const ADMIN_EMAIL = "hiring@posefit.com";
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const ADMIN_EMAIL = "posefit0@gmail.com";
 
   const scrollToSection = (ref) => {
     ref.current?.scrollIntoView({
       behavior: "smooth",
       block: "start",
     });
+
+    setMobileMenuOpen(false);
   };
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-[#FFFDF5] text-gray-700 font-['Sora']">
-      {/* =====================================================
-          CUSTOM CSS
-      ===================================================== */}
-      <style>{`
-        @import url("https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&display=swap");
-
-        @import url(
-          "https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,300..700,0..1,-25..200&display=swap"
-        );
-
-        .material-symbols-outlined {
-          font-family: "Material Symbols Outlined";
-          font-weight: normal;
-          font-style: normal;
-          font-size: 24px;
-          line-height: 1;
-          letter-spacing: normal;
-          text-transform: none;
-          display: inline-block;
-          white-space: nowrap;
-          word-wrap: normal;
-          direction: ltr;
-          -webkit-font-feature-settings: "liga";
-          -webkit-font-smoothing: antialiased;
-          font-feature-settings: "liga";
-        }
-
-        .hero-gradient {
-          background:
-            radial-gradient(
-              circle at 82% 18%,
-              rgba(255, 255, 255, 0.72),
-              transparent 28%
-            ),
-            linear-gradient(
-              135deg,
-              #b7e4c7 0%,
-              #d0ebff 52%,
-              #ffd8b1 100%
-            );
-        }
-
-        .scroll-offset {
-          scroll-margin-top: 78px;
-        }
-
-        @media (max-width: 768px) {
-          .scroll-offset {
-            scroll-margin-top: 68px;
-          }
-        }
-
-        @keyframes slideInLeft {
-          from {
-            transform: translateX(-25px);
-            opacity: 0;
-          }
-
-          to {
-            transform: translateX(0);
-            opacity: 1;
-          }
-        }
-
-        @keyframes slideInRight {
-          from {
-            transform: translateX(25px);
-            opacity: 0;
-          }
-
-          to {
-            transform: translateX(0);
-            opacity: 1;
-          }
-        }
-
-        .animate-slide-in-left {
-          animation: slideInLeft 0.6s ease-out forwards;
-        }
-
-        .animate-slide-in-right {
-          animation: slideInRight 0.6s ease-out forwards;
-        }
-      `}</style>
-
+    <div className="min-h-screen bg-surface font-sans text-gray-700">
       {/* =====================================================
           HEADER
       ===================================================== */}
-      <header className="sticky top-0 z-50 border-b border-gray-200/60 bg-white/90 backdrop-blur-lg">
-        <div className="mx-auto flex h-[68px] max-w-7xl items-center justify-between px-5 sm:px-6 lg:px-8">
-          {/* LOGO */}
-          <Link to="/" className="flex shrink-0 items-center gap-2">
-            {/* Small Logo Icon */}
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#B7E4C7]">
-              <span className="material-symbols-outlined text-[18px] text-[#16845b]">
-                fitness_center
-              </span>
-            </div>
+      <header className="sticky top-0 z-50 w-full border-b border-gray-200/60 bg-white/95 backdrop-blur-lg">
+        <div className="mx-auto flex min-h-[68px] max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+          {/* =================================================
+              LOGO
+          ================================================= */}
+          <Link
+            to="/"
+            onClick={() => setMobileMenuOpen(false)}
+            className="flex shrink-0 items-center gap-2"
+          >
+            {/* Logo Image */}
+            <img
+              src={posefit_logo}
+              alt="PoseFit Logo"
+              className="h-9 w-9 object-contain sm:h-10 sm:w-10"
+            />
 
             {/* Logo Text */}
-            <span className="text-lg font-bold tracking-tight text-gray-800">
-              Pose<span className="text-[#53b889]">Fit</span>
+            <span className="text-lg font-bold tracking-tight text-gray-800 sm:text-xl">
+              Pose<span className="text-brand">Fit</span>
             </span>
           </Link>
 
-          {/* DESKTOP NAVIGATION */}
-          <nav className="hidden items-center gap-6 lg:flex">
+          {/* =================================================
+              DESKTOP NAVIGATION
+          ================================================= */}
+          <nav className="hidden items-center gap-4 lg:flex xl:gap-7">
             <button
               type="button"
               onClick={() => scrollToSection(heroRef)}
-              className="text-xs font-semibold text-gray-600 transition-colors hover:text-[#16845b]"
+              className="whitespace-nowrap text-xs font-semibold text-gray-600 transition-colors hover:text-brand-dark"
             >
               Home
             </button>
@@ -137,7 +66,7 @@ export default function LandingPage() {
             <button
               type="button"
               onClick={() => scrollToSection(featuresRef)}
-              className="text-xs font-semibold text-gray-600 transition-colors hover:text-[#16845b]"
+              className="whitespace-nowrap text-xs font-semibold text-gray-600 transition-colors hover:text-brand-dark"
             >
               Free Tools
             </button>
@@ -145,7 +74,7 @@ export default function LandingPage() {
             <button
               type="button"
               onClick={() => scrollToSection(professionalsRef)}
-              className="text-xs font-semibold text-gray-600 transition-colors hover:text-[#16845b]"
+              className="whitespace-nowrap text-xs font-semibold text-gray-600 transition-colors hover:text-brand-dark"
             >
               Hire a Pro
             </button>
@@ -153,7 +82,7 @@ export default function LandingPage() {
             <button
               type="button"
               onClick={() => scrollToSection(communityRef)}
-              className="text-xs font-semibold text-gray-600 transition-colors hover:text-[#16845b]"
+              className="whitespace-nowrap text-xs font-semibold text-gray-600 transition-colors hover:text-brand-dark"
             >
               For Professionals
             </button>
@@ -161,17 +90,19 @@ export default function LandingPage() {
             <button
               type="button"
               onClick={() => scrollToSection(contactRef)}
-              className="text-xs font-semibold text-gray-600 transition-colors hover:text-[#16845b]"
+              className="whitespace-nowrap text-xs font-semibold text-gray-600 transition-colors hover:text-brand-dark"
             >
               Contact
             </button>
           </nav>
 
-          {/* HEADER BUTTONS */}
-          <div className="flex items-center gap-2">
+          {/* =================================================
+              DESKTOP BUTTONS
+          ================================================= */}
+          <div className="hidden items-center gap-2 lg:flex">
             <Link
               to="/user/login"
-              className="rounded-lg px-3 py-2 text-xs font-bold text-[#16845b] transition-colors hover:bg-[#B7E4C7]/30 sm:px-4"
+              className="rounded-lg px-3 py-2 text-xs font-bold text-brand-dark transition-colors hover:bg-brand-light/30 sm:px-4"
             >
               Login
             </Link>
@@ -183,7 +114,90 @@ export default function LandingPage() {
               Sign Up
             </Link>
           </div>
+
+          {/* =================================================
+              MOBILE MENU BUTTON
+          ================================================= */}
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen((prev) => !prev)}
+            className="flex h-10 w-10 items-center justify-center rounded-lg text-gray-700 transition-colors hover:bg-brand-light/30 lg:hidden"
+            aria-label="Toggle navigation menu"
+            aria-expanded={mobileMenuOpen}
+          >
+            <span className="material-symbols-outlined text-2xl">
+              {mobileMenuOpen ? "close" : "menu"}
+            </span>
+          </button>
         </div>
+
+        {/* =================================================
+            MOBILE MENU
+        ================================================= */}
+        {mobileMenuOpen && (
+          <div className="border-t border-gray-200/60 bg-white px-4 py-4 shadow-sm lg:hidden">
+            <nav className="flex flex-col gap-1">
+              <button
+                type="button"
+                onClick={() => scrollToSection(heroRef)}
+                className="rounded-lg px-4 py-3 text-left text-sm font-semibold text-gray-700 transition-colors hover:bg-brand-light/20 hover:text-brand-dark"
+              >
+                Home
+              </button>
+
+              <button
+                type="button"
+                onClick={() => scrollToSection(featuresRef)}
+                className="rounded-lg px-4 py-3 text-left text-sm font-semibold text-gray-700 transition-colors hover:bg-brand-light/20 hover:text-brand-dark"
+              >
+                Free Tools
+              </button>
+
+              <button
+                type="button"
+                onClick={() => scrollToSection(professionalsRef)}
+                className="rounded-lg px-4 py-3 text-left text-sm font-semibold text-gray-700 transition-colors hover:bg-brand-light/20 hover:text-brand-dark"
+              >
+                Hire a Pro
+              </button>
+
+              <button
+                type="button"
+                onClick={() => scrollToSection(communityRef)}
+                className="rounded-lg px-4 py-3 text-left text-sm font-semibold text-gray-700 transition-colors hover:bg-brand-light/20 hover:text-brand-dark"
+              >
+                For Professionals
+              </button>
+
+              <button
+                type="button"
+                onClick={() => scrollToSection(contactRef)}
+                className="rounded-lg px-4 py-3 text-left text-sm font-semibold text-gray-700 transition-colors hover:bg-brand-light/20 hover:text-brand-dark"
+              >
+                Contact
+              </button>
+            </nav>
+
+            {/* Mobile Auth Buttons */}
+            <div className="mt-3 flex gap-2 border-t border-gray-100 pt-3">
+              <Link
+                to="/user/login"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex-1 rounded-lg border border-brand-light px-4 py-2.5 text-center text-xs font-bold text-brand-dark transition-colors hover:bg-brand-light/20"
+              >
+                Login
+              </Link>
+
+              <Link
+                to="/user/register"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex-1 rounded-lg bg-gray-800 px-4 py-2.5 text-center text-xs font-bold text-white transition-colors hover:bg-gray-700"
+              >
+                Sign Up
+              </Link>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* =====================================================
@@ -201,17 +215,17 @@ export default function LandingPage() {
           <div className="pointer-events-none absolute inset-0 overflow-hidden">
             <div className="absolute -left-24 top-16 h-60 w-60 rounded-full bg-white/25 blur-3xl" />
 
-            <div className="absolute -right-20 bottom-0 h-72 w-72 rounded-full bg-[#FFD8B1]/30 blur-3xl" />
+            <div className="absolute -right-20 bottom-0 h-72 w-72 rounded-full bg-accent-orange/30 blur-3xl" />
           </div>
 
-          <div className="relative z-10 mx-auto grid max-w-7xl items-center gap-12 px-5 py-20 sm:px-6 md:py-24 lg:grid-cols-2 lg:gap-16 lg:px-8 lg:py-28">
+          <div className="relative z-10 mx-auto grid max-w-7xl items-center gap-12 px-4 py-14 sm:px-6 sm:py-20 md:py-24 lg:grid-cols-2 lg:gap-16 lg:px-8 lg:py-28">
             {/* HERO TEXT */}
-            <div className="max-w-xl">
+            <div className="max-w-xl text-center lg:text-left">
               {/* Badge */}
               <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-white/65 px-4 py-2 backdrop-blur">
-                <span className="h-2 w-2 animate-pulse rounded-full bg-[#53b889]" />
+                <span className="h-2 w-2 animate-pulse rounded-full bg-brand" />
 
-                <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#16845b] sm:text-xs">
+                <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-brand-dark sm:text-xs">
                   Free Tools + Real Coaches
                 </span>
               </div>
@@ -226,33 +240,30 @@ export default function LandingPage() {
               </h1>
 
               {/* Description */}
-              <p className="mt-6 max-w-lg text-base leading-7 text-gray-700 sm:text-lg">
+              <p className="mx-auto mt-6 max-w-lg text-base leading-7 text-gray-700 sm:text-lg lg:mx-0">
                 Start free with AI-guided workouts, personalized diet plans, and
                 posture correction. When you're ready for more, connect with a
                 professional directly through PoseFit.
               </p>
 
               {/* Buttons */}
-              <div className="mt-8 flex flex-wrap gap-3">
-                <Link
-                  to="/user/register"
-                  className="rounded-xl bg-gray-800 px-7 py-3.5 text-sm font-bold text-white transition-all hover:-translate-y-0.5 hover:bg-gray-700"
-                >
+              <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row lg:justify-start">
+                <Link to="/user/register" className="btn-primary text-center">
                   Start Free
                 </Link>
 
                 <button
                   type="button"
                   onClick={() => scrollToSection(professionalsRef)}
-                  className="rounded-xl bg-white/75 px-7 py-3.5 text-sm font-bold text-gray-800 transition-all hover:-translate-y-0.5 hover:bg-white"
+                  className="btn-secondary"
                 >
                   Hire a Professional
                 </button>
               </div>
 
               {/* Trust */}
-              <div className="mt-7 flex items-center gap-2">
-                <span className="material-symbols-outlined text-lg text-[#16845b]">
+              <div className="mt-7 flex items-center justify-center gap-2 lg:justify-start">
+                <span className="material-symbols-outlined text-lg text-brand-dark">
                   check_circle
                 </span>
 
@@ -265,7 +276,7 @@ export default function LandingPage() {
             {/* HERO IMAGE */}
             <div className="flex justify-center lg:justify-end">
               <div className="relative w-full max-w-[470px]">
-                <div className="aspect-[4/3] overflow-hidden rounded-[2.25rem] border-[6px] border-white/60 bg-white/30 shadow-xl backdrop-blur-xl">
+                <div className="aspect-[4/3] overflow-hidden rounded-hero border-[6px] border-white/60 bg-white/30 shadow-xl backdrop-blur-xl">
                   <img
                     src="https://lh3.googleusercontent.com/aida-public/AB6AXuDgE1XUpJJUBnUcm9nZeJbZZWdu-FqAJan-7gdJHSarWT87pQkkYObLqpYfLRvwu8rINxVICJyZXK2BhgrXDCNCLjaK_Y69LyBu8LGAHetHLlXZ2_lHpyn5zK29rvKRvODC-WyzKBbIzKL60T8UoF-tf3P162WS-dy5-qLhF2n4T9PLxD7t82uEEKCXwBFf690EUgzmnmCEhV-ejmnC2qr_nzXNnDOElLZ-3tNB0wn2NsxTZGQiDVGYABZBTQXWJV6j4XiDGZotYUg"
                     alt="Person exercising"
@@ -276,9 +287,9 @@ export default function LandingPage() {
                 </div>
 
                 {/* Verification Badge */}
-                <div className="absolute -bottom-4 left-3 flex items-center gap-3 rounded-xl bg-white px-4 py-3 shadow-lg sm:-left-4">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#B7E4C7]">
-                    <span className="material-symbols-outlined text-lg text-[#16845b]">
+                <div className="absolute -bottom-4 left-3 flex items-center gap-3 rounded-xl bg-white px-3 py-3 shadow-lg sm:-left-4 sm:px-4">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-light">
+                    <span className="material-symbols-outlined text-lg text-brand-dark">
                       check_circle
                     </span>
                   </div>
@@ -303,17 +314,17 @@ export default function LandingPage() {
         ===================================================== */}
         <section
           ref={featuresRef}
-          className="scroll-offset bg-[#FFFDF5] py-20 md:py-24"
+          className="scroll-offset bg-surface py-16 sm:py-20 md:py-24"
         >
-          <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             {/* Heading */}
             <div className="mx-auto mb-10 max-w-2xl text-center">
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-[#B7E4C7]/40 px-4 py-1.5">
-                <span className="material-symbols-outlined text-base text-[#16845b]">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-brand-light/40 px-4 py-1.5">
+                <span className="material-symbols-outlined text-base text-brand-dark">
                   redeem
                 </span>
 
-                <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#16845b] sm:text-xs">
+                <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-brand-dark sm:text-xs">
                   Free, forever
                 </span>
               </div>
@@ -358,10 +369,10 @@ export default function LandingPage() {
                 return (
                   <div
                     key={item.title}
-                    className={`relative min-h-[210px] rounded-2xl border border-gray-100 bg-white p-6 transition-transform duration-300 hover:-translate-y-1 ${animationClass}`}
+                    className={`card relative min-h-[210px] ${animationClass}`}
                   >
                     {/* FREE BADGE */}
-                    <span className="absolute right-5 top-5 rounded-full bg-[#EAF7EF] px-3 py-1 text-[9px] font-bold uppercase tracking-wider text-[#16845b]">
+                    <span className="absolute right-5 top-5 rounded-full bg-brand-light/30 px-3 py-1 text-[9px] font-bold uppercase tracking-wider text-brand-dark">
                       Free
                     </span>
 
@@ -372,7 +383,7 @@ export default function LandingPage() {
                         backgroundColor: item.color,
                       }}
                     >
-                      <span className="material-symbols-outlined text-[22px] text-[#16845b]">
+                      <span className="material-symbols-outlined text-[22px] text-brand-dark">
                         {item.icon}
                       </span>
                     </div>
@@ -398,17 +409,17 @@ export default function LandingPage() {
         ===================================================== */}
         <section
           ref={professionalsRef}
-          className="scroll-offset bg-white py-20 md:py-24"
+          className="scroll-offset bg-white py-16 sm:py-20 md:py-24"
         >
-          <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             {/* Heading */}
             <div className="mx-auto mb-10 max-w-2xl text-center">
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-[#FFD8B1]/40 px-4 py-1.5">
-                <span className="material-symbols-outlined text-base text-[#d47a2e]">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-accent-orange/40 px-4 py-1.5">
+                <span className="material-symbols-outlined text-base text-accent-orange-dark">
                   workspace_premium
                 </span>
 
-                <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#d47a2e] sm:text-xs">
+                <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-accent-orange-dark sm:text-xs">
                   Paid, on your terms
                 </span>
               </div>
@@ -426,8 +437,8 @@ export default function LandingPage() {
             {/* TWO CARDS */}
             <div className="mx-auto grid max-w-4xl grid-cols-1 gap-5 md:grid-cols-2">
               {/* TRAINER */}
-              <div className="rounded-2xl border border-[#FDE2E4] bg-[#FFFDF5] p-6 transition-transform duration-300 hover:-translate-y-1">
-                <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl bg-[#FDE2E4]">
+              <div className="rounded-card border border-accent-pink bg-surface p-6 transition-transform duration-300 hover:-translate-y-1">
+                <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl bg-accent-pink">
                   <span className="material-symbols-outlined text-[22px] text-gray-700">
                     sports_gymnastics
                   </span>
@@ -444,9 +455,9 @@ export default function LandingPage() {
               </div>
 
               {/* NUTRITION */}
-              <div className="rounded-2xl border border-[#B7E4C7] bg-[#FFFDF5] p-6 transition-transform duration-300 hover:-translate-y-1">
-                <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl bg-[#B7E4C7]">
-                  <span className="material-symbols-outlined text-[22px] text-[#16845b]">
+              <div className="rounded-card border border-brand-light bg-surface p-6 transition-transform duration-300 hover:-translate-y-1">
+                <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl bg-brand-light">
+                  <span className="material-symbols-outlined text-[22px] text-brand-dark">
                     nutrition
                   </span>
                 </div>
@@ -466,7 +477,7 @@ export default function LandingPage() {
             <div className="mt-9 flex justify-center">
               <Link
                 to="/professionals"
-                className="rounded-xl bg-gray-800 px-8 py-3.5 text-sm font-bold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-gray-700"
+                className="btn-primary w-full max-w-xs text-center sm:w-auto"
               >
                 Browse Professionals
               </Link>
@@ -479,10 +490,10 @@ export default function LandingPage() {
         ===================================================== */}
         <section
           ref={communityRef}
-          className="scroll-offset bg-[#FFFDF5] px-5 py-20 sm:px-6 md:py-24"
+          className="scroll-offset bg-surface px-4 py-16 sm:px-6 sm:py-20 md:py-24"
         >
-          <div className="mx-auto max-w-5xl overflow-hidden rounded-[2rem] bg-gradient-to-r from-[#B7E4C7] to-[#D0EBFF]">
-            <div className="flex flex-col items-center px-6 py-14 text-center sm:px-10 md:px-16 md:py-16">
+          <div className="mx-auto max-w-5xl overflow-hidden rounded-section bg-gradient-to-r from-brand-light to-accent-blue">
+            <div className="flex flex-col items-center px-5 py-12 text-center sm:px-10 sm:py-14 md:px-16 md:py-16">
               {/* ICON */}
               <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-white/70">
                 <span className="material-symbols-outlined text-2xl text-gray-800">
@@ -504,22 +515,22 @@ export default function LandingPage() {
               {/* BUTTON */}
               <Link
                 to="/professional/login"
-                className="mt-7 rounded-xl bg-gray-800 px-8 py-3.5 text-sm font-bold text-white transition-all hover:-translate-y-0.5 hover:bg-gray-700"
+                className="btn-primary mt-7 w-full max-w-xs text-center sm:w-auto"
               >
                 Join As a Professional
               </Link>
 
               {/* EMAIL */}
-              <div className="mt-5 flex flex-wrap items-center justify-center gap-2 rounded-xl bg-white/70 px-5 py-3">
+              <div className="mt-5 flex w-full max-w-md flex-col items-center justify-center gap-2 rounded-xl bg-white/70 px-4 py-3 sm:flex-row sm:px-5">
                 <span className="material-symbols-outlined text-lg text-gray-700">
                   mail
                 </span>
 
-                <p className="text-xs font-semibold text-gray-800 sm:text-sm">
+                <p className="text-center text-xs font-semibold text-gray-800 sm:text-sm">
                   Want to get hired? Email{" "}
                   <a
                     href={`mailto:${ADMIN_EMAIL}`}
-                    className="text-[#16845b] underline underline-offset-2"
+                    className="text-brand-dark underline underline-offset-2"
                   >
                     {ADMIN_EMAIL}
                   </a>
@@ -534,11 +545,11 @@ export default function LandingPage() {
         ===================================================== */}
         <section
           ref={contactRef}
-          className="scroll-offset bg-[#FFFDF5] px-5 py-20 sm:px-6 md:py-24"
+          className="scroll-offset bg-surface px-4 py-16 sm:px-6 sm:py-20 md:py-24"
         >
           <div className="mx-auto max-w-3xl text-center">
-            <div className="mx-auto mb-5 flex h-11 w-11 items-center justify-center rounded-xl bg-[#B7E4C7]">
-              <span className="material-symbols-outlined text-xl text-[#16845b]">
+            <div className="mx-auto mb-5 flex h-11 w-11 items-center justify-center rounded-xl bg-brand-light">
+              <span className="material-symbols-outlined text-xl text-brand-dark">
                 mail
               </span>
             </div>
@@ -554,9 +565,9 @@ export default function LandingPage() {
 
             <a
               href="mailto:support@posefit.com"
-              className="mt-5 inline-block font-semibold text-[#16845b] hover:underline"
+              className="mt-5 inline-block break-all font-semibold text-brand-dark hover:underline sm:break-normal"
             >
-              support@posefit.com
+              posefit0@gmail.com
             </a>
           </div>
         </section>
@@ -566,87 +577,9 @@ export default function LandingPage() {
           FOOTER
       ===================================================== */}
       <footer className="border-t border-gray-800 bg-gray-900 text-white">
-        <div className="mx-auto max-w-7xl px-5 py-12 sm:px-6 lg:px-8">
-          <div className="grid gap-10 sm:grid-cols-2 md:grid-cols-3">
-            {/* BRAND */}
-            <div>
-              <Link to="/" className="inline-flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#B7E4C7]">
-                  <span className="material-symbols-outlined text-[18px] text-[#16845b]">
-                    fitness_center
-                  </span>
-                </div>
-
-                <span className="text-lg font-bold">
-                  Pose<span className="text-[#74C69D]">Fit</span>
-                </span>
-              </Link>
-
-              <p className="mt-4 max-w-sm text-sm leading-6 text-gray-400">
-                Your personal fitness assistant for smarter workouts,
-                personalized nutrition, and better movement.
-              </p>
-            </div>
-
-            {/* QUICK LINKS */}
-            <div>
-              <h3 className="text-sm font-bold text-white">Quick Links</h3>
-
-              <div className="mt-4 flex flex-col gap-3">
-                <Link
-                  to="/"
-                  className="text-sm text-gray-400 transition-colors hover:text-white"
-                >
-                  Home
-                </Link>
-
-                <Link
-                  to="/professionals"
-                  className="text-sm text-gray-400 transition-colors hover:text-white"
-                >
-                  Browse Professionals
-                </Link>
-
-                <Link
-                  to="/user/login"
-                  className="text-sm text-gray-400 transition-colors hover:text-white"
-                >
-                  Login
-                </Link>
-
-                <Link
-                  to="/user/register"
-                  className="text-sm text-gray-400 transition-colors hover:text-white"
-                >
-                  Create Account
-                </Link>
-              </div>
-            </div>
-
-            {/* CONTACT */}
-            <div>
-              <h3 className="text-sm font-bold text-white">Contact</h3>
-
-              <div className="mt-4 space-y-3">
-                <a
-                  href="mailto:support@posefit.com"
-                  className="block text-sm text-gray-400 transition-colors hover:text-white"
-                >
-                  support@posefit.com
-                </a>
-
-                <a
-                  href={`mailto:${ADMIN_EMAIL}`}
-                  className="block text-sm text-gray-400 transition-colors hover:text-white"
-                >
-                  Professional inquiries
-                </a>
-              </div>
-            </div>
-          </div>
-
+        <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
           {/* BOTTOM */}
-          <div className="mt-10 flex flex-col gap-3 border-t border-white/10 pt-6 text-xs text-gray-500 sm:flex-row sm:items-center sm:justify-between">
+          <div className="mt-10 flex flex-col gap-3 border-t border-white/10 pt-6 text-center text-xs text-gray-500 sm:flex-row sm:items-center sm:justify-between sm:text-left">
             <p>© 2026 PoseFit. All rights reserved.</p>
 
             <p>Fitness guidance made simple.</p>

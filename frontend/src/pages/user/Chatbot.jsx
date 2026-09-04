@@ -131,19 +131,19 @@ function Chatbot() {
 
   return (
     <UserLayout>
-      <div className="min-h-full bg-gray-50/50 p-4 md:p-8">
+      <div className="relative min-h-full bg-transparent p-4 sm:p-6 md:p-8 font-sans">
         {/* =====================================================
             HEADER
         ===================================================== */}
 
-        <header className="max-w-4xl mx-auto mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <header className="max-w-4xl mx-auto mb-6 sm:mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
           <div>
-            <h1 className="text-3xl md:text-4xl font-black text-gray-900 tracking-tight flex items-center gap-3">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-gray-800 tracking-tight flex items-center gap-3">
               AI Fitness Assistant
-              <Sparkles className="text-indigo-500 h-7 w-7 animate-pulse" />
+              <Sparkles className="text-brand-dark h-6 w-6 sm:h-7 sm:w-7 animate-pulse" />
             </h1>
 
-            <p className="text-gray-500 font-medium mt-2">
+            <p className="text-gray-500 font-medium mt-1 sm:mt-2 text-sm sm:text-base">
               Your 24/7 fitness and nutrition assistant.
             </p>
           </div>
@@ -153,7 +153,7 @@ function Chatbot() {
               type="button"
               onClick={clearChat}
               disabled={loading}
-              className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 font-bold text-xs uppercase tracking-widest transition-all disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 sm:py-3 rounded-btn border border-brand-light/50 bg-surface/80 backdrop-blur-sm hover:bg-brand-light/25 text-gray-600 font-bold text-xs uppercase tracking-widest transition-all shadow-card disabled:opacity-50 self-start md:self-auto"
             >
               <Trash2 size={16} />
               Clear Chat
@@ -165,12 +165,12 @@ function Chatbot() {
             CHAT CONTAINER
         ===================================================== */}
 
-        <div className="max-w-4xl mx-auto h-[550px] flex flex-col bg-white rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden">
+        <div className="max-w-4xl mx-auto h-[calc(100vh-14rem)] min-h-[460px] flex flex-col bg-surface/85 rounded-3xl sm:rounded-[2rem] border border-brand-light/50 shadow-card-hover backdrop-blur-xl overflow-hidden">
           {/* =====================================================
               CHAT HISTORY
           ===================================================== */}
 
-          <div className="flex-1 overflow-y-auto p-5 md:p-8 space-y-7 bg-gray-50/30">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 space-y-6 sm:space-y-7 bg-brand-light/10">
             {/* =====================================================
                 EMPTY STATE
             ===================================================== */}
@@ -178,14 +178,14 @@ function Chatbot() {
             {messages.length === 0 && (
               <div className="h-full flex flex-col items-center justify-center text-center">
                 <div className="relative mb-6">
-                  <div className="h-20 w-20 bg-white rounded-2xl border border-gray-100 shadow-sm flex items-center justify-center">
-                    <Bot size={45} className="text-indigo-500" />
+                  <div className="h-20 w-20 bg-brand-light/35 rounded-card border border-brand-light/50 shadow-card flex items-center justify-center">
+                    <Bot size={45} className="text-brand-dark" />
                   </div>
 
-                  <div className="absolute -right-1 -top-1 h-5 w-5 bg-green-500 rounded-full border-4 border-white" />
+                  <div className="absolute -right-1 -top-1 h-5 w-5 bg-brand rounded-full border-4 border-surface" />
                 </div>
 
-                <h3 className="text-2xl font-black text-gray-900">
+                <h3 className="text-2xl font-extrabold text-gray-800">
                   Interactive Fitness AI
                 </h3>
 
@@ -203,7 +203,7 @@ function Chatbot() {
                       type="button"
                       onClick={() => sendMessage(suggestion)}
                       disabled={loading}
-                      className="px-4 py-3 bg-white hover:bg-indigo-600 hover:text-white border border-gray-100 rounded-2xl text-xs font-bold text-gray-600 shadow-sm transition-all hover:scale-105 disabled:opacity-50"
+                      className="px-4 py-3 bg-surface/80 hover:bg-brand hover:text-white border border-brand-light/40 rounded-btn text-xs font-bold text-gray-600 shadow-card transition-all hover:-translate-y-0.5 hover:shadow-card-hover disabled:opacity-50"
                     >
                       {suggestion}
                     </button>
@@ -226,10 +226,10 @@ function Chatbot() {
                 {/* Avatar */}
 
                 <div
-                  className={`h-10 w-10 shrink-0 rounded-2xl flex items-center justify-center shadow-sm ${
+                  className={`h-10 w-10 shrink-0 rounded-btn flex items-center justify-center shadow-card ${
                     msg.type === "user"
-                      ? "bg-indigo-600 text-white"
-                      : "bg-white text-indigo-600 border border-gray-100"
+                      ? "bg-brand text-white"
+                      : "bg-brand-light/30 text-brand-dark border border-brand-light/50"
                   }`}
                 >
                   {msg.type === "user" ? <User size={20} /> : <Bot size={20} />}
@@ -238,10 +238,10 @@ function Chatbot() {
                 {/* Message */}
 
                 <div
-                  className={`max-w-[80%] px-5 py-4 rounded-3xl text-sm font-medium leading-relaxed shadow-sm whitespace-pre-wrap ${
+                  className={`max-w-[80%] px-5 py-4 rounded-card text-sm font-medium leading-relaxed shadow-card whitespace-pre-wrap ${
                     msg.type === "user"
-                      ? "bg-indigo-600 text-white rounded-br-md"
-                      : "bg-white text-gray-700 rounded-bl-md border border-gray-100"
+                      ? "bg-brand text-white rounded-br-md"
+                      : "bg-surface/90 text-gray-700 rounded-bl-md border border-brand-light/40"
                   }`}
                 >
                   {msg.text}
@@ -255,12 +255,12 @@ function Chatbot() {
 
             {loading && (
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 shrink-0 rounded-2xl bg-white text-indigo-600 border border-gray-100 flex items-center justify-center shadow-sm">
+                <div className="h-10 w-10 shrink-0 rounded-btn bg-brand-light/30 text-brand-dark border border-brand-light/50 flex items-center justify-center shadow-card">
                   <Bot size={20} />
                 </div>
 
-                <div className="bg-white px-5 py-4 rounded-3xl rounded-bl-md border border-gray-100 shadow-sm flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 text-indigo-600 animate-spin" />
+                <div className="bg-surface/90 px-5 py-4 rounded-card rounded-bl-md border border-brand-light/40 shadow-card flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 text-brand-dark animate-spin" />
 
                   <span className="text-xs uppercase font-bold text-gray-400 tracking-widest">
                     AI is thinking...
@@ -276,7 +276,7 @@ function Chatbot() {
               INPUT
           ===================================================== */}
 
-          <div className="p-5 md:p-6 bg-white border-t border-gray-100">
+          <div className="p-5 md:p-6 bg-surface/90 border-t border-brand-light/40">
             <div className="relative">
               <input
                 type="text"
@@ -285,14 +285,14 @@ function Chatbot() {
                 onKeyDown={handleKeyDown}
                 placeholder="Message your AI Coach..."
                 disabled={loading}
-                className="w-full h-14 pl-5 pr-16 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 focus:bg-white transition-all font-medium text-gray-700 placeholder:text-gray-400 disabled:opacity-60"
+                className="w-full h-14 pl-5 pr-16 bg-white/60 border border-brand-light/50 rounded-btn outline-none focus:ring-2 focus:ring-brand-light/60 focus:border-brand focus:bg-white/80 transition-all font-medium text-gray-700 placeholder:text-gray-400 disabled:opacity-60"
               />
 
               <button
                 type="button"
                 onClick={() => sendMessage()}
                 disabled={loading || !input.trim()}
-                className="absolute right-2 top-1/2 -translate-y-1/2 h-10 w-10 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white flex items-center justify-center transition-all"
+                className="absolute right-2 top-1/2 -translate-y-1/2 h-10 w-10 rounded-btn bg-gray-800 hover:bg-gray-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white flex items-center justify-center transition-all"
               >
                 {loading ? (
                   <Loader2 size={18} className="animate-spin" />

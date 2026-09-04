@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+
 import {
   Search,
   Star,
@@ -9,9 +10,9 @@ import {
   ShieldCheck,
   UserRound,
 } from "lucide-react";
+
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-
 import { httpClient } from "../../lib/http";
 import UserLayout from "../../components/user/UserLayout";
 
@@ -20,7 +21,6 @@ export default function PublicProfessionals() {
 
   const [professionals, setProfessionals] = useState([]);
   const [filteredProfessionals, setFilteredProfessionals] = useState([]);
-
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
@@ -159,15 +159,17 @@ export default function PublicProfessionals() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-stone-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+      <UserLayout>
+        <div className="min-h-full bg-transparent flex items-center justify-center p-6">
+          <div className="text-center">
+            <div className="w-10 h-10 border-4 border-brand border-t-transparent rounded-full animate-spin mx-auto mb-4" />
 
-          <p className="text-gray-500 font-medium">
-            Loading certified professionals...
-          </p>
+            <p className="text-gray-500 font-medium">
+              Loading certified professionals...
+            </p>
+          </div>
         </div>
-      </div>
+      </UserLayout>
     );
   }
 
@@ -177,28 +179,28 @@ export default function PublicProfessionals() {
 
   return (
     <UserLayout>
-      <div className="min-h-screen bg-stone-50">
+      <div className="min-h-full bg-transparent font-sans">
         {/* =====================================================
             HEADER
         ===================================================== */}
 
-        <section className="bg-white border-b border-stone-200">
-          <div className="max-w-7xl mx-auto px-6 py-12">
+        <section className="border-b border-brand-light/50 bg-surface/75 backdrop-blur-xl">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
             <div className="max-w-3xl">
               <div className="flex items-center gap-2 mb-4">
-                <ShieldCheck className="w-5 h-5 text-emerald-600" />
+                <ShieldCheck className="w-5 h-5 text-brand-dark" />
 
-                <span className="text-sm font-bold text-emerald-600 uppercase tracking-wide">
+                <span className="text-sm font-bold text-brand-dark uppercase tracking-wide">
                   Certified Professionals
                 </span>
               </div>
 
-              <h1 className="text-4xl md:text-5xl font-black text-gray-900">
-                Find Your Perfect
-                <span className="text-emerald-600"> Fitness Professional</span>
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-gray-800">
+                Find Your Perfect{" "}
+                <span className="text-brand-dark">Fitness Professional</span>
               </h1>
 
-              <p className="mt-4 text-gray-500 text-lg">
+              <p className="mt-4 text-gray-500 text-base sm:text-lg">
                 Connect with certified trainers and fitness professionals who
                 can help you achieve your goals.
               </p>
@@ -218,7 +220,7 @@ export default function PublicProfessionals() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search professionals..."
-                  className="w-full pl-12 pr-4 py-4 bg-stone-50 border border-stone-200 rounded-2xl outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                  className="w-full pl-12 pr-4 py-3.5 sm:py-4 rounded-btn border border-gray-200 bg-white/70 text-sm sm:text-base text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand-light/60"
                 />
               </div>
 
@@ -226,12 +228,10 @@ export default function PublicProfessionals() {
               <select
                 value={filter}
                 onChange={(e) => setFilter(e.target.value)}
-                className="px-5 py-4 bg-stone-50 border border-stone-200 rounded-2xl outline-none focus:border-emerald-500"
+                className="px-5 py-3.5 sm:py-4 rounded-btn border border-gray-200 bg-white/70 text-sm sm:text-base text-gray-800 outline-none transition-all focus:border-brand focus:ring-2 focus:ring-brand-light/60"
               >
                 <option value="all">All Professionals</option>
-
                 <option value="trainer">Trainer</option>
-
                 <option value="coach">Coach</option>
               </select>
             </div>
@@ -242,12 +242,11 @@ export default function PublicProfessionals() {
             PROFESSIONALS
         ===================================================== */}
 
-        <main className="max-w-7xl mx-auto px-6 py-10">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
           {/* Results Header */}
-
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-2xl font-black text-gray-900">
+              <h2 className="text-2xl font-black text-gray-800">
                 Certified Professionals
               </h2>
 
@@ -263,10 +262,10 @@ export default function PublicProfessionals() {
           ================================================= */}
 
           {filteredProfessionals.length === 0 ? (
-            <div className="bg-white rounded-3xl border border-stone-200 p-16 text-center">
+            <div className="rounded-card border border-brand-light/50 bg-surface/80 p-16 text-center shadow-card backdrop-blur-xl">
               <UserRound className="w-14 h-14 text-gray-300 mx-auto mb-4" />
 
-              <h3 className="text-xl font-bold text-gray-900">
+              <h3 className="text-xl font-bold text-gray-800">
                 No professionals found
               </h3>
 
@@ -290,7 +289,7 @@ export default function PublicProfessionals() {
                 return (
                   <div
                     key={professional._id}
-                    className="bg-white rounded-3xl border border-stone-200 overflow-hidden hover:shadow-lg transition-shadow"
+                    className="overflow-hidden rounded-card border border-brand-light/50 bg-surface/80 shadow-card backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover"
                   >
                     {/* =================================================
                         CARD CONTENT
@@ -298,49 +297,44 @@ export default function PublicProfessionals() {
 
                     <div className="p-6">
                       {/* Profile Header */}
-
                       <div className="flex items-start gap-4">
                         {/* Profile Image */}
-
                         <div className="relative w-16 h-16 shrink-0">
                           {/* Fallback */}
-
                           <div
                             className={`profile-image-fallback ${
                               imageUrl ? "hidden" : ""
-                            } w-16 h-16 rounded-2xl flex items-center justify-center bg-emerald-100 text-emerald-700 font-black text-xl`}
+                            } w-16 h-16 rounded-card flex items-center justify-center bg-brand-light/40 text-brand-dark font-black text-xl`}
                           >
                             {initials || "U"}
                           </div>
 
                           {/* Image */}
-
                           {imageUrl && (
                             <img
                               src={imageUrl}
                               alt={`${professional.firstName || ""} ${
                                 professional.lastName || ""
                               }`}
-                              className="w-16 h-16 rounded-2xl object-cover border border-stone-200 shadow-sm"
+                              className="w-16 h-16 rounded-card object-cover border border-brand-light/60 shadow-sm"
                               onError={handleImageError}
                             />
                           )}
                         </div>
 
                         {/* Name */}
-
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
-                            <h3 className="font-black text-gray-900 truncate">
+                            <h3 className="font-black text-gray-800 truncate">
                               {professional.firstName} {professional.lastName}
                             </h3>
 
                             {professional.isVerified && (
-                              <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
+                              <ShieldCheck className="w-4 h-4 text-brand shrink-0" />
                             )}
                           </div>
 
-                          <p className="text-sm text-emerald-600 font-semibold mt-1">
+                          <p className="text-sm text-brand-dark font-semibold mt-1">
                             {professional.professionalType ||
                               "Fitness Professional"}
                           </p>
@@ -355,7 +349,7 @@ export default function PublicProfessionals() {
                         <div className="flex items-center gap-1">
                           <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
 
-                          <span className="font-bold text-gray-900">
+                          <span className="font-bold text-gray-800">
                             {professional.rating?.average
                               ? Number(professional.rating.average).toFixed(1)
                               : "5.0"}
@@ -373,8 +367,7 @@ export default function PublicProfessionals() {
 
                       <div className="grid grid-cols-2 gap-3 mt-5">
                         {/* Experience */}
-
-                        <div className="bg-stone-50 rounded-2xl p-3">
+                        <div className="rounded-btn border border-brand-light/40 bg-brand-light/10 p-3">
                           <div className="flex items-center gap-2 text-gray-400">
                             <Award className="w-4 h-4" />
 
@@ -383,14 +376,13 @@ export default function PublicProfessionals() {
                             </span>
                           </div>
 
-                          <p className="font-bold text-gray-900 mt-1">
+                          <p className="font-bold text-gray-800 mt-1">
                             {professional.experience || "Professional"}
                           </p>
                         </div>
 
                         {/* Session */}
-
-                        <div className="bg-stone-50 rounded-2xl p-3">
+                        <div className="rounded-btn border border-brand-light/40 bg-brand-light/10 p-3">
                           <div className="flex items-center gap-2 text-gray-400">
                             <Clock className="w-4 h-4" />
 
@@ -399,7 +391,7 @@ export default function PublicProfessionals() {
                             </span>
                           </div>
 
-                          <p className="font-bold text-gray-900 mt-1">
+                          <p className="font-bold text-gray-800 mt-1">
                             {professional.sessionFee
                               ? `$${professional.sessionFee}`
                               : "Free"}
@@ -412,7 +404,7 @@ export default function PublicProfessionals() {
                       ================================================= */}
 
                       <div className="flex items-center gap-2 mt-5 text-sm text-gray-500">
-                        <Calendar className="w-4 h-4 text-emerald-500" />
+                        <Calendar className="w-4 h-4 text-brand" />
 
                         <span>
                           {professional.availability?.length
@@ -426,12 +418,12 @@ export default function PublicProfessionals() {
                         VIEW PROFILE BUTTON
                     ================================================= */}
 
-                    <div className="border-t border-stone-100 p-4">
+                    <div className="border-t border-brand-light/40 p-4">
                       <button
                         onClick={() => handleViewProfile(professional._id)}
-                        className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-2xl bg-gray-900 text-white font-bold text-sm hover:bg-emerald-600 transition-colors"
+                        className="w-full flex items-center justify-center gap-2 rounded-btn bg-gray-800 px-4 py-3 text-sm font-bold text-white shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:bg-gray-700 hover:shadow-card-hover"
                       >
-                        View Profile
+                        View Profile & Availability
                         <ChevronRight className="w-4 h-4" />
                       </button>
                     </div>

@@ -464,15 +464,15 @@ export default function DietPlan() {
 
   return (
     <UserLayout>
-      <div className="min-h-screen bg-gray-50/50 p-4 md:p-8">
+      <div className="min-h-screen bg-gray-50/50 p-4 sm:p-6 lg:p-8">
         {/* HEADER */}
 
-        <div className="max-w-6xl mx-auto mb-10">
-          <h1 className="text-3xl md:text-4xl font-black text-gray-900 tracking-tight">
+        <div className="max-w-6xl mx-auto mb-6 sm:mb-10">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-gray-900 tracking-tight">
             Personalized Diet Planner
           </h1>
 
-          <p className="text-gray-500 mt-2 font-medium">
+          <p className="text-gray-500 mt-2 font-medium text-sm sm:text-base">
             Define your goals and dietary preferences for a personalized
             nutrition plan.
           </p>
@@ -488,12 +488,12 @@ export default function DietPlan() {
           {/* FORM */}
 
           <div
-            className={`shadow-sm bg-white/90 border border-gray-100 ${
+            className={`shadow-sm bg-white/90 border border-gray-100 rounded-3xl overflow-hidden ${
               showResult ? "lg:col-span-6" : "lg:col-span-1"
             }`}
           >
-            <div className="p-8 border-b border-gray-100">
-              <h2 className="text-2xl font-black text-gray-900">
+            <div className="p-5 sm:p-8 border-b border-gray-100">
+              <h2 className="text-xl sm:text-2xl font-black text-gray-900">
                 Health Metrics
               </h2>
 
@@ -502,7 +502,7 @@ export default function DietPlan() {
               </p>
             </div>
 
-            <div className="p-8 space-y-8">
+            <div className="p-5 sm:p-8 space-y-6 sm:space-y-8">
               {/* HEIGHT / WEIGHT / AGE */}
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

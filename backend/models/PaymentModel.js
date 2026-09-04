@@ -20,14 +20,12 @@ const paymentSchema = new mongoose.Schema(
       min: 0,
     },
 
-    // 20% PoseFit platform commission
     adminCommission: {
       type: Number,
       required: true,
       min: 0,
     },
 
-    // 80% Professional share
     professionalAmount: {
       type: Number,
       required: true,
@@ -40,7 +38,6 @@ const paymentSchema = new mongoose.Schema(
       lowercase: true,
     },
 
-    // Appointment Schedule Details
     appointmentDay: {
       type: String,
       trim: true,
@@ -55,12 +52,18 @@ const paymentSchema = new mongoose.Schema(
       type: Date,
     },
 
+    sessionDuration: {
+      type: Number,
+      required: true,
+      min: 1,
+      max: 3,
+    },
+
     notes: {
       type: String,
       trim: true,
     },
 
-    // Stripe IDs
     stripePaymentIntentId: {
       type: String,
       unique: true,
@@ -78,27 +81,40 @@ const paymentSchema = new mongoose.Schema(
       sparse: true,
     },
 
-    // Payment Status
+    meetingLink: {
+      type: String,
+      trim: true,
+    },
+
+    meetingEventId: {
+      type: String,
+      trim: true,
+    },
+
+    meetingReminderSent: {
+      type: Boolean,
+      default: false,
+    },
+
+    adminDeleted: {
+      type: Boolean,
+      default: false,
+    },
+
+    professionalDeleted: {
+      type: Boolean,
+      default: false,
+    },
+
     status: {
       type: String,
-      enum: [
-        "pending",
-        "completed",
-        "failed",
-        
-      ],
+      enum: ["pending", "completed", "failed"],
       default: "pending",
     },
 
-    // Professional Connect Transfer Status
     payoutStatus: {
       type: String,
-      enum: [
-        "pending",
-        "transferred",
-        "paid",
-        "failed",
-      ],
+      enum: ["pending", "transferred", "paid", "failed"],
       default: "pending",
     },
 
@@ -113,9 +129,10 @@ const paymentSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 const PaymentModel = mongoose.model("Payment", paymentSchema);
 
 module.exports = PaymentModel;
+

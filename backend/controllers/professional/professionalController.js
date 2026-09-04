@@ -254,9 +254,17 @@ const getProfessionalBookings = async (req, res) => {
     const professionalId = req.user.userId;
     const { status } = req.query;
 
-    const query = { professional: professionalId };
+    const query = {
+      professional: professionalId,
+      professionalDeleted: false,
+    };
 
-    if (status && ["completed", "pending", "refunded", "cancelled", "failed"].includes(status.toLowerCase())) {
+    if (
+      status &&
+      ["completed", "pending", "refunded", "cancelled", "failed"].includes(
+        status.toLowerCase()
+      )
+    ) {
       query.status = status.toLowerCase();
     }
 
@@ -265,6 +273,7 @@ const getProfessionalBookings = async (req, res) => {
       .sort({ createdAt: -1 });
 
     await syncPendingPayments(payments);
+
     const bookings = await PaymentModel.find(query)
       .populate("user", "firstName lastName email profilePhoto")
       .sort({ createdAt: -1 });
@@ -291,7 +300,11 @@ const getProfessionalBookingById = async (req, res) => {
     const professionalId = req.user.userId;
     const { id } = req.params;
 
-    const booking = await PaymentModel.findById(id).populate(
+    const booking = await PaymentModel.findOne({
+      _id: id,
+      professional: professionalId,
+      professionalDeleted: false,
+    }).populate(
       "user",
       "firstName lastName email profilePhoto"
     );
@@ -300,13 +313,6 @@ const getProfessionalBookingById = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: "Booking not found",
-      });
-    }
-
-    if (booking.professional.toString() !== professionalId.toString()) {
-      return res.status(403).json({
-        success: false,
-        message: "Unauthorized: You do not have permission to view this booking",
       });
     }
 
@@ -356,7 +362,6 @@ const getAvailability = async (req, res) => {
     });
   }
 };
-
 // 7. Update Availability Schedule
 const updateAvailability = async (req, res) => {
   try {
@@ -392,6 +397,10 @@ const updateAvailability = async (req, res) => {
       const minutes = parseInt(match[2], 10);
       const modifier = match[3].toUpperCase();
 
+      if (hours < 1 || hours > 12 || minutes < 0 || minutes > 59) {
+        return null;
+      }
+
       if (modifier === "AM" && hours === 12) {
         hours = 0;
       }
@@ -415,29 +424,63 @@ const updateAvailability = async (req, res) => {
       const parsedSlots = [];
 
       for (const slot of dayItem.slots) {
+        if (typeof slot !== "string") {
+          return res.status(400).json({
+            success: false,
+            message: `Invalid time slot for ${dayItem.day}`,
+          });
+        }
+
         const parts = slot.split(" - ");
 
         if (parts.length !== 2) {
           return res.status(400).json({
             success: false,
-            message: `Invalid time slot format for ${dayItem.day}`,
+            message: `Invalid time slot format for ${dayItem.day}. Use format like "09:00 AM - 10:00 AM".`,
           });
         }
 
-        const start = convertToMinutes(parts[0]);
-        const end = convertToMinutes(parts[1]);
+        const start = convertToMinutes(parts[0].trim());
+        const end = convertToMinutes(parts[1].trim());
 
         if (start === null || end === null) {
           return res.status(400).json({
             success: false,
-            message: `Invalid time format for ${dayItem.day}`,
+            message: `Invalid time format for ${dayItem.day}. Use format like "09:00 AM - 10:00 AM".`,
           });
         }
 
         if (start >= end) {
           return res.status(400).json({
             success: false,
-            message: `Start time must be before end time for ${dayItem.day}`,
+            message: `Start time must be before end time for ${dayItem.day}.`,
+          });
+        }
+
+        const durationMinutes = end - start;
+        const durationHours = durationMinutes / 60;
+
+        // Minimum session duration = 1 hour
+        if (durationMinutes < 60) {
+          return res.status(400).json({
+            success: false,
+            message: `Each session slot must be at least 1 hour long. Invalid slot on ${dayItem.day}: ${slot}`,
+          });
+        }
+
+        // Maximum session duration = 3 hours
+        if (durationMinutes > 180) {
+          return res.status(400).json({
+            success: false,
+            message: `Each session slot cannot be longer than 3 hours. Invalid slot on ${dayItem.day}: ${slot}`,
+          });
+        }
+
+        // Duration must be in complete hours
+        if (!Number.isInteger(durationHours)) {
+          return res.status(400).json({
+            success: false,
+            message: `Session slots must be exactly 1, 2, or 3 hours long. Invalid slot on ${dayItem.day}: ${slot}`,
           });
         }
 
