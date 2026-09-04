@@ -72,6 +72,7 @@ export default function ProfessionalAvailability() {
 
   const showToast = (msg, type = "success") => {
     setToast({ msg, type });
+
     setTimeout(() => setToast(null), 3500);
   };
 
@@ -97,9 +98,7 @@ export default function ProfessionalAvailability() {
     const exists = availability.find((item) => item.day === day);
 
     if (exists) {
-      setAvailability((prev) =>
-        prev.filter((item) => item.day !== day)
-      );
+      setAvailability((prev) => prev.filter((item) => item.day !== day));
     } else {
       setAvailability((prev) => [
         ...prev,
@@ -133,57 +132,37 @@ export default function ProfessionalAvailability() {
     const { start, end } = input;
 
     if (!start || !end) {
-      showToast(
-        "Please choose both start and end times.",
-        "error"
-      );
+      showToast("Please choose both start and end times.", "error");
       return;
     }
 
     if (start >= end) {
-      showToast(
-        "Start time must be strictly before end time.",
-        "error"
-      );
+      showToast("Start time must be strictly before end time.", "error");
       return;
     }
 
-    const newStartMinutes = convertToMinutes(
-      formatTo12Hour(start)
-    );
+    const newStartMinutes = convertToMinutes(formatTo12Hour(start));
 
-    const newEndMinutes = convertToMinutes(
-      formatTo12Hour(end)
-    );
+    const newEndMinutes = convertToMinutes(formatTo12Hour(end));
 
-    if (
-      newStartMinutes === null ||
-      newEndMinutes === null
-    ) {
+    if (newStartMinutes === null || newEndMinutes === null) {
       showToast("Invalid time selected.", "error");
       return;
     }
 
-    const durationMinutes =
-      newEndMinutes - newStartMinutes;
+    const durationMinutes = newEndMinutes - newStartMinutes;
 
     const durationHours = durationMinutes / 60;
 
     // Minimum session duration = 1 hour
     if (durationMinutes < 60) {
-      showToast(
-        "Each session slot must be at least 1 hour long.",
-        "error"
-      );
+      showToast("Each session slot must be at least 1 hour long.", "error");
       return;
     }
 
     // Maximum session duration = 3 hours
     if (durationMinutes > 180) {
-      showToast(
-        "Each session slot cannot be longer than 3 hours.",
-        "error"
-      );
+      showToast("Each session slot cannot be longer than 3 hours.", "error");
       return;
     }
 
@@ -191,32 +170,24 @@ export default function ProfessionalAvailability() {
     if (!Number.isInteger(durationHours)) {
       showToast(
         "Session slots must be exactly 1, 2, or 3 hours long.",
-        "error"
+        "error",
       );
       return;
     }
 
-    const dayItem = availability.find(
-      (item) => item.day === day
-    );
+    const dayItem = availability.find((item) => item.day === day);
 
     const existingSlots = dayItem?.slots || [];
 
     // Check overlap with existing slots
     const hasOverlap = existingSlots.some((slot) => {
-      const [existingStart, existingEnd] =
-        slot.split(" - ");
+      const [existingStart, existingEnd] = slot.split(" - ");
 
-      const existingStartMinutes =
-        convertToMinutes(existingStart);
+      const existingStartMinutes = convertToMinutes(existingStart);
 
-      const existingEndMinutes =
-        convertToMinutes(existingEnd);
+      const existingEndMinutes = convertToMinutes(existingEnd);
 
-      if (
-        existingStartMinutes === null ||
-        existingEndMinutes === null
-      ) {
+      if (existingStartMinutes === null || existingEndMinutes === null) {
         return false;
       }
 
@@ -227,31 +198,23 @@ export default function ProfessionalAvailability() {
     });
 
     if (hasOverlap) {
-      showToast(
-        "This time slot overlaps with an existing slot.",
-        "error"
-      );
+      showToast("This time slot overlaps with an existing slot.", "error");
       return;
     }
 
-    const formattedSlot = `${formatTo12Hour(
-      start
-    )} - ${formatTo12Hour(end)}`;
+    const formattedSlot = `${formatTo12Hour(start)} - ${formatTo12Hour(end)}`;
 
     setAvailability((prev) =>
       prev.map((item) => {
         if (item.day === day) {
           return {
             ...item,
-            slots: [
-              ...(item.slots || []),
-              formattedSlot,
-            ],
+            slots: [...(item.slots || []), formattedSlot],
           };
         }
 
         return item;
-      })
+      }),
     );
 
     // Reset picker to a default 1-hour slot
@@ -270,14 +233,12 @@ export default function ProfessionalAvailability() {
         if (item.day === day) {
           return {
             ...item,
-            slots: item.slots.filter(
-              (_, i) => i !== slotIndex
-            ),
+            slots: item.slots.filter((_, i) => i !== slotIndex),
           };
         }
 
         return item;
-      })
+      }),
     );
   };
 
@@ -288,10 +249,7 @@ export default function ProfessionalAvailability() {
         const parts = slot.split(" - ");
 
         if (parts.length !== 2) {
-          showToast(
-            `Invalid time slot format on ${dayItem.day}.`,
-            "error"
-          );
+          showToast(`Invalid time slot format on ${dayItem.day}.`, "error");
           return;
         }
 
@@ -299,17 +257,14 @@ export default function ProfessionalAvailability() {
         const end = convertToMinutes(parts[1]);
 
         if (start === null || end === null) {
-          showToast(
-            `Invalid time format on ${dayItem.day}.`,
-            "error"
-          );
+          showToast(`Invalid time format on ${dayItem.day}.`, "error");
           return;
         }
 
         if (start >= end) {
           showToast(
             `Start time must be before end time on ${dayItem.day}.`,
-            "error"
+            "error",
           );
           return;
         }
@@ -320,7 +275,7 @@ export default function ProfessionalAvailability() {
         if (durationMinutes < 60) {
           showToast(
             `Each session slot must be at least 1 hour. Invalid slot on ${dayItem.day}: ${slot}`,
-            "error"
+            "error",
           );
           return;
         }
@@ -328,7 +283,7 @@ export default function ProfessionalAvailability() {
         if (durationMinutes > 180) {
           showToast(
             `Each session slot cannot exceed 3 hours. Invalid slot on ${dayItem.day}: ${slot}`,
-            "error"
+            "error",
           );
           return;
         }
@@ -336,7 +291,7 @@ export default function ProfessionalAvailability() {
         if (!Number.isInteger(durationHours)) {
           showToast(
             `Session slots must be exactly 1, 2, or 3 hours. Invalid slot on ${dayItem.day}: ${slot}`,
-            "error"
+            "error",
           );
           return;
         }
@@ -350,14 +305,11 @@ export default function ProfessionalAvailability() {
         availability,
       });
 
-      showToast(
-        "Availability schedule saved successfully!"
-      );
+      showToast("Availability schedule saved successfully!");
     } catch (err) {
       showToast(
-        err?.response?.data?.message ||
-          "Failed to save availability.",
-        "error"
+        err?.response?.data?.message || "Failed to save availability.",
+        "error",
       );
     } finally {
       setSaving(false);
@@ -366,16 +318,14 @@ export default function ProfessionalAvailability() {
 
   return (
     <ProfessionalLayout>
-      <div
-        className="min-h-screen pb-16"
-        style={{ background: "#f5f7f2" }}
-      >
+      <div className="min-h-screen bg-transparent pb-16 font-sans">
+        {/* Toast */}
         {toast && (
           <div
-            className={`fixed top-5 right-5 z-50 px-5 py-3 rounded-2xl shadow-xl text-white text-sm font-bold border transition-all ${
+            className={`fixed right-5 top-5 z-50 rounded-2xl border px-5 py-3 text-sm font-bold text-white shadow-card-hover transition-all ${
               toast.type === "error"
-                ? "bg-rose-500 border-rose-600"
-                : "bg-emerald-600 border-emerald-700"
+                ? "border-rose-600 bg-rose-500"
+                : "border-brand-dark bg-brand-dark"
             }`}
             style={{ animation: "modalIn 0.2s ease" }}
           >
@@ -384,67 +334,56 @@ export default function ProfessionalAvailability() {
         )}
 
         {/* Header */}
-        <div className="px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 pb-4 flex items-center justify-between flex-wrap gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-4 px-4 pb-4 pt-6 sm:px-6 sm:pt-8 lg:px-8">
           <div>
-            <span className="text-xs font-extrabold uppercase tracking-widest px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+            <span className="inline-flex rounded-full border border-brand-light/70 bg-brand-light/40 px-3 py-1 text-xs font-extrabold uppercase tracking-widest text-brand-dark">
               Schedule Management
             </span>
 
-            <h1 className="text-2xl sm:text-3xl font-black text-stone-800 tracking-tight mt-2">
+            <h1 className="mt-2 text-2xl font-extrabold tracking-tight text-gray-800 sm:text-3xl">
               Availability Schedule
             </h1>
 
-            <p className="text-stone-500 font-medium text-sm mt-1">
-              Configure available days and session slots from
-              1 to 3 hours for client bookings.
+            <p className="mt-1 text-sm font-medium text-gray-500">
+              Configure available days and session slots from 1 to 3 hours for
+              client bookings.
             </p>
           </div>
 
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-2 px-6 py-2.5 rounded-2xl font-bold text-white text-sm shadow-xs hover:opacity-90 disabled:opacity-60 transition-all"
-            style={{
-              background:
-                "linear-gradient(135deg, #10b981, #059669)",
-            }}
+            className="flex items-center gap-2 rounded-btn bg-gray-800 px-6 py-3 text-sm font-bold text-white shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:bg-gray-700 hover:shadow-card-hover disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
           >
-            <IconSave className="w-4 h-4" />
+            <IconSave className="h-4 w-4" />
 
-            <span>
-              {saving
-                ? "Saving..."
-                : "Save Availability Schedule"}
-            </span>
+            <span>{saving ? "Saving..." : "Save Availability Schedule"}</span>
           </button>
         </div>
 
         {/* Duration Rule */}
-        <div className="px-4 sm:px-6 lg:px-8 mb-5 max-w-4xl">
-          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
-            <p className="text-xs font-bold text-emerald-800">
+        <div className="mb-5 max-w-4xl px-4 sm:px-6 lg:px-8">
+          <div className="rounded-card border border-brand-light/70 bg-brand-light/25 px-4 py-3">
+            <p className="text-xs font-extrabold text-brand-dark">
               Session Slot Rule
             </p>
 
-            <p className="text-xs font-medium text-emerald-700 mt-1">
-              Each availability slot must be exactly 1, 2, or
-              3 hours long. For example: 9:00 AM - 10:00 AM
-              or 1:00 PM - 4:00 PM.
+            <p className="mt-1 text-xs font-medium leading-relaxed text-gray-600">
+              Each availability slot must be exactly 1, 2, or 3 hours long. For
+              example: 9:00 AM - 10:00 AM or 1:00 PM - 4:00 PM.
             </p>
           </div>
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center h-52">
-            <div className="w-8 h-8 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" />
+          <div className="flex h-52 items-center justify-center">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-light border-t-brand-dark" />
           </div>
         ) : (
-          <div className="px-4 sm:px-6 lg:px-8 max-w-4xl space-y-4">
+          <div className="max-w-4xl space-y-4 px-4 sm:px-6 lg:px-8">
             <div className="grid gap-4">
               {DAYS_OF_WEEK.map((day) => {
-                const dayItem = availability.find(
-                  (item) => item.day === day
-                );
+                const dayItem = availability.find((item) => item.day === day);
 
                 const isActive = !!dayItem;
 
@@ -456,90 +395,80 @@ export default function ProfessionalAvailability() {
                 return (
                   <div
                     key={day}
-                    className={`rounded-3xl border p-5 transition-all ${
+                    className={`rounded-card border p-5 transition-all duration-300 ${
                       isActive
-                        ? "bg-white border-stone-200 shadow-xs"
-                        : "bg-stone-50/70 border-stone-200/60 opacity-75"
+                        ? "border-brand-light/60 bg-surface/90 shadow-card"
+                        : "border-gray-200 bg-white/60 opacity-75"
                     }`}
                   >
-                    <div className="flex items-center justify-between flex-wrap gap-3 mb-3">
+                    {/* Day Header */}
+                    <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
                       <div className="flex items-center gap-3">
                         <input
                           type="checkbox"
                           id={`check-${day}`}
                           checked={isActive}
-                          onChange={() =>
-                            handleToggleDay(day)
-                          }
-                          className="w-5 h-5 accent-emerald-600 rounded-lg cursor-pointer"
+                          onChange={() => handleToggleDay(day)}
+                          className="h-5 w-5 cursor-pointer accent-[#53b889]"
                         />
 
                         <label
                           htmlFor={`check-${day}`}
-                          className="font-extrabold text-stone-800 text-base cursor-pointer"
+                          className="cursor-pointer text-base font-extrabold text-gray-800"
                         >
                           {day}
                         </label>
                       </div>
 
                       <span
-                        className={`text-xs font-bold px-3 py-1 rounded-full border ${
+                        className={`rounded-full border px-3 py-1 text-xs font-bold ${
                           isActive
-                            ? "bg-emerald-50 text-emerald-800 border-emerald-200"
-                            : "bg-stone-100 text-stone-500 border-stone-200"
+                            ? "border-brand-light bg-brand-light/30 text-brand-dark"
+                            : "border-gray-200 bg-gray-100 text-gray-500"
                         }`}
                       >
                         {isActive
-                          ? `${
-                              dayItem.slots?.length || 0
-                            } Slots Active`
+                          ? `${dayItem.slots?.length || 0} Slots Active`
                           : "Off / Unavailable"}
                       </span>
                     </div>
 
                     {isActive && (
-                      <div className="space-y-3 pt-2 border-t border-stone-100">
+                      <div className="space-y-3 border-t border-brand-light/30 pt-3">
                         {/* Current Slots */}
                         <div className="flex flex-wrap gap-2">
-                          {dayItem.slots &&
-                          dayItem.slots.length > 0 ? (
-                            dayItem.slots.map(
-                              (slot, sIdx) => (
-                                <span
-                                  key={sIdx}
-                                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-stone-100 text-stone-800 border border-stone-200 text-xs font-bold"
+                          {dayItem.slots && dayItem.slots.length > 0 ? (
+                            dayItem.slots.map((slot, sIdx) => (
+                              <span
+                                key={sIdx}
+                                className="inline-flex items-center gap-2 rounded-xl border border-brand-light/60 bg-brand-light/20 px-3 py-1.5 text-xs font-bold text-gray-800"
+                              >
+                                <IconClock className="h-3.5 w-3.5 text-brand-dark" />
+
+                                {slot}
+
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveSlot(day, sIdx)}
+                                  className="ml-1 text-gray-400 transition-colors hover:text-rose-600"
+                                  aria-label="Remove slot"
                                 >
-                                  <IconClock className="w-3.5 h-3.5 text-stone-500" />
-
-                                  {slot}
-
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      handleRemoveSlot(
-                                        day,
-                                        sIdx
-                                      )
-                                    }
-                                    className="text-stone-400 hover:text-rose-600 transition-colors ml-1"
-                                  >
-                                    <IconTrash className="w-3.5 h-3.5" />
-                                  </button>
-                                </span>
-                              )
-                            )
+                                  <IconTrash className="h-3.5 w-3.5" />
+                                </button>
+                              </span>
+                            ))
                           ) : (
-                            <p className="text-xs text-stone-400 font-medium">
-                              No time slots configured for{" "}
-                              {day}. Add one below.
+                            <p className="text-xs font-medium text-gray-400">
+                              No time slots configured for {day}. Add one below.
                             </p>
                           )}
                         </div>
 
                         {/* Add New Slot */}
-                        <div className="flex items-center gap-3 max-w-lg pt-1 flex-wrap bg-stone-50 p-3 rounded-2xl border border-stone-200">
+                        <div className="flex max-w-lg flex-wrap items-center gap-3 rounded-card border border-brand-light/40 bg-brand-light/10 p-3">
+                          {/* Start */}
                           <div>
-                            <label className="block text-[10px] font-bold uppercase text-stone-500 mb-0.5">
+                            <label className="mb-0.5 block text-[10px] font-bold uppercase text-gray-500">
                               Start
                             </label>
 
@@ -547,18 +476,15 @@ export default function ProfessionalAvailability() {
                               type="time"
                               value={input.start}
                               onChange={(e) =>
-                                handleTimeChange(
-                                  day,
-                                  "start",
-                                  e.target.value
-                                )
+                                handleTimeChange(day, "start", e.target.value)
                               }
-                              className="px-2.5 py-1.5 rounded-xl border border-stone-200 bg-white text-xs font-bold text-stone-800 outline-none"
+                              className="rounded-xl border border-gray-200 bg-white/80 px-2.5 py-1.5 text-xs font-bold text-gray-800 outline-none transition-all focus:border-brand focus:ring-2 focus:ring-brand-light/60"
                             />
                           </div>
 
+                          {/* End */}
                           <div>
-                            <label className="block text-[10px] font-bold uppercase text-stone-500 mb-0.5">
+                            <label className="mb-0.5 block text-[10px] font-bold uppercase text-gray-500">
                               End
                             </label>
 
@@ -566,26 +492,20 @@ export default function ProfessionalAvailability() {
                               type="time"
                               value={input.end}
                               onChange={(e) =>
-                                handleTimeChange(
-                                  day,
-                                  "end",
-                                  e.target.value
-                                )
+                                handleTimeChange(day, "end", e.target.value)
                               }
-                              className="px-2.5 py-1.5 rounded-xl border border-stone-200 bg-white text-xs font-bold text-stone-800 outline-none"
+                              className="rounded-xl border border-gray-200 bg-white/80 px-2.5 py-1.5 text-xs font-bold text-gray-800 outline-none transition-all focus:border-brand focus:ring-2 focus:ring-brand-light/60"
                             />
                           </div>
 
+                          {/* Add */}
                           <div className="pt-3.5">
                             <button
                               type="button"
-                              onClick={() =>
-                                handleAddSlot(day)
-                              }
-                              className="flex items-center gap-1 px-3.5 py-2 rounded-xl bg-emerald-100 text-emerald-900 border border-emerald-200 text-xs font-bold hover:bg-emerald-200 transition-colors shrink-0"
+                              onClick={() => handleAddSlot(day)}
+                              className="flex shrink-0 items-center gap-1 rounded-xl border border-brand-light bg-brand-light/35 px-3.5 py-2 text-xs font-bold text-brand-dark transition-all duration-200 hover:-translate-y-0.5 hover:bg-brand-light/50"
                             >
-                              <IconPlus className="w-3.5 h-3.5" />
-
+                              <IconPlus className="h-3.5 w-3.5" />
                               Add Slot
                             </button>
                           </div>
@@ -601,4 +521,4 @@ export default function ProfessionalAvailability() {
       </div>
     </ProfessionalLayout>
   );
-};
+}

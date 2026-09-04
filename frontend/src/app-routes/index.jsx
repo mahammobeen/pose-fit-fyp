@@ -93,6 +93,15 @@ const AppRoutes = () => {
         />
 
         <Route
+          path="/user/review"
+          element={
+            <UserPrivateRoute>
+              <UserReviews />
+            </UserPrivateRoute>
+          }
+        />
+
+        <Route
           path="/user/workout"
           element={
             <UserPrivateRoute>

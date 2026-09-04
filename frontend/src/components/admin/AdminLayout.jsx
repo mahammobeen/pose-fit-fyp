@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { deleteToken, getUser } from "../../lib/local-storage";
+import posefit_logo from "../../assets/posefit_logo.png";
 
 import {
   IconDashboard,
@@ -14,16 +15,8 @@ import {
 } from "./Icons";
 
 const NAV_ITEMS = [
-  {
-    path: "/admin/dashboard",
-    Icon: IconDashboard,
-    label: "Dashboard",
-  },
-  {
-    path: "/admin/users",
-    Icon: IconUsers,
-    label: "Users",
-  },
+  { path: "/admin/dashboard", Icon: IconDashboard, label: "Dashboard" },
+  { path: "/admin/users", Icon: IconUsers, label: "Users" },
   {
     path: "/admin/professionals",
     Icon: IconProfessional,
@@ -34,22 +27,9 @@ const NAV_ITEMS = [
     Icon: IconClipboard,
     label: "Pro Requests",
   },
-  {
-    path: "/admin/payments",
-    Icon: IconPayment,
-    label: "Payments",
-  },
-  {
-    path: "/admin/reviews",
-    Icon: IconReview,
-    label: "Reviews",
-  },
-  {
-    path: "/admin/settings",
-    Icon: IconSettings,
-    label: "Settings",
-  },
-  
+  { path: "/admin/payments", Icon: IconPayment, label: "Payments" },
+  { path: "/admin/reviews", Icon: IconReview, label: "Reviews" },
+  { path: "/admin/settings", Icon: IconSettings, label: "Settings" },
 ];
 
 export default function AdminLayout({ children }) {
@@ -57,9 +37,6 @@ export default function AdminLayout({ children }) {
   const user = getUser();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // =====================================================
-  // DESKTOP SIDEBAR STATE
-  // =====================================================
   const [sidebarOpen, setSidebarOpen] = useState(() => {
     const savedState = localStorage.getItem("admin-sidebar-open");
     if (savedState === null) return true;
@@ -74,85 +51,118 @@ export default function AdminLayout({ children }) {
     });
   };
 
-  // =====================================================
-  // LOGOUT
-  // =====================================================
   const handleLogout = () => {
     deleteToken();
     localStorage.removeItem("pose-fit-user");
     navigate("/admin/login");
   };
 
+  const getUserName = () => {
+    if (user?.name) return user.name;
+
+    const fullName = `${user?.firstName || ""} ${user?.lastName || ""}`.trim();
+
+    return fullName || "Admin";
+  };
+
   return (
-    <div className="flex h-screen overflow-hidden bg-stone-50">
+    <div className="relative flex h-screen overflow-hidden bg-surface font-sans">
+      {/* =====================================================
+          BACKGROUND THEME
+      ===================================================== */}
+
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        {/* Green */}
+        <div className="absolute -left-32 -top-32 h-80 w-80 rounded-full bg-brand-light/35 blur-3xl" />
+
+        {/* Blue */}
+        <div className="absolute right-[-100px] top-[15%] h-72 w-72 rounded-full bg-accent-blue/35 blur-3xl" />
+
+        {/* Orange */}
+        <div className="absolute bottom-[-120px] left-[35%] h-80 w-80 rounded-full bg-accent-orange/25 blur-3xl" />
+
+        {/* Soft white glow */}
+        <div className="absolute left-[45%] top-[20%] h-72 w-72 rounded-full bg-white/40 blur-3xl" />
+      </div>
+
       {/* =====================================================
           MOBILE BACKDROP
       ===================================================== */}
+
       {mobileMenuOpen && (
         <div
+          className="dashboard-mobile-backdrop"
           onClick={() => setMobileMenuOpen(false)}
-          className="fixed inset-0 bg-black/40 backdrop-blur-xs z-40 lg:hidden transition-opacity"
         />
       )}
 
       {/* =====================================================
-          MOBILE DRAWER (SLIDE-OVER)
+          MOBILE DRAWER
       ===================================================== */}
-      <div
-        className={`fixed inset-y-0 left-0 z-50 w-72 bg-white flex flex-col shadow-2xl lg:hidden transform transition-transform duration-300 ease-in-out ${
+
+      <aside
+        className={`dashboard-mobile-drawer border-r border-brand-light/50 bg-surface/95 backdrop-blur-xl ${
           mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         {/* Mobile Header */}
-        <div className="flex items-center justify-between px-5 py-5 border-b border-stone-100">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-[#B7E4C7] shadow-xs shrink-0">
-              <span className="font-black text-emerald-800">P</span>
+        <div className="dashboard-mobile-header border-brand-light/50">
+          <div className="dashboard-brand-wrapper gap-3">
+            <div className="dashboard-logo border border-brand-light/60 bg-white/80 shadow-card">
+              <img
+                src={posefit_logo}
+                alt="PoseFit"
+                className="h-10 w-10 object-contain"
+              />
             </div>
+
             <div>
-              <p className="font-bold text-base tracking-tight leading-none text-gray-800">
-                Pose<span className="text-[#53b889]">Fit</span>
-              </p>
-              <p className="text-[10px] font-extrabold mt-1 uppercase tracking-widest text-[#16845b]">
-                Admin Control
-              </p>
+              <h2 className="dashboard-brand-name">
+                Pose
+                <span className="dashboard-brand-highlight">Fit</span>
+              </h2>
+
+              <p className="dashboard-portal-name">Admin Control</p>
             </div>
           </div>
 
           <button
             type="button"
             onClick={() => setMobileMenuOpen(false)}
-            className="p-1.5 rounded-lg text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition-colors"
+            className="dashboard-mobile-close"
+            aria-label="Close menu"
           >
-            ✕
+            <span className="material-symbols-outlined">close</span>
           </button>
         </div>
 
-        {/* Mobile Nav Links */}
-        <nav className="flex-1 py-4 px-3 space-y-1.5 overflow-y-auto">
-          <p className="text-[10px] font-extrabold uppercase tracking-widest px-3 mb-2 text-stone-400">
-            Main Menu
-          </p>
+        {/* Mobile Navigation */}
+        <nav className="dashboard-nav px-4">
+          <p className="dashboard-menu-title">Admin Menu</p>
+
           {NAV_ITEMS.map(({ path, Icon, label }) => (
             <NavLink
               key={path}
               to={path}
               onClick={() => setMobileMenuOpen(false)}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-sm font-bold transition-all ${
+                `dashboard-nav-link gap-3 px-4 py-3 ${
                   isActive
-                    ? "bg-[#B7E4C7]/30 text-[#16845b] border border-[#B7E4C7] shadow-2xs font-bold"
-                    : "text-stone-600 hover:text-stone-900 hover:bg-stone-100/70 border border-transparent"
+                    ? "dashboard-nav-link-active"
+                    : "dashboard-nav-link-inactive"
                 }`
               }
             >
               {({ isActive }) => (
                 <>
                   <Icon
-                    className={`w-4 h-4 shrink-0 ${
-                      isActive ? "text-[#16845b]" : "text-stone-400"
+                    className={`dashboard-nav-icon h-5 w-5 ${
+                      isActive
+                        ? "dashboard-nav-icon-active"
+                        : "dashboard-nav-icon-inactive"
                     }`}
                   />
+
                   <span>{label}</span>
                 </>
               )}
@@ -160,111 +170,121 @@ export default function AdminLayout({ children }) {
           ))}
         </nav>
 
-        {/* Mobile Footer Admin Info */}
-        <div className="border-t border-stone-100 bg-stone-50/60 p-4">
-          <div className="flex items-center gap-3 mb-3">
-            <div
-              className="w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm text-white shrink-0 shadow-sm"
-              style={{
-                background: "linear-gradient(135deg, #10b981, #059669)",
-              }}
+        {/* Mobile Footer */}
+        <div className="dashboard-sidebar-footer border-brand-light/50 bg-white/30 p-4">
+          <div className="dashboard-user-wrapper gap-3">
+            <div className="dashboard-logo h-10 w-10 border border-brand-light/60 bg-white/80 shadow-card">
+              <img
+                src={posefit_logo}
+                alt="PoseFit"
+                className="h-9 w-9 object-contain"
+              />
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <p className="dashboard-user-name">{getUserName()}</p>
+
+              <p className="dashboard-user-email">{user?.email || ""}</p>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="dashboard-logout p-2"
+              title="Logout"
             >
-              {user?.firstName?.[0] || user?.name?.[0] || "A"}
-            </div>
-            <div className="min-w-0 overflow-hidden">
-              <p className="text-sm font-bold truncate text-stone-800">
-                {user?.name || (user?.firstName ? `${user.firstName} ${user.lastName || ""}`.trim() : "Admin")}
-              </p>
-              <p className="text-xs font-medium truncate text-stone-400">
-                {user?.email || ""}
-              </p>
-            </div>
+              <IconLogOut className="h-4 w-4" />
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200/60 transition-all shadow-sm"
-          >
-            <IconLogOut className="w-3.5 h-3.5 shrink-0" />
-            <span>Logout</span>
-          </button>
         </div>
-      </div>
+      </aside>
 
       {/* =====================================================
           DESKTOP SIDEBAR
       ===================================================== */}
+
       <aside
-        className={`hidden lg:flex flex-col flex-shrink-0 bg-white border-r border-stone-200/80 shadow-sm transition-all duration-300 ease-in-out ${
+        className={`dashboard-sidebar relative z-10 border-r border-brand-light/50 bg-surface/85 backdrop-blur-xl ${
           sidebarOpen ? "w-64" : "w-20"
         }`}
       >
-        {/* Header */}
-        <div className={`relative border-b border-stone-100 transition-all duration-300 ${sidebarOpen ? "px-6 py-6 h-24" : "px-2 py-3 h-24"}`}>
-          <button
-            type="button"
-            onClick={toggleSidebar}
-            title={sidebarOpen ? "Close sidebar" : "Open sidebar"}
-            className={`absolute top-3 w-7 h-7 rounded-lg flex items-center justify-center text-stone-500 hover:text-stone-800 hover:bg-stone-100 transition-all duration-200 z-50 ${sidebarOpen ? "right-3" : "right-1"}`}
+        {/* Sidebar Header */}
+        <div
+          className={`dashboard-sidebar-header border-brand-light/40 ${
+            sidebarOpen ? "h-20 px-5" : "h-20 px-3"
+          }`}
+        >
+          <div
+            className={`dashboard-brand-wrapper h-full ${
+              sidebarOpen ? "gap-3" : "justify-center"
+            }`}
           >
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="4" width="18" height="16" rx="2" />
-              {sidebarOpen ? <line x1="9" y1="4" x2="9" y2="20" /> : <line x1="15" y1="4" x2="15" y2="20" />}
-            </svg>
-          </button>
-
-          <div className={`flex items-center transition-all duration-300 ${sidebarOpen ? "gap-3 mt-4" : "justify-center mt-8"}`}>
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-[#B7E4C7] shadow-xs flex-shrink-0">
-              <span className="font-black text-emerald-800">P</span>
+            <div className="dashboard-logo border border-brand-light/60 bg-white/80 shadow-card">
+              <img
+                src={posefit_logo}
+                alt="PoseFit"
+                className="h-10 w-10 object-contain"
+              />
             </div>
 
             {sidebarOpen && (
-              <div className="overflow-hidden whitespace-nowrap">
-                <p className="font-bold text-lg tracking-tight leading-none text-gray-800">
-                  Pose<span className="text-[#53b889]">Fit</span>
-                </p>
-                <p className="text-[10px] font-extrabold mt-1 uppercase tracking-widest text-[#16845b]">
-                  Admin Control
-                </p>
+              <div className="min-w-0">
+                <h2 className="dashboard-brand-name">
+                  Pose
+                  <span className="dashboard-brand-highlight">Fit</span>
+                </h2>
+
+                <p className="dashboard-portal-name">Admin Control</p>
               </div>
             )}
           </div>
+
+          {/* Sidebar Toggle */}
+          <button
+            type="button"
+            onClick={toggleSidebar}
+            className={`dashboard-sidebar-toggle ${
+              sidebarOpen ? "right-3" : "left-1/2 -translate-x-1/2"
+            }`}
+            title={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+          >
+            <span className="material-symbols-outlined text-[20px]">
+              {sidebarOpen ? "chevron_left" : "chevron_right"}
+            </span>
+          </button>
         </div>
 
         {/* Desktop Navigation */}
-        <nav className={`flex-1 py-5 space-y-1.5 overflow-y-auto transition-all duration-300 ${sidebarOpen ? "px-3.5" : "px-2"}`}>
-          {sidebarOpen && (
-            <p className="text-[11px] font-extrabold uppercase tracking-widest px-3 mb-2 text-stone-400 whitespace-nowrap">
-              Main Menu
-            </p>
-          )}
+        <nav className={`dashboard-nav ${sidebarOpen ? "px-3" : "px-2"}`}>
+          {sidebarOpen && <p className="dashboard-menu-title">Admin Menu</p>}
 
           {NAV_ITEMS.map(({ path, Icon, label }) => (
             <NavLink
               key={path}
               to={path}
-              title={!sidebarOpen ? label : ""}
               className={({ isActive }) =>
-                `flex items-center rounded-2xl text-sm font-bold transition-all duration-200 ${
-                  sidebarOpen ? "gap-3 px-3.5 py-2.5" : "justify-center px-2 py-3"
+                `dashboard-nav-link ${
+                  sidebarOpen ? "gap-3 px-3 py-3" : "justify-center px-2 py-3"
                 } ${
                   isActive
-                    ? "bg-[#B7E4C7]/30 text-[#16845b] border border-[#B7E4C7] shadow-2xs font-bold"
-                    : "text-stone-600 hover:text-stone-900 hover:bg-stone-100/70 border border-transparent"
+                    ? "dashboard-nav-link-active"
+                    : "dashboard-nav-link-inactive"
                 }`
               }
+              title={!sidebarOpen ? label : undefined}
             >
               {({ isActive }) => (
                 <>
                   <Icon
-                    className={`w-4 h-4 shrink-0 ${
-                      isActive ? "text-[#16845b]" : "text-stone-400"
+                    className={`dashboard-nav-icon h-5 w-5 ${
+                      isActive
+                        ? "dashboard-nav-icon-active"
+                        : "dashboard-nav-icon-inactive"
                     }`}
                   />
+
                   {sidebarOpen && (
-                    <span className="whitespace-nowrap overflow-hidden">
-                      {label}
-                    </span>
+                    <span className="whitespace-nowrap">{label}</span>
                   )}
                 </>
               )}
@@ -272,79 +292,84 @@ export default function AdminLayout({ children }) {
           ))}
         </nav>
 
-        {/* Desktop Footer Section */}
-        <div className={`border-t border-stone-100 bg-stone-50/60 transition-all duration-300 ${sidebarOpen ? "p-4" : "p-2"}`}>
-          <div className={`flex items-center transition-all duration-300 ${sidebarOpen ? "gap-3 px-1 mb-3" : "justify-center mb-2"}`}>
-            <div
-              className="w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm text-white shrink-0 shadow-sm"
-              style={{
-                background: "linear-gradient(135deg, #10b981, #059669)",
-              }}
-            >
-              {user?.firstName?.[0] || user?.name?.[0] || "A"}
+        {/* Desktop Sidebar Footer */}
+        <div
+          className={`dashboard-sidebar-footer border-brand-light/50 bg-white/30 ${
+            sidebarOpen ? "p-3" : "p-2"
+          }`}
+        >
+          <div
+            className={`dashboard-user-wrapper ${
+              sidebarOpen ? "gap-3 px-2 py-2" : "justify-center py-2"
+            }`}
+          >
+            {/* PoseFit Logo */}
+            <div className="dashboard-logo border border-brand-light/60 bg-white/80 shadow-card">
+              <img
+                src={posefit_logo}
+                alt="PoseFit"
+                className="h-9 w-9 object-contain"
+              />
             </div>
 
             {sidebarOpen && (
-              <div className="min-w-0 overflow-hidden">
-                <p className="text-sm font-bold truncate text-stone-800">
-                  {user?.name || (user?.firstName ? `${user.firstName} ${user.lastName || ""}`.trim() : "Admin")}
-                </p>
-                <p className="text-xs font-medium truncate text-stone-400">
-                  {user?.email || ""}
-                </p>
-              </div>
+              <>
+                <div className="min-w-0 flex-1">
+                  <p className="dashboard-user-name">{getUserName()}</p>
+
+                  <p className="dashboard-user-email">{user?.email || ""}</p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="dashboard-logout p-2"
+                  title="Logout"
+                >
+                  <IconLogOut className="h-4 w-4" />
+                </button>
+              </>
             )}
           </div>
-
-          <button
-            type="button"
-            onClick={handleLogout}
-            title={!sidebarOpen ? "Logout" : ""}
-            className={`flex items-center rounded-xl text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200/60 transition-all duration-200 shadow-sm ${
-              sidebarOpen ? "w-full justify-center gap-2 px-4 py-2" : "w-full justify-center py-2"
-            }`}
-          >
-            <IconLogOut className="w-3.5 h-3.5 shrink-0" />
-            {sidebarOpen && <span>Logout</span>}
-          </button>
         </div>
       </aside>
 
       {/* =====================================================
-          MAIN CONTENT AREA
+          MAIN AREA
       ===================================================== */}
-      <div className="flex-1 flex flex-col overflow-hidden min-w-0 w-full">
-        {/* Mobile Header Bar with Hamburger */}
-        <header className="lg:hidden h-16 flex-shrink-0 bg-white border-b border-stone-200 px-4 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
+
+      <div className="dashboard-main-wrapper relative z-10">
+        {/* Mobile Header */}
+        <header className="dashboard-header border-brand-light/50 bg-surface/80 backdrop-blur-xl lg:hidden">
+          <div className="flex min-w-0 items-center gap-3">
             <button
               type="button"
               onClick={() => setMobileMenuOpen(true)}
-              className="p-2 rounded-xl text-stone-600 hover:bg-stone-100 hover:text-stone-900 transition-colors"
-              aria-label="Open navigation menu"
+              className="dashboard-mobile-menu-button"
+              aria-label="Open menu"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
+              <span className="material-symbols-outlined">menu</span>
             </button>
-            <p className="font-bold text-sm text-stone-800">
-              Admin Portal
-            </p>
+
+            <div className="min-w-0">
+              <h1 className="truncate text-base font-bold text-gray-800">
+                Admin Portal
+              </h1>
+            </div>
           </div>
 
           <button
             type="button"
             onClick={handleLogout}
-            className="p-2 rounded-xl text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-colors flex items-center gap-1.5"
+            className="dashboard-mobile-logout"
           >
-            <IconLogOut className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Logout</span>
+            <IconLogOut className="h-4 w-4" />
+            <span>Logout</span>
           </button>
         </header>
 
-        <main className="flex-1 overflow-y-auto overflow-x-hidden min-w-0 bg-[#f8fafc]">
-          {children}
-        </main>
+        {/* Dashboard Content */}
+        <main className="dashboard-content bg-transparent">{children}</main>
       </div>
     </div>
   );

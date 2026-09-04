@@ -1,10 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { httpClient } from "../../lib/http";
-import {
-  IconAlertTriangle,
-  IconCheck,
-} from "../../components/admin/Icons";
+import { IconAlertTriangle, IconCheck } from "../../components/admin/Icons";
+import posefit_logo from "../../assets/posefit_logo.png";
 
 export default function UserRegister() {
   const navigate = useNavigate();
@@ -29,22 +27,22 @@ export default function UserRegister() {
   // TOAST
   const [toast, setToast] = useState(null);
 
-  const showToast = useCallback((message, type = "success") => {
+  const showToast = useCallback((type, message) => {
     setToast({
-      msg: message,
       type,
+      message,
     });
+
+    setTimeout(() => {
+      setToast(null);
+    }, 4000);
   }, []);
 
   useEffect(() => {
-    if (!toast) return;
-
-    const timer = setTimeout(() => {
+    return () => {
       setToast(null);
-    }, 4000);
-
-    return () => clearTimeout(timer);
-  }, [toast]);
+    };
+  }, []);
 
   // INPUT CHANGE
   const handleChange = (e) => {
@@ -64,12 +62,12 @@ export default function UserRegister() {
       !form.email.trim() ||
       !form.password
     ) {
-      showToast("All fields are required.", "error");
+      showToast("error", "All fields are required.");
       return;
     }
 
     if (form.password.length < 6) {
-      showToast("Password must be at least 6 characters.", "error");
+      showToast("error", "Password must be at least 6 characters.");
       return;
     }
 
@@ -86,9 +84,8 @@ export default function UserRegister() {
 
       if (!res.data?.success) {
         showToast(
-          res.data?.message ||
-            "Registration failed. Please try again.",
-          "error"
+          "error",
+          res.data?.message || "Registration failed. Please try again.",
         );
         return;
       }
@@ -97,9 +94,9 @@ export default function UserRegister() {
       setUserId(res.data.userId);
 
       showToast(
+        "success",
         res.data.message ||
           "Registration successful. Verification code sent to your email.",
-        "success"
       );
 
       setStep(2);
@@ -107,10 +104,10 @@ export default function UserRegister() {
       console.error("Registration error:", err);
 
       showToast(
+        "error",
         err?.response?.data?.message ||
           err?.response?.data?.error ||
           "Registration failed. Please verify your details.",
-        "error"
       );
     } finally {
       setLoading(false);
@@ -125,8 +122,8 @@ export default function UserRegister() {
 
     if (!userId) {
       showToast(
+        "error",
         "Registration session expired. Please register again.",
-        "error"
       );
 
       setStep(1);
@@ -134,15 +131,12 @@ export default function UserRegister() {
     }
 
     if (!trimmedCode) {
-      showToast("Verification code is required.", "error");
+      showToast("error", "Verification code is required.");
       return;
     }
 
     if (!/^\d{6}$/.test(trimmedCode)) {
-      showToast(
-        "Please enter the 6-digit verification code.",
-        "error"
-      );
+      showToast("error", "Please enter the 6-digit verification code.");
       return;
     }
 
@@ -150,27 +144,21 @@ export default function UserRegister() {
       setLoading(true);
 
       // VERIFY EMAIL
-      const verifyRes = await httpClient.post(
-        "/auth/verify-email",
-        {
-          userId,
-          code: trimmedCode,
-        }
-      );
+      const verifyRes = await httpClient.post("/auth/verify-email", {
+        userId,
+        code: trimmedCode,
+      });
 
       if (!verifyRes.data?.success) {
         showToast(
+          "error",
           verifyRes.data?.message ||
             "Verification failed. Please check the code.",
-          "error"
         );
         return;
       }
 
-      showToast(
-        "Email verified successfully. Logging you in...",
-        "success"
-      );
+      showToast("success", "Email verified successfully. Logging you in...");
 
       // AUTO LOGIN
       const loginEmail = form.email.trim().toLowerCase();
@@ -185,8 +173,8 @@ export default function UserRegister() {
       // LOGIN RESPONSE VALIDATION
       if (!success || !token || !user) {
         showToast(
+          "error",
           "Email verified successfully, but automatic login failed. Please login manually.",
-          "error"
         );
 
         setTimeout(() => {
@@ -203,8 +191,8 @@ export default function UserRegister() {
       // ROLE CHECK
       if (user.role !== "USER") {
         showToast(
+          "error",
           "Invalid account role. Please use the appropriate portal.",
-          "error"
         );
         return;
       }
@@ -215,14 +203,10 @@ export default function UserRegister() {
         _id: user._id || user.id || user.userId,
       };
 
-      const userIdFromResponse =
-        user?._id || user?.id || user?.userId;
+      const userIdFromResponse = user?._id || user?.id || user?.userId;
 
       if (!userIdFromResponse) {
-        showToast(
-          "User ID was not received from server.",
-          "error"
-        );
+        showToast("error", "User ID was not received from server.");
         return;
       }
 
@@ -233,45 +217,34 @@ export default function UserRegister() {
       // SAVE AUTH DATA
       localStorage.setItem("pose-fit", token);
 
-      localStorage.setItem(
-        "pose-fit-user",
-        JSON.stringify(normalizedUser)
-      );
+      localStorage.setItem("pose-fit-user", JSON.stringify(normalizedUser));
 
       // REMEMBER EMAIL ONLY
       localStorage.setItem("pose-fit-email", loginEmail);
 
       // DEBUG
-      console.log(
-        "REGISTER LOGIN RESPONSE:",
-        loginRes.data
-      );
+      console.log("REGISTER LOGIN RESPONSE:", loginRes.data);
+
       console.log("SAVED TOKEN:", token);
+
       console.log("SAVED USER:", normalizedUser);
-      console.log(
-        "SAVED USER ID:",
-        normalizedUser._id
-      );
+
+      console.log("SAVED USER ID:", normalizedUser._id);
 
       // REDIRECT
-      const from =
-        location.state?.from?.pathname ||
-        "/user/dashboard";
+      const from = location.state?.from?.pathname || "/user/dashboard";
 
       navigate(from, {
         replace: true,
       });
     } catch (err) {
-      console.error(
-        "Verification/Login error:",
-        err
-      );
+      console.error("Verification/Login error:", err);
 
       showToast(
+        "error",
         err?.response?.data?.message ||
           err?.response?.data?.error ||
           "Verification failed. Please check the code and try again.",
-        "error"
       );
     } finally {
       setLoading(false);
@@ -284,47 +257,38 @@ export default function UserRegister() {
     setCode("");
   };
 
-  // TOAST ICON
-  const ToastIcon = () => {
-    if (toast?.type === "error") {
-      return (
-        <IconAlertTriangle className="w-5 h-5 text-white shrink-0" />
-      );
-    }
-
-    return (
-      <IconCheck className="w-5 h-5 text-white shrink-0" />
-    );
-  };
-
   return (
-    <div
-      className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
-      style={{
-        background:
-          "linear-gradient(135deg, #f0fdf4 0%, #f8fafc 40%, #e0f2fe 100%)",
-      }}
-    >
-      {/* TOAST */}
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-surface px-4 py-8 font-sans">
+      {/* ================= BACKGROUND DECORATIONS ================= */}
+
+      <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-brand-light/50 blur-3xl" />
+
+      <div className="pointer-events-none absolute -bottom-24 -right-24 h-80 w-80 rounded-full bg-accent-blue/60 blur-3xl" />
+
+      <div className="pointer-events-none absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent-orange/20 blur-3xl" />
+
+      {/* ================= TOAST ================= */}
 
       {toast && (
         <div
-          className={`fixed top-5 right-5 z-[100] max-w-sm px-5 py-3.5 rounded-2xl shadow-xl text-white text-sm font-bold border flex items-center gap-3 ${
+          className={`fixed right-5 top-5 z-[100] flex max-w-sm items-center gap-3 rounded-card border px-5 py-4 text-sm font-medium shadow-card-hover ${
             toast.type === "error"
-              ? "bg-rose-500 border-rose-600"
-              : "bg-emerald-600 border-emerald-700"
+              ? "border-red-200 bg-red-50 text-red-700"
+              : "border-brand-light bg-brand-light/60 text-brand-dark"
           }`}
         >
-          <ToastIcon />
+          {toast.type === "error" ? (
+            <IconAlertTriangle className="h-5 w-5 shrink-0" />
+          ) : (
+            <IconCheck className="h-5 w-5 shrink-0" />
+          )}
 
-          <span className="leading-relaxed">
-            {toast.msg}
-          </span>
+          <span>{toast.message}</span>
 
           <button
             type="button"
             onClick={() => setToast(null)}
-            className="ml-2 text-white/80 hover:text-white text-lg leading-none"
+            className="ml-1 text-current opacity-60 transition-opacity hover:opacity-100"
             aria-label="Close notification"
           >
             ✕
@@ -332,95 +296,95 @@ export default function UserRegister() {
         </div>
       )}
 
-      {/* BACKGROUND */}
+      {/* ================= REGISTER CARD ================= */}
 
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div
-          className="absolute -top-32 -left-32 w-96 h-96 rounded-full opacity-40 blur-3xl"
-          style={{
-            background: "#bbf7d0",
-          }}
-        />
+      <div className="relative z-10 w-full max-w-md">
+        <div className="rounded-card border border-brand-light/70 bg-surface/80 p-8 shadow-card-hover backdrop-blur-xl sm:p-10">
+          {/* ================= LOGO ================= */}
 
-        <div
-          className="absolute -bottom-32 -right-32 w-96 h-96 rounded-full opacity-40 blur-3xl"
-          style={{
-            background: "#bae6fd",
-          }}
-        />
-      </div>
-
-      {/* REGISTER CARD */}
-
-      <div className="w-full max-w-md relative z-10">
-        <div className="bg-white/90 backdrop-blur-xl rounded-3xl p-8 border border-stone-200/80 shadow-xl">
-
-          {/* HEADER */}
-
-          <div className="text-center mb-8">
-            <div
-              className="w-16 h-16 rounded-3xl mx-auto flex items-center justify-center text-white font-black text-2xl shadow-sm mb-4"
-              style={{
-                background:
-                  "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-              }}
+          <div className="mb-7 flex justify-center">
+            <Link
+              to="/"
+              className="flex h-16 w-16 items-center justify-center rounded-card bg-white/70 p-2 shadow-card transition-transform duration-300 hover:-translate-y-1"
             >
-              P
-            </div>
+              <img
+                src={posefit_logo}
+                alt="PoseFit Logo"
+                className="h-full w-full object-contain"
+              />
+            </Link>
+          </div>
 
-            <h1 className="text-2xl font-black text-stone-800 tracking-tight">
-              PoseFit Sign Up
+          {/* ================= HEADING ================= */}
+
+          <div className="mb-8 text-center">
+            <h1 className="text-3xl font-extrabold tracking-tight text-gray-800">
+              {step === 1 ? "Create Account" : "Verify Your Email"}
             </h1>
 
-            <p className="text-xs text-stone-500 font-medium mt-1">
+            <p className="mt-2 text-sm text-gray-500">
               {step === 1
-                ? "Create your customer account to start booking"
-                : "Verify your email to complete registration"}
+                ? "Create your account to start your PoseFit journey"
+                : "Enter the verification code sent to your email"}
             </p>
           </div>
 
-          {/* STEP 1 - REGISTER */}
+          {/* ================= STEP 1 ================= */}
 
           {step === 1 ? (
             <form
               onSubmit={handleRegisterSubmit}
-              className="space-y-4"
+              className="space-y-5"
               autoComplete="on"
             >
               {/* FIRST + LAST NAME */}
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                {/* FIRST NAME */}
+
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-stone-600 mb-1.5">
+                  <label
+                    htmlFor="firstName"
+                    className="mb-2 block text-sm font-semibold text-gray-700"
+                  >
                     First Name
                   </label>
 
                   <input
+                    id="firstName"
                     type="text"
                     name="firstName"
                     required
                     autoComplete="given-name"
-                    placeholder="John"
+                    placeholder="Enter first name"
                     value={form.firstName}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 rounded-2xl border border-stone-200 text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-300 text-stone-800 transition-all bg-stone-50/50 focus:bg-white"
+                    disabled={loading}
+                    className="w-full rounded-btn border border-gray-200 bg-white/70 px-4 py-3.5 text-sm text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand-light/60 disabled:cursor-not-allowed disabled:opacity-60"
                   />
                 </div>
 
+                {/* LAST NAME */}
+
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-stone-600 mb-1.5">
+                  <label
+                    htmlFor="lastName"
+                    className="mb-2 block text-sm font-semibold text-gray-700"
+                  >
                     Last Name
                   </label>
 
                   <input
+                    id="lastName"
                     type="text"
                     name="lastName"
                     required
                     autoComplete="family-name"
-                    placeholder="Doe"
+                    placeholder="Enter last name"
                     value={form.lastName}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 rounded-2xl border border-stone-200 text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-300 text-stone-800 transition-all bg-stone-50/50 focus:bg-white"
+                    disabled={loading}
+                    className="w-full rounded-btn border border-gray-200 bg-white/70 px-4 py-3.5 text-sm text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand-light/60 disabled:cursor-not-allowed disabled:opacity-60"
                   />
                 </div>
               </div>
@@ -428,87 +392,70 @@ export default function UserRegister() {
               {/* EMAIL */}
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-stone-600 mb-1.5">
+                <label
+                  htmlFor="email"
+                  className="mb-2 block text-sm font-semibold text-gray-700"
+                >
                   Email Address
                 </label>
 
                 <input
+                  id="email"
                   type="email"
                   name="email"
                   required
                   autoComplete="email"
-                  placeholder="john.doe@example.com"
+                  placeholder="Enter your email"
                   value={form.email}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 rounded-2xl border border-stone-200 text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-300 text-stone-800 transition-all bg-stone-50/50 focus:bg-white"
+                  disabled={loading}
+                  className="w-full rounded-btn border border-gray-200 bg-white/70 px-4 py-3.5 text-sm text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand-light/60 disabled:cursor-not-allowed disabled:opacity-60"
                 />
               </div>
 
               {/* PASSWORD */}
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-stone-600 mb-1.5">
+                <label
+                  htmlFor="password"
+                  className="mb-2 block text-sm font-semibold text-gray-700"
+                >
                   Password
                 </label>
 
                 <div className="relative">
                   <input
-                    type={
-                      showPassword ? "text" : "password"
-                    }
+                    id="password"
+                    type={showPassword ? "text" : "password"}
                     name="password"
                     required
                     minLength={6}
                     autoComplete="new-password"
-                    placeholder="••••••••"
+                    placeholder="Enter your password"
                     value={form.password}
                     onChange={handleChange}
-                    className="w-full px-4 pr-12 py-3 rounded-2xl border border-stone-200 text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-300 text-stone-800 transition-all bg-stone-50/50 focus:bg-white"
+                    disabled={loading}
+                    className="w-full rounded-btn border border-gray-200 bg-white/70 px-4 py-3.5 pr-12 text-sm text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand-light/60 disabled:cursor-not-allowed disabled:opacity-60"
                   />
+
+                  {/* SHOW PASSWORD */}
 
                   <button
                     type="button"
-                    onClick={() =>
-                      setShowPassword((prev) => !prev)
-                    }
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    disabled={loading}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 transition-colors hover:text-brand-dark disabled:cursor-not-allowed"
                     aria-label={
-                      showPassword
-                        ? "Hide password"
-                        : "Show password"
+                      showPassword ? "Hide password" : "Show password"
                     }
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 transition-colors"
                   >
-                    {showPassword ? (
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        className="w-5 h-5"
-                      >
-                        <path d="M3 3l18 18" />
-                        <path d="M10.58 10.58a2 2 0 0 0 2.83 2.83" />
-                        <path d="M9.88 5.09A9.77 9.77 0 0 1 12 4.86c5 0 8.27 4.17 9.5 6.14a1.77 1.77 0 0 1 0 1.99 16.2 16.2 0 0 1-3.1 3.45" />
-                        <path d="M6.61 6.61A16.5 16.5 0 0 0 2.5 11a1.77 1.77 0 0 0 0 1.99C3.73 14.96 7 19.14 12 19.14a9.8 9.8 0 0 0 3.13-.51" />
-                      </svg>
-                    ) : (
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        className="w-5 h-5"
-                      >
-                        <path d="M2.5 12s3.27-7 9.5-7 9.5 7 9.5 7-3.27 7-9.5 7-9.5-7-9.5-7Z" />
-                        <circle cx="12" cy="12" r="3" />
-                      </svg>
-                    )}
+                    <span className="material-symbols-outlined text-[22px]">
+                      {showPassword ? "visibility_off" : "visibility"}
+                    </span>
                   </button>
                 </div>
 
-                <p className="text-[11px] text-stone-400 mt-1.5">
+                <p className="mt-1.5 text-xs text-gray-400">
                   Password must be at least 6 characters.
                 </p>
               </div>
@@ -518,36 +465,34 @@ export default function UserRegister() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3.5 rounded-2xl font-bold text-white text-sm shadow-md hover:opacity-95 active:scale-95 disabled:opacity-60 transition-all duration-200 flex items-center justify-center gap-2 mt-2"
-                style={{
-                  background:
-                    "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-                }}
+                className="w-full rounded-btn bg-gray-800 px-6 py-3.5 text-sm font-bold text-white shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:bg-gray-700 hover:shadow-card-hover disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
               >
                 {loading ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-
-                    <span>Signing up...</span>
-                  </>
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                    Signing up...
+                  </span>
                 ) : (
-                  <span>Register Account</span>
+                  "Create Account"
                 )}
               </button>
             </form>
           ) : (
-            /* STEP 2 - VERIFY EMAIL */
+            /* ================= STEP 2 ================= */
 
-            <form
-              onSubmit={handleVerifySubmit}
-              className="space-y-5"
-            >
+            <form onSubmit={handleVerifySubmit} className="space-y-5">
+              {/* VERIFICATION CODE */}
+
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-stone-600 mb-2 text-center">
-                  Enter 6-Digit Code
+                <label
+                  htmlFor="verificationCode"
+                  className="mb-2 block text-center text-sm font-semibold text-gray-700"
+                >
+                  Verification Code
                 </label>
 
                 <input
+                  id="verificationCode"
                   type="text"
                   inputMode="numeric"
                   autoComplete="one-time-code"
@@ -556,17 +501,16 @@ export default function UserRegister() {
                   placeholder="123456"
                   value={code}
                   onChange={(e) => {
-                    const value = e.target.value
-                      .replace(/\D/g, "")
-                      .slice(0, 6);
+                    const value = e.target.value.replace(/\D/g, "").slice(0, 6);
 
                     setCode(value);
                   }}
-                  className="w-full text-center px-4 py-3 rounded-2xl border border-stone-200 text-lg font-black tracking-widest outline-none focus:ring-2 focus:ring-emerald-300 text-stone-800 transition-all bg-stone-50/50 focus:bg-white"
+                  disabled={loading}
+                  className="w-full rounded-btn border border-gray-200 bg-white/70 px-4 py-3.5 text-center text-lg font-bold tracking-[0.35em] text-gray-800 outline-none transition-all placeholder:tracking-normal placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand-light/60 disabled:cursor-not-allowed disabled:opacity-60"
                 />
 
-                <p className="text-center text-[11px] text-stone-400 mt-2">
-                  Check your email for the verification code.
+                <p className="mt-2 text-center text-xs text-gray-400">
+                  Check your email for the 6-digit verification code.
                 </p>
               </div>
 
@@ -575,20 +519,15 @@ export default function UserRegister() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3.5 rounded-2xl font-bold text-white text-sm shadow-md hover:opacity-95 active:scale-95 disabled:opacity-60 transition-all duration-200 flex items-center justify-center gap-2"
-                style={{
-                  background:
-                    "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-                }}
+                className="w-full rounded-btn bg-gray-800 px-6 py-3.5 text-sm font-bold text-white shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:bg-gray-700 hover:shadow-card-hover disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
               >
                 {loading ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-
-                    <span>Verifying...</span>
-                  </>
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                    Verifying...
+                  </span>
                 ) : (
-                  <span>Verify Code & Log In</span>
+                  "Verify Code & Log In"
                 )}
               </button>
 
@@ -598,26 +537,32 @@ export default function UserRegister() {
                 type="button"
                 onClick={handleBack}
                 disabled={loading}
-                className="w-full text-xs font-bold text-stone-500 hover:text-stone-700 disabled:opacity-50 transition-colors"
+                className="w-full text-sm font-semibold text-gray-500 transition-colors hover:text-brand-dark disabled:cursor-not-allowed disabled:opacity-50"
               >
                 ← Back to Registration
               </button>
             </form>
           )}
 
-          {/* FOOTER */}
+          {/* ================= LOGIN LINK ================= */}
 
-          <div className="mt-6 text-center text-xs font-bold text-stone-600">
+          <div className="mt-7 text-center text-sm text-gray-500">
             Already have an account?{" "}
             <Link
               to="/user/login"
               state={location.state}
-              className="text-emerald-600 hover:text-emerald-700 underline transition-colors"
+              className="font-bold text-brand-dark transition-colors hover:text-brand"
             >
-              Sign In
+              Login
             </Link>
           </div>
         </div>
+
+        {/* ================= BOTTOM TEXT ================= */}
+
+        <p className="mt-5 text-center text-xs text-gray-400">
+          Your fitness journey starts with PoseFit.
+        </p>
       </div>
     </div>
   );

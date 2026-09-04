@@ -2,384 +2,303 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { httpClient } from "../../lib/http";
 import { IconAlertTriangle } from "../../components/admin/Icons";
+import posefit_logo from "../../assets/posefit_logo.png";
 
 export default function UserLogin() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [form, setForm] = useState({
-    email: "",
-    password: "",
-  });
-
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState(null);
 
-  // TOAST
-  const showToast = useCallback((message, type = "success") => {
-    setToast({
-      msg: message,
-      type,
-    });
+  const showToast = useCallback((type, message) => {
+    setToast({ type, message });
+
+    setTimeout(() => {
+      setToast(null);
+    }, 4000);
   }, []);
 
   useEffect(() => {
-    if (!toast) return;
-
-    const timer = setTimeout(() => {
+    return () => {
       setToast(null);
-    }, 4000);
+    };
+  }, []);
 
-    return () => clearTimeout(timer);
-  }, [toast]);
-
-  // LOGIN
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!form.email.trim() || !form.password) {
-      showToast("Email and password are required.", "error");
+    if (!email.trim() || !password) {
+      showToast("error", "Please enter your email and password.");
       return;
     }
 
+    setLoading(true);
+
     try {
-      setLoading(true);
-
-      const loginEmail = form.email.trim().toLowerCase();
-
-      const res = await httpClient.post("/auth/login", {
-        email: loginEmail,
-        password: form.password,
+      const response = await httpClient.post("/auth/login", {
+        email: email.trim().toLowerCase(),
+        password,
       });
 
-      console.log("LOGIN RESPONSE:", res.data);
+      const data = response?.data;
 
-      const { success, token, user } = res.data;
-
-      // VALIDATE RESPONSE
-      if (!success || !token || !user) {
-        showToast("Invalid response from server.", "error");
-        return;
+      if (!data?.success) {
+        throw new Error(
+          data?.message || data?.error || "Login failed. Please try again.",
+        );
       }
 
-      // USER ID CHECK
+      const token = data?.token;
+      const user = data?.user;
+
+      if (!token || !user) {
+        throw new Error("Invalid login response from server.");
+      }
+
       const userId = user?._id || user?.id || user?.userId;
 
       if (!userId) {
-        console.error("User object does not contain an ID:", user);
-
-        showToast("User ID was not received from server.", "error");
-        return;
+        throw new Error("User information is missing.");
       }
 
-      // ROLE VALIDATION
+      const role = String(user?.role || "USER").toUpperCase();
+
       const validRoles = ["USER", "ADMIN", "PROFESSIONAL"];
 
-      if (!validRoles.includes(user.role)) {
-        console.error("Unknown user role:", user.role);
-
-        showToast("Invalid user role received from server.", "error");
-        return;
+      if (!validRoles.includes(role)) {
+        throw new Error("Invalid user role.");
       }
 
-      // EMAIL VERIFICATION
-      if (user.role === "USER" && !user.isVerified) {
-        showToast("Please verify your email before logging in.", "error");
-        return;
+      // USER verification check
+      if (role === "USER" && user?.isVerified === false) {
+        throw new Error(
+          "Your account is not verified. Please verify your email first.",
+        );
       }
 
-      // NORMALIZE USER OBJECT
+      // Normalize user data before storing
       const normalizedUser = {
         ...user,
-        _id: user._id || user.id || user.userId,
+        _id: userId,
+        id: userId,
+        role,
       };
 
-      // CLEAR OLD LOGIN DATA
-      localStorage.removeItem("pose-fit");
-      localStorage.removeItem("pose-fit-user");
-
-      // SAVE AUTH DATA
       localStorage.setItem("pose-fit", token);
+      localStorage.setItem("pose-fit-user", JSON.stringify(normalizedUser));
 
-      localStorage.setItem(
-        "pose-fit-user",
-        JSON.stringify(normalizedUser)
-      );
-
-      // DEBUG
-      console.log("SAVED TOKEN:", token);
-      console.log("SAVED USER:", normalizedUser);
-      console.log("SAVED USER ID:", normalizedUser._id);
-      console.log("USER ROLE:", normalizedUser.role);
-
-      // SUCCESS TOAST
-      showToast("Login successful! Welcome to PoseFit.", "success");
-
-      // ROLE-BASED REDIRECT
-      let redirectPath = "/user/dashboard";
-
-      if (user.role === "ADMIN") {
-        redirectPath = "/admin/dashboard";
-      } else if (user.role === "PROFESSIONAL") {
-        const professionalStatus = (
-          user.professionalStatus || ""
-        ).toLowerCase();
-
-        if (
-          professionalStatus === "incomplete" ||
-          professionalStatus === "invited" ||
-          professionalStatus === "pending_verification" ||
-          professionalStatus === "rejected"
-        ) {
-          redirectPath = "/professional/profile/complete";
-        } else if (professionalStatus === "approved") {
-          redirectPath = "/professional/dashboard";
-        } else {
-          redirectPath = "/professional/profile/complete";
-        }
-      } else if (user.role === "USER") {
-        redirectPath =
-          location.state?.from?.pathname || "/user/dashboard";
-      }
-
-      console.log("REDIRECTING TO:", redirectPath);
+      showToast("success", "Login successful! Redirecting...");
 
       setTimeout(() => {
-        navigate(redirectPath, {
-          replace: true,
-        });
-      }, 700);
-    } catch (err) {
-      console.error("Login error:", err);
+        // ADMIN
+        if (role === "ADMIN") {
+          navigate("/admin/dashboard");
+          return;
+        }
 
-      showToast(
-        err?.response?.data?.message ||
-          err?.response?.data?.error ||
-          "Login failed. Please check your email and password.",
-        "error"
-      );
+        // PROFESSIONAL
+        if (role === "PROFESSIONAL") {
+          const professionalStatus = String(
+            user?.professionalStatus || "",
+          ).toLowerCase();
+
+          const incompleteStatuses = [
+            "",
+            "incomplete",
+            "invited",
+            "pending_verification",
+            "rejected",
+          ];
+
+          if (incompleteStatuses.includes(professionalStatus)) {
+            navigate("/professional/profile/complete");
+          } else if (professionalStatus === "approved") {
+            navigate("/professional/dashboard");
+          } else {
+            navigate("/professional/profile/complete");
+          }
+
+          return;
+        }
+
+        // USER
+        const fromPath = location.state?.from?.pathname || "/user/dashboard";
+
+        navigate(fromPath);
+      }, 700);
+    } catch (error) {
+      console.error("Login error:", error);
+
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.message ||
+        "Something went wrong. Please try again.";
+
+      showToast("error", message);
     } finally {
       setLoading(false);
     }
   };
 
-  // UI
   return (
-    <div
-      className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
-      style={{
-        background:
-          "linear-gradient(135deg, #f0fdf4 0%, #f8fafc 40%, #e0f2fe 100%)",
-      }}
-    >
-      {/* BACKGROUND DECORATION */}
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-surface px-4 py-8 font-sans">
+      {/* Background Decorations */}
+      <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-brand-light/50 blur-3xl" />
 
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div
-          className="absolute -top-32 -left-32 w-96 h-96 rounded-full opacity-40 blur-3xl"
-          style={{
-            background: "#bbf7d0",
-          }}
-        />
+      <div className="pointer-events-none absolute -bottom-24 -right-24 h-80 w-80 rounded-full bg-accent-blue/60 blur-3xl" />
 
-        <div
-          className="absolute -bottom-32 -right-32 w-96 h-96 rounded-full opacity-40 blur-3xl"
-          style={{
-            background: "#bae6fd",
-          }}
-        />
-      </div>
+      <div className="pointer-events-none absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent-orange/20 blur-3xl" />
 
-      {/* TOAST */}
-
+      {/* Toast */}
       {toast && (
         <div
-          className={`fixed top-5 right-5 z-[100] px-5 py-3 rounded-2xl shadow-xl text-white text-sm font-bold border max-w-sm ${
+          className={`fixed right-5 top-5 z-[100] flex max-w-sm items-center gap-3 rounded-card border px-5 py-4 text-sm font-medium shadow-card-hover ${
             toast.type === "error"
-              ? "bg-rose-500 border-rose-600"
-              : "bg-emerald-600 border-emerald-700"
+              ? "border-red-200 bg-red-50 text-red-700"
+              : "border-brand-light bg-brand-light/60 text-brand-dark"
           }`}
         >
-          <div className="flex items-center gap-2.5">
-            {toast.type === "error" && (
-              <IconAlertTriangle className="w-4 h-4 shrink-0 text-white" />
-            )}
+          {toast.type === "error" && (
+            <IconAlertTriangle className="h-5 w-5 shrink-0" />
+          )}
 
-            {toast.type === "success" && (
-              <span className="text-base leading-none">✓</span>
-            )}
-
-            <span>{toast.msg}</span>
-          </div>
+          <span>{toast.message}</span>
         </div>
       )}
 
-      {/* LOGIN CARD */}
-
-      <div className="w-full max-w-md relative z-10">
-        <div className="bg-white/90 backdrop-blur-xl rounded-3xl p-8 border border-stone-200/80 shadow-xl">
-
-          {/* LOGO / HEADER */}
-
-          <div className="text-center mb-8">
-            <div
-              className="w-16 h-16 rounded-3xl mx-auto flex items-center justify-center text-white font-black text-2xl shadow-sm mb-4"
-              style={{
-                background:
-                  "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-              }}
+      {/* Login Card */}
+      <div className="relative z-10 w-full max-w-md">
+        <div className="rounded-card border border-brand-light/70 bg-surface/80 p-8 shadow-card-hover backdrop-blur-xl sm:p-10">
+          {/* Logo */}
+          <div className="mb-8 flex justify-center">
+            <Link
+              to="/"
+              className="flex h-16 w-16 items-center justify-center rounded-card bg-white/70 p-2 shadow-card transition-transform duration-300 hover:-translate-y-1"
             >
-              P
-            </div>
+              <img
+                src={posefit_logo}
+                alt="PoseFit Logo"
+                className="h-full w-full object-contain"
+              />
+            </Link>
+          </div>
 
-            <h1 className="text-2xl font-black text-stone-800 tracking-tight">
-              PoseFit Login
+          {/* Heading */}
+          <div className="mb-8 text-center">
+            <h1 className="text-3xl font-extrabold tracking-tight text-gray-800">
+              Welcome Back
             </h1>
 
-            <p className="text-xs text-stone-500 font-medium mt-1">
-              Sign in to your PoseFit account
+            <p className="mt-2 text-sm text-gray-500">
+              Login to continue to PoseFit
             </p>
           </div>
 
-          {/* LOGIN FORM */}
-
-          <form
-            onSubmit={handleSubmit}
-            className="space-y-5"
-          >
-            {/* EMAIL */}
-
+          {/* Login Form */}
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Email */}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-stone-600 mb-2">
+              <label
+                htmlFor="email"
+                className="mb-2 block text-sm font-semibold text-gray-700"
+              >
                 Email Address
               </label>
 
               <input
+                id="email"
                 type="email"
-                name="email"
-                required
-                placeholder="email@example.com"
-                value={form.email}
-                onChange={(e) => {
-                  setForm((prev) => ({
-                    ...prev,
-                    email: e.target.value,
-                  }));
-                }}
-                className="w-full px-4 py-3 rounded-2xl border border-stone-200 text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-300 text-stone-800 transition-all bg-stone-50/50 focus:bg-white"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email"
+                autoComplete="email"
+                disabled={loading}
+                className="w-full rounded-btn border border-gray-200 bg-white/70 px-4 py-3.5 text-sm text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand-light/60 disabled:cursor-not-allowed disabled:opacity-60"
               />
             </div>
 
-            {/* PASSWORD */}
-
+            {/* Password */}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-stone-600 mb-2">
+              <label
+                htmlFor="password"
+                className="mb-2 block text-sm font-semibold text-gray-700"
+              >
                 Password
               </label>
 
               <div className="relative">
                 <input
+                  id="password"
                   type={showPassword ? "text" : "password"}
-                  name="password"
-                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
                   autoComplete="current-password"
-                  placeholder="••••••••"
-                  value={form.password}
-                  onChange={(e) => {
-                    setForm((prev) => ({
-                      ...prev,
-                      password: e.target.value,
-                    }));
-                  }}
-                  className="w-full px-4 pr-12 py-3 rounded-2xl border border-stone-200 text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-300 text-stone-800 transition-all bg-stone-50/50 focus:bg-white"
+                  disabled={loading}
+                  className="w-full rounded-btn border border-gray-200 bg-white/70 px-4 py-3.5 pr-12 text-sm text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand-light/60 disabled:cursor-not-allowed disabled:opacity-60"
                 />
 
                 <button
                   type="button"
                   onClick={() => setShowPassword((prev) => !prev)}
-                  aria-label={
-                    showPassword ? "Hide password" : "Show password"
-                  }
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 transition-colors"
+                  disabled={loading}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 transition-colors hover:text-brand-dark disabled:cursor-not-allowed"
                 >
-                  {showPassword ? (
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      className="w-5 h-5"
-                    >
-                      <path d="M3 3l18 18" />
-                      <path d="M10.58 10.58a2 2 0 0 0 2.83 2.83" />
-                      <path d="M9.88 5.09A9.77 9.77 0 0 1 12 4.86c5 0 8.27 4.17 9.5 6.14a1.77 1.77 0 0 1 0 1.99 16.2 16.2 0 0 1-3.1 3.45" />
-                      <path d="M6.61 6.61A16.5 16.5 0 0 0 2.5 11a1.77 1.77 0 0 0 0 1.99C3.73 14.96 7 19.14 12 19.14a9.8 9.8 0 0 0 3.13-.51" />
-                    </svg>
-                  ) : (
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      className="w-5 h-5"
-                    >
-                      <path d="M2.5 12s3.27-7 9.5-7 9.5 7 9.5 7-3.27 7-9.5 7-9.5-7-9.5-7Z" />
-                      <circle cx="12" cy="12" r="3" />
-                    </svg>
-                  )}
+                  <span className="material-symbols-outlined text-[22px]">
+                    {showPassword ? "visibility_off" : "visibility"}
+                  </span>
                 </button>
               </div>
             </div>
 
-            {/* FORGOT PASSWORD */}
-
-            <div className="text-right">
+            {/* Forgot Password */}
+            <div className="flex justify-end">
               <Link
                 to="/forgot-password"
-                className="text-xs font-bold text-emerald-600 hover:text-emerald-700"
+                className="text-sm font-semibold text-brand-dark transition-colors hover:text-brand"
               >
                 Forgot Password?
               </Link>
             </div>
 
-            {/* LOGIN BUTTON */}
-
+            {/* Login Button */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3.5 rounded-2xl font-bold text-white text-sm shadow-md hover:opacity-95 active:scale-95 disabled:opacity-60 transition-all duration-200 flex items-center justify-center gap-2"
-              style={{
-                background:
-                  "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-              }}
+              className="w-full rounded-btn bg-gray-800 px-6 py-3.5 text-sm font-bold text-white shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:bg-gray-700 hover:shadow-card-hover disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
             >
               {loading ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span>Signing in...</span>
-                </>
+                <span className="flex items-center justify-center gap-2">
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                  Logging in...
+                </span>
               ) : (
-                <span>Sign In</span>
+                "Login"
               )}
             </button>
           </form>
 
-          {/* REGISTER */}
-
-          <div className="mt-8 text-center text-xs font-bold text-stone-600">
+          {/* Signup */}
+          <div className="mt-7 text-center text-sm text-gray-500">
             Don't have an account?{" "}
             <Link
               to="/user/register"
-              state={location.state}
-              className="text-emerald-600 hover:text-emerald-700 underline transition-colors"
+              className="font-bold text-brand-dark transition-colors hover:text-brand"
             >
               Sign Up
             </Link>
           </div>
         </div>
+
+        {/* Bottom Text */}
+        <p className="mt-5 text-center text-xs text-gray-400">
+          Your fitness journey starts with PoseFit.
+        </p>
       </div>
     </div>
   );

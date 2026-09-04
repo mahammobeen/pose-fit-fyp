@@ -8,8 +8,6 @@ import {
   Scale,
   HeartPulse,
   Moon,
-  Star,
-  CheckCircle,
   X,
 } from "lucide-react";
 
@@ -70,15 +68,21 @@ export default function UserDashboard() {
   const [metrics, setMetrics] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Automatic Professional Rating Dialog state (single rating per professional)
+  // Automatic Professional Rating Dialog
   const [activeRatingSession, setActiveRatingSession] = useState(null);
+
   const [selectedRating, setSelectedRating] = useState(5);
   const [hoverRating, setHoverRating] = useState(0);
   const [submittingRating, setSubmittingRating] = useState(false);
 
+  // ===================================================
+  // DISMISSED PROFESSIONAL RATINGS
+  // ===================================================
+
   const getDismissedProIds = () => {
     try {
       const stored = localStorage.getItem("posefit_dismissed_pro_ratings");
+
       return stored ? JSON.parse(stored) : [];
     } catch {
       return [];
@@ -88,12 +92,15 @@ export default function UserDashboard() {
   const markProDismissed = (proId) => {
     try {
       if (!proId) return;
+
       const dismissed = getDismissedProIds();
+
       if (!dismissed.includes(proId.toString())) {
         dismissed.push(proId.toString());
+
         localStorage.setItem(
           "posefit_dismissed_pro_ratings",
-          JSON.stringify(dismissed)
+          JSON.stringify(dismissed),
         );
       }
     } catch (e) {
@@ -101,19 +108,25 @@ export default function UserDashboard() {
     }
   };
 
+  // ===================================================
+  // FETCH PENDING RATINGS
+  // ===================================================
+
   const fetchPendingRatings = async () => {
     try {
       const res = await httpClient.get("/reviews/pending-ratings");
+
       const sessions = res.data?.pendingSessions || [];
 
       const dismissedProIds = getDismissedProIds();
+
       const eligibleToPrompt = sessions.filter((s) => {
         const proId = s.professional?._id || s.professional;
+
         return proId && !dismissedProIds.includes(proId.toString());
       });
 
       if (eligibleToPrompt.length > 0) {
-        // Show dialog for the first unrated completed professional
         setActiveRatingSession(eligibleToPrompt[0]);
         setSelectedRating(5);
         setHoverRating(0);
@@ -125,28 +138,40 @@ export default function UserDashboard() {
     }
   };
 
+  // ===================================================
+  // DISMISS RATING DIALOG
+  // ===================================================
+
   const handleDismissDialog = () => {
     if (activeRatingSession) {
       const proId =
         activeRatingSession.professional?._id ||
         activeRatingSession.professional;
+
       markProDismissed(proId);
     }
-    // Dismiss completely — do not show again and no queue
+
     setActiveRatingSession(null);
   };
 
+  // ===================================================
+  // SUBMIT RATING
+  // ===================================================
+
   const handleSubmitRating = async (e) => {
     if (e) e.preventDefault();
+
     if (!activeRatingSession) return;
 
     if (!selectedRating || selectedRating < 1 || selectedRating > 5) {
       toast.error("Please select a rating between 1 and 5 stars.");
+
       return;
     }
 
     try {
       setSubmittingRating(true);
+
       const res = await httpClient.post("/reviews/professional", {
         reviewType: "PROFESSIONAL",
         paymentId: activeRatingSession._id,
@@ -158,19 +183,22 @@ export default function UserDashboard() {
       const proId =
         activeRatingSession.professional?._id ||
         activeRatingSession.professional;
+
       markProDismissed(proId);
 
-      // Close dialog immediately — no queue
       setActiveRatingSession(null);
     } catch (err) {
       console.error("Submit session rating error:", err);
-      toast.error(
-        err?.response?.data?.message || "Failed to submit rating."
-      );
+
+      toast.error(err?.response?.data?.message || "Failed to submit rating.");
     } finally {
       setSubmittingRating(false);
     }
   };
+
+  // ===================================================
+  // FETCH PENDING RATINGS
+  // ===================================================
 
   useEffect(() => {
     fetchPendingRatings();
@@ -212,9 +240,7 @@ export default function UserDashboard() {
 
   useEffect(() => {
     const fetchMetrics = async () => {
-      // -----------------------------------------------
       // USER NOT FOUND
-      // -----------------------------------------------
 
       if (!userId) {
         setLoading(false);
@@ -231,9 +257,7 @@ export default function UserDashboard() {
 
         const metricsData = response?.data?.data;
 
-        // ---------------------------------------------
         // NO METRICS
-        // ---------------------------------------------
 
         if (!metricsData) {
           setMetrics(null);
@@ -243,9 +267,7 @@ export default function UserDashboard() {
           return;
         }
 
-        // ---------------------------------------------
         // SUCCESS
-        // ---------------------------------------------
 
         setMetrics(metricsData);
       } catch (error) {
@@ -275,7 +297,7 @@ export default function UserDashboard() {
       <UserLayout>
         <div className="min-h-full flex items-center justify-center">
           <div className="text-center">
-            <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+            <div className="w-10 h-10 border-4 border-brand border-t-transparent rounded-full animate-spin mx-auto mb-4" />
 
             <p className="text-gray-500 font-medium">
               Loading your fitness dashboard...
@@ -296,9 +318,9 @@ export default function UserDashboard() {
       value: metrics?.tdee ? Math.round(metrics.tdee) : "--",
       unit: "kcal",
       icon: Flame,
-      iconColor: "text-orange-500",
-      bgColor: "from-orange-50 to-orange-100",
-      textColor: "text-orange-700",
+      iconColor: "text-accent-orange-dark",
+      bgColor: "from-accent-orange/70 to-accent-orange/30",
+      textColor: "text-accent-orange-dark",
     },
     {
       label: "Protein Target",
@@ -307,9 +329,9 @@ export default function UserDashboard() {
         : "--",
       unit: "g",
       icon: Target,
-      iconColor: "text-indigo-500",
-      bgColor: "from-indigo-50 to-indigo-100",
-      textColor: "text-indigo-700",
+      iconColor: "text-brand-dark",
+      bgColor: "from-brand-light/70 to-brand-light/30",
+      textColor: "text-brand-dark",
     },
     {
       label: "Daily Water Target",
@@ -317,7 +339,7 @@ export default function UserDashboard() {
       unit: "L",
       icon: Droplets,
       iconColor: "text-blue-500",
-      bgColor: "from-blue-50 to-blue-100",
+      bgColor: "from-accent-blue/70 to-accent-blue/30",
       textColor: "text-blue-700",
     },
   ];
@@ -328,14 +350,11 @@ export default function UserDashboard() {
 
   return (
     <UserLayout>
-      <main className="p-4 sm:p-6 lg:p-8 space-y-8 sm:space-y-10">
-        {/* =================================================
-            HEADER
-        ================================================= */}
-
+      <main className="relative p-4 sm:p-6 lg:p-8 space-y-8 sm:space-y-10 font-sans">
+        {/* HEADER */}
         <section className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-gray-900">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-gray-800">
               Daily Progress
             </h1>
 
@@ -344,19 +363,16 @@ export default function UserDashboard() {
             </p>
           </div>
 
-          <div className="bg-white px-4 py-2.5 rounded-xl border border-gray-200 flex items-center gap-2 w-fit">
-            <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+          <div className="bg-surface/80 backdrop-blur-sm px-4 py-2.5 rounded-btn border border-brand-light/60 flex items-center gap-2 w-fit shadow-card">
+            <div className="h-2 w-2 rounded-full bg-brand animate-pulse" />
 
-            <span className="text-sm font-medium text-gray-600">
+            <span className="text-sm font-bold text-gray-600">
               Metrics Available
             </span>
           </div>
         </section>
 
-        {/* =================================================
-            MAIN STATS
-        ================================================= */}
-
+        {/* MAIN STATS */}
         <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {stats.map((stat) => {
             const Icon = stat.icon;
@@ -364,24 +380,24 @@ export default function UserDashboard() {
             return (
               <div
                 key={stat.label}
-                className={`relative overflow-hidden bg-gradient-to-br ${stat.bgColor} p-6 md:p-8 rounded-3xl border border-white shadow-sm`}
+                className={`relative overflow-hidden bg-gradient-to-br ${stat.bgColor} p-6 md:p-8 rounded-card border border-brand-light/40 shadow-card transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover`}
               >
                 <div className="absolute -right-5 -top-5 opacity-10">
                   <Icon className="w-32 h-32" />
                 </div>
 
-                <div className="flex items-center gap-3 mb-5">
-                  <div className="p-2.5 bg-white rounded-xl">
+                <div className="flex items-center gap-3 mb-5 relative">
+                  <div className="p-2.5 bg-surface/80 rounded-btn shadow-xs border border-white/60">
                     <Icon className={`h-5 w-5 ${stat.iconColor}`} />
                   </div>
 
-                  <h2 className="text-gray-600 font-bold text-xs uppercase tracking-wide">
+                  <h2 className="text-gray-600 font-extrabold text-xs uppercase tracking-wide">
                     {stat.label}
                   </h2>
                 </div>
 
-                <div className="flex items-baseline gap-2">
-                  <p className="text-4xl font-black text-gray-900">
+                <div className="flex items-baseline gap-2 relative">
+                  <p className="text-4xl font-extrabold text-gray-800">
                     {stat.value}
                   </p>
 
@@ -394,9 +410,9 @@ export default function UserDashboard() {
 
                 {stat.label === "Daily Water Target" &&
                   metrics?.waterIntake && (
-                    <p className="text-xs text-gray-500 mt-3">
+                    <p className="text-xs text-gray-500 mt-3 relative">
                       Approx.{" "}
-                      <span className="font-bold">
+                      <span className="font-bold text-gray-700">
                         {metrics.waterIntake.glasses}
                       </span>{" "}
                       glasses per day.
@@ -404,7 +420,7 @@ export default function UserDashboard() {
                   )}
 
                 {stat.label === "Daily Calorie Target" && metrics?.tdee && (
-                  <p className="text-xs text-gray-500 mt-3">
+                  <p className="text-xs text-gray-500 mt-3 relative">
                     Estimated calories required per day.
                   </p>
                 )}
@@ -413,13 +429,12 @@ export default function UserDashboard() {
           })}
         </section>
 
-        {/* =================================================
-            BODY METRICS
-        ================================================= */}
-
+        {/* BODY METRICS */}
         <section>
           <div className="mb-6">
-            <h2 className="text-2xl font-black text-gray-900">Body Metrics</h2>
+            <h2 className="text-2xl font-extrabold text-gray-800">
+              Body Metrics
+            </h2>
 
             <p className="text-gray-500 text-sm mt-1">
               Your calculated fitness measurements.
@@ -427,22 +442,19 @@ export default function UserDashboard() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* BMI */}
-
-            <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
+            <div className="card bg-surface/85 border-brand-light/40">
               <div className="flex items-center gap-3 mb-5">
-                <div className="p-3 bg-emerald-50 rounded-xl">
-                  <Scale className="w-5 h-5 text-emerald-600" />
+                <div className="p-3 bg-brand-light/35 rounded-btn">
+                  <Scale className="w-5 h-5 text-brand-dark" />
                 </div>
 
                 <div>
-                  <h3 className="font-bold text-gray-900">BMI</h3>
-
+                  <h3 className="font-bold text-gray-800">BMI</h3>
                   <p className="text-xs text-gray-400">Body Mass Index</p>
                 </div>
               </div>
 
-              <p className="text-4xl font-black text-gray-900">
+              <p className="text-4xl font-extrabold text-gray-800">
                 {metrics?.bmi ?? "--"}
               </p>
 
@@ -451,22 +463,19 @@ export default function UserDashboard() {
               </p>
             </div>
 
-            {/* BMR */}
-
-            <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
+            <div className="card bg-surface/85 border-accent-orange/50">
               <div className="flex items-center gap-3 mb-5">
-                <div className="p-3 bg-orange-50 rounded-xl">
-                  <Flame className="w-5 h-5 text-orange-600" />
+                <div className="p-3 bg-accent-orange/45 rounded-btn">
+                  <Flame className="w-5 h-5 text-accent-orange-dark" />
                 </div>
 
                 <div>
-                  <h3 className="font-bold text-gray-900">BMR</h3>
-
+                  <h3 className="font-bold text-gray-800">BMR</h3>
                   <p className="text-xs text-gray-400">Basal Metabolic Rate</p>
                 </div>
               </div>
 
-              <p className="text-4xl font-black text-gray-900">
+              <p className="text-4xl font-extrabold text-gray-800">
                 {metrics?.bmr ? Math.round(metrics.bmr) : "--"}
               </p>
 
@@ -475,24 +484,21 @@ export default function UserDashboard() {
               </p>
             </div>
 
-            {/* TDEE */}
-
-            <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
+            <div className="card bg-surface/85 border-accent-blue/50">
               <div className="flex items-center gap-3 mb-5">
-                <div className="p-3 bg-indigo-50 rounded-xl">
-                  <Activity className="w-5 h-5 text-indigo-600" />
+                <div className="p-3 bg-accent-blue/50 rounded-btn">
+                  <Activity className="w-5 h-5 text-blue-600" />
                 </div>
 
                 <div>
-                  <h3 className="font-bold text-gray-900">TDEE</h3>
-
+                  <h3 className="font-bold text-gray-800">TDEE</h3>
                   <p className="text-xs text-gray-400">
                     Daily Energy Requirement
                   </p>
                 </div>
               </div>
 
-              <p className="text-4xl font-black text-gray-900">
+              <p className="text-4xl font-extrabold text-gray-800">
                 {metrics?.tdee ? Math.round(metrics.tdee) : "--"}
               </p>
 
@@ -503,18 +509,15 @@ export default function UserDashboard() {
           </div>
         </section>
 
-        {/* =================================================
-            FITNESS PROFILE
-        ================================================= */}
-
-        <section className="bg-white p-6 md:p-8 rounded-3xl border border-gray-100 shadow-sm">
+        {/* FITNESS PROFILE */}
+        <section className="card bg-surface/85 border-brand-light/40 p-6 md:p-8">
           <div className="flex items-center gap-3 mb-6">
-            <div className="p-3 bg-emerald-50 rounded-xl">
-              <HeartPulse className="w-5 h-5 text-emerald-600" />
+            <div className="p-3 bg-brand-light/35 rounded-btn">
+              <HeartPulse className="w-5 h-5 text-brand-dark" />
             </div>
 
             <div>
-              <h2 className="text-xl font-bold text-gray-900">
+              <h2 className="text-xl font-extrabold text-gray-800">
                 Your Fitness Profile
               </h2>
 
@@ -525,105 +528,84 @@ export default function UserDashboard() {
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {/* Weight */}
-
-            <div className="bg-gray-50 rounded-2xl p-4">
+            <div className="bg-brand-light/15 rounded-btn p-4 border border-brand-light/30">
               <p className="text-xs text-gray-400 mb-1">Weight</p>
 
-              <p className="font-bold text-gray-900">
+              <p className="font-bold text-gray-800">
                 {metrics?.weight ?? "--"} kg
               </p>
             </div>
 
-            {/* Height */}
-
-            <div className="bg-gray-50 rounded-2xl p-4">
+            <div className="bg-accent-blue/15 rounded-btn p-4 border border-accent-blue/30">
               <p className="text-xs text-gray-400 mb-1">Height</p>
 
-              <p className="font-bold text-gray-900">
+              <p className="font-bold text-gray-800">
                 {metrics?.height ?? "--"} cm
               </p>
             </div>
 
-            {/* Age */}
-
-            <div className="bg-gray-50 rounded-2xl p-4">
+            <div className="bg-accent-orange/15 rounded-btn p-4 border border-accent-orange/30">
               <p className="text-xs text-gray-400 mb-1">Age</p>
 
-              <p className="font-bold text-gray-900">
+              <p className="font-bold text-gray-800">
                 {metrics?.age ?? "--"} years
               </p>
             </div>
 
-            {/* Goal */}
-
-            <div className="bg-gray-50 rounded-2xl p-4">
+            <div className="bg-brand-light/15 rounded-btn p-4 border border-brand-light/30">
               <p className="text-xs text-gray-400 mb-1">Goal</p>
 
-              <p className="font-bold text-gray-900 capitalize">
+              <p className="font-bold text-gray-800 capitalize">
                 {metrics?.goal ?? "--"}
               </p>
             </div>
 
-            {/* Gender */}
-
-            <div className="bg-gray-50 rounded-2xl p-4">
+            <div className="bg-accent-blue/15 rounded-btn p-4 border border-accent-blue/30">
               <p className="text-xs text-gray-400 mb-1">Gender</p>
 
-              <p className="font-bold text-gray-900 capitalize">
+              <p className="font-bold text-gray-800 capitalize">
                 {metrics?.gender ?? "--"}
               </p>
             </div>
 
-            {/* Activity Level */}
-
-            <div className="bg-gray-50 rounded-2xl p-4">
+            <div className="bg-accent-orange/15 rounded-btn p-4 border border-accent-orange/30">
               <p className="text-xs text-gray-400 mb-1">Activity Level</p>
 
-              <p className="font-bold text-gray-900 capitalize">
+              <p className="font-bold text-gray-800 capitalize">
                 {metrics?.activityLevel ?? "--"}
               </p>
             </div>
 
-            {/* Diet Preference */}
-
-            <div className="bg-gray-50 rounded-2xl p-4">
+            <div className="bg-brand-light/15 rounded-btn p-4 border border-brand-light/30">
               <p className="text-xs text-gray-400 mb-1">Diet Preference</p>
 
-              <p className="font-bold text-gray-900 capitalize">
+              <p className="font-bold text-gray-800 capitalize">
                 {metrics?.dietPref ?? "--"}
               </p>
             </div>
 
-            {/* Diabetes */}
-
-            <div className="bg-gray-50 rounded-2xl p-4">
+            <div className="bg-accent-blue/15 rounded-btn p-4 border border-accent-blue/30">
               <p className="text-xs text-gray-400 mb-1">Diabetes</p>
 
-              <p className="font-bold text-gray-900 capitalize">
+              <p className="font-bold text-gray-800 capitalize">
                 {metrics?.diabetes ? "Yes" : "No"}
               </p>
             </div>
           </div>
 
-          {/* Allergy */}
-
-          <div className="mt-4 bg-gray-50 rounded-2xl p-4">
+          <div className="mt-4 bg-accent-orange/10 rounded-btn p-4 border border-accent-orange/30">
             <p className="text-xs text-gray-400 mb-1">Nut Allergy</p>
 
-            <p className="font-bold text-gray-900">
+            <p className="font-bold text-gray-800">
               {metrics?.allergiesNuts ? "Yes" : "No"}
             </p>
           </div>
         </section>
 
-        {/* =================================================
-            MACROS
-        ================================================= */}
-
-        <section className="bg-white p-6 md:p-8 rounded-3xl border border-gray-100 shadow-sm">
+        {/* MACROS */}
+        <section className="card bg-surface/85 border-brand-light/40 p-6 md:p-8">
           <div className="mb-6">
-            <h2 className="text-2xl font-black text-gray-900">
+            <h2 className="text-2xl font-extrabold text-gray-800">
               Daily Macro Targets
             </h2>
 
@@ -633,14 +615,12 @@ export default function UserDashboard() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {/* Protein */}
-
-            <div className="bg-indigo-50 rounded-2xl p-6">
-              <p className="text-xs font-bold uppercase text-indigo-500">
+            <div className="bg-brand-light/25 rounded-btn p-6 border border-brand-light/40">
+              <p className="text-xs font-extrabold uppercase text-brand-dark">
                 Protein
               </p>
 
-              <p className="text-3xl font-black text-gray-900 mt-2">
+              <p className="text-3xl font-extrabold text-gray-800 mt-2">
                 {metrics?.macros?.protein
                   ? Math.round(metrics.macros.protein)
                   : "--"}{" "}
@@ -648,14 +628,12 @@ export default function UserDashboard() {
               </p>
             </div>
 
-            {/* Carbs */}
-
-            <div className="bg-emerald-50 rounded-2xl p-6">
-              <p className="text-xs font-bold uppercase text-emerald-500">
+            <div className="bg-accent-blue/30 rounded-btn p-6 border border-accent-blue/50">
+              <p className="text-xs font-extrabold uppercase text-blue-700">
                 Carbs
               </p>
 
-              <p className="text-3xl font-black text-gray-900 mt-2">
+              <p className="text-3xl font-extrabold text-gray-800 mt-2">
                 {metrics?.macros?.carbs
                   ? Math.round(metrics.macros.carbs)
                   : "--"}{" "}
@@ -663,25 +641,22 @@ export default function UserDashboard() {
               </p>
             </div>
 
-            {/* Fat */}
+            <div className="bg-accent-orange/35 rounded-btn p-6 border border-accent-orange/50">
+              <p className="text-xs font-extrabold uppercase text-accent-orange-dark">
+                Fat
+              </p>
 
-            <div className="bg-orange-50 rounded-2xl p-6">
-              <p className="text-xs font-bold uppercase text-orange-500">Fat</p>
-
-              <p className="text-3xl font-black text-gray-900 mt-2">
+              <p className="text-3xl font-extrabold text-gray-800 mt-2">
                 {metrics?.macros?.fat ? Math.round(metrics.macros.fat) : "--"} g
               </p>
             </div>
           </div>
         </section>
 
-        {/* =================================================
-            DAILY HYDRATION
-        ================================================= */}
-
+        {/* DAILY HYDRATION */}
         <section>
           <div className="mb-6">
-            <h2 className="text-2xl font-black text-gray-900">
+            <h2 className="text-2xl font-extrabold text-gray-800">
               Daily Hydration
             </h2>
 
@@ -691,89 +666,75 @@ export default function UserDashboard() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Liters */}
-
-            <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
+            <div className="card bg-surface/85 border-accent-blue/40">
               <div className="flex items-center gap-3 mb-4">
-                <div className="p-3 bg-blue-50 rounded-xl">
+                <div className="p-3 bg-accent-blue/40 rounded-btn">
                   <Droplets className="w-5 h-5 text-blue-500" />
                 </div>
 
                 <div>
-                  <h3 className="font-bold text-gray-900">Water Target</h3>
-
+                  <h3 className="font-bold text-gray-800">Water Target</h3>
                   <p className="text-xs text-gray-400">Per day</p>
                 </div>
               </div>
 
-              <p className="text-4xl font-black text-gray-900">
+              <p className="text-4xl font-extrabold text-gray-800">
                 {metrics?.waterIntake?.liters ?? "--"}
               </p>
 
-              <p className="text-sm text-blue-500 font-bold mt-1">Liters</p>
+              <p className="text-sm text-blue-600 font-bold mt-1">Liters</p>
             </div>
 
-            {/* Glasses */}
-
-            <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
+            <div className="card bg-surface/85 border-brand-light/40">
               <div className="flex items-center gap-3 mb-4">
-                <div className="p-3 bg-cyan-50 rounded-xl">
-                  <Droplets className="w-5 h-5 text-cyan-500" />
+                <div className="p-3 bg-brand-light/30 rounded-btn">
+                  <Droplets className="w-5 h-5 text-brand-dark" />
                 </div>
 
                 <div>
-                  <h3 className="font-bold text-gray-900">Water Glasses</h3>
-
+                  <h3 className="font-bold text-gray-800">Water Glasses</h3>
                   <p className="text-xs text-gray-400">Per day</p>
                 </div>
               </div>
 
-              <p className="text-4xl font-black text-gray-900">
+              <p className="text-4xl font-extrabold text-gray-800">
                 {metrics?.waterIntake?.glasses ?? "--"}
               </p>
 
-              <p className="text-sm text-cyan-500 font-bold mt-1">Glasses</p>
+              <p className="text-sm text-brand-dark font-bold mt-1">Glasses</p>
             </div>
 
-            {/* ML */}
-
-            <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
+            <div className="card bg-surface/85 border-accent-blue/40">
               <div className="flex items-center gap-3 mb-4">
-                <div className="p-3 bg-sky-50 rounded-xl">
+                <div className="p-3 bg-accent-blue/40 rounded-btn">
                   <Droplets className="w-5 h-5 text-sky-500" />
                 </div>
 
                 <div>
-                  <h3 className="font-bold text-gray-900">Water Amount</h3>
-
+                  <h3 className="font-bold text-gray-800">Water Amount</h3>
                   <p className="text-xs text-gray-400">Per day</p>
                 </div>
               </div>
 
-              <p className="text-4xl font-black text-gray-900">
+              <p className="text-4xl font-extrabold text-gray-800">
                 {metrics?.waterIntake?.ml ?? "--"}
               </p>
 
-              <p className="text-sm text-sky-500 font-bold mt-1">ml</p>
+              <p className="text-sm text-sky-600 font-bold mt-1">ml</p>
             </div>
           </div>
         </section>
 
-        {/* =================================================
-            WEEKLY ACTIVITY + STREAK
-        ================================================= */}
-
+        {/* WEEKLY ACTIVITY + STREAK */}
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Weekly Activity */}
-
-          <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm">
+          <div className="card bg-surface/85 border-accent-blue/40 p-8">
             <div className="flex items-center gap-3 mb-5">
-              <div className="p-3 bg-indigo-50 rounded-xl">
-                <TrendingUp className="w-5 h-5 text-indigo-600" />
+              <div className="p-3 bg-accent-blue/40 rounded-btn">
+                <TrendingUp className="w-5 h-5 text-blue-600" />
               </div>
 
               <div>
-                <h2 className="text-xl font-bold text-gray-900">
+                <h2 className="text-xl font-extrabold text-gray-800">
                   Weekly Activity
                 </h2>
 
@@ -794,16 +755,14 @@ export default function UserDashboard() {
             </div>
           </div>
 
-          {/* Streak */}
-
-          <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm">
+          <div className="card bg-surface/85 border-accent-orange/40 p-8">
             <div className="flex items-center gap-3 mb-5">
-              <div className="p-3 bg-orange-50 rounded-xl">
-                <Flame className="w-5 h-5 text-orange-500" />
+              <div className="p-3 bg-accent-orange/40 rounded-btn">
+                <Flame className="w-5 h-5 text-accent-orange-dark" />
               </div>
 
               <div>
-                <h2 className="text-xl font-bold text-gray-900">
+                <h2 className="text-xl font-extrabold text-gray-800">
                   Workout Streak
                 </h2>
 
@@ -812,7 +771,7 @@ export default function UserDashboard() {
             </div>
 
             <div className="py-8 text-center">
-              <p className="text-4xl font-black text-gray-900">--</p>
+              <p className="text-4xl font-extrabold text-gray-800">--</p>
 
               <p className="text-sm text-gray-400 mt-2">
                 Streak tracking will be available once workout activity is
@@ -822,13 +781,10 @@ export default function UserDashboard() {
           </div>
         </section>
 
-        {/* =================================================
-            HEALTH TRACKING
-        ================================================= */}
-
+        {/* HEALTH TRACKING */}
         <section>
           <div className="mb-6">
-            <h2 className="text-2xl font-black text-gray-900">
+            <h2 className="text-2xl font-extrabold text-gray-800">
               Health Tracking
             </h2>
 
@@ -838,29 +794,27 @@ export default function UserDashboard() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* WATER */}
-
-            <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
+            <div className="card bg-surface/85 border-accent-blue/40">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="p-3 bg-blue-50 rounded-xl">
+                  <div className="p-3 bg-accent-blue/40 rounded-btn">
                     <Droplets className="w-5 h-5 text-blue-500" />
                   </div>
 
                   <div>
-                    <h3 className="font-bold text-gray-900">Water Intake</h3>
+                    <h3 className="font-bold text-gray-800">Water Intake</h3>
 
                     <p className="text-xs text-gray-400">Recommended today</p>
                   </div>
                 </div>
 
-                <span className="text-xs font-bold px-3 py-1 rounded-full bg-blue-50 text-blue-500">
+                <span className="text-xs font-bold px-3 py-1 rounded-full bg-accent-blue/40 text-blue-700 border border-accent-blue/60">
                   Recommended
                 </span>
               </div>
 
               <div className="mt-6">
-                <p className="text-3xl font-black text-gray-900">
+                <p className="text-3xl font-extrabold text-gray-800">
                   {metrics?.waterIntake?.liters ?? "--"} L
                 </p>
 
@@ -874,29 +828,27 @@ export default function UserDashboard() {
               </div>
             </div>
 
-            {/* SLEEP */}
-
-            <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
+            <div className="card bg-surface/85 border-brand-light/40">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="p-3 bg-purple-50 rounded-xl">
-                    <Moon className="w-5 h-5 text-purple-500" />
+                  <div className="p-3 bg-brand-light/30 rounded-btn">
+                    <Moon className="w-5 h-5 text-brand-dark" />
                   </div>
 
                   <div>
-                    <h3 className="font-bold text-gray-900">Sleep Quality</h3>
+                    <h3 className="font-bold text-gray-800">Sleep Quality</h3>
 
                     <p className="text-xs text-gray-400">Today's sleep</p>
                   </div>
                 </div>
 
-                <span className="text-xs font-bold px-3 py-1 rounded-full bg-gray-100 text-gray-500">
+                <span className="text-xs font-bold px-3 py-1 rounded-full bg-stone-100 text-stone-500 border border-stone-200">
                   Not Tracked
                 </span>
               </div>
 
               <div className="mt-6">
-                <p className="text-3xl font-black text-gray-900">--</p>
+                <p className="text-3xl font-extrabold text-gray-800">--</p>
 
                 <p className="text-sm text-gray-400 mt-2">
                   Sleep data will be added with sleep tracking.
@@ -906,13 +858,10 @@ export default function UserDashboard() {
           </div>
         </section>
 
-        {/* =================================================
-            TODAY'S NUTRITION
-        ================================================= */}
-
+        {/* TODAY'S NUTRITION */}
         <section>
           <div className="mb-8">
-            <h2 className="text-2xl font-black text-gray-900 uppercase">
+            <h2 className="text-2xl font-extrabold text-gray-800 uppercase">
               Today's Nutrition
             </h2>
 
@@ -925,15 +874,13 @@ export default function UserDashboard() {
             {dietData.map((item) => (
               <div
                 key={item.id}
-                className="group bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden"
+                className="group bg-surface/90 rounded-card border border-brand-light/30 shadow-card overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover"
               >
-                {/* IMAGE */}
-
                 <div className="relative h-48 overflow-hidden">
                   <img
                     src={item.image}
                     alt={item.name}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
 
                   <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/30">
@@ -944,15 +891,11 @@ export default function UserDashboard() {
                     </p>
                   </div>
 
-                  {/* TIME */}
-
                   <div className="absolute top-4 left-4">
-                    <span className="bg-white/90 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase text-gray-900">
+                    <span className="bg-surface/90 px-3 py-1.5 rounded-btn text-[10px] font-extrabold uppercase text-gray-800">
                       {item.time}
                     </span>
                   </div>
-
-                  {/* NAME */}
 
                   <div className="absolute bottom-4 left-4">
                     <h3 className="font-bold text-white text-xl">
@@ -961,8 +904,6 @@ export default function UserDashboard() {
                   </div>
                 </div>
 
-                {/* DETAILS */}
-
                 <div className="p-6">
                   <div className="flex items-center justify-between mb-4">
                     <div>
@@ -970,19 +911,19 @@ export default function UserDashboard() {
                         Calories
                       </span>
 
-                      <span className="font-bold text-gray-900">
+                      <span className="font-bold text-gray-800">
                         {item.calories}
                       </span>
                     </div>
 
-                    <div className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-gray-50 text-gray-400">
+                    <div className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-brand-light/20 text-gray-500 border border-brand-light/30">
                       {item.status}
                     </div>
                   </div>
 
                   <button
                     disabled
-                    className="w-full py-3 rounded-2xl text-xs font-bold bg-gray-50 text-gray-400 cursor-not-allowed"
+                    className="w-full py-3 rounded-btn text-xs font-bold bg-stone-50/80 text-gray-400 border border-brand-light/30 cursor-not-allowed"
                   >
                     View Details
                   </button>
@@ -998,13 +939,10 @@ export default function UserDashboard() {
         </section>
       </main>
 
-      {/* =================================================
-          AUTOMATIC PROFESSIONAL RATING DIALOG
-      ================================================= */}
+      {/* AUTOMATIC PROFESSIONAL RATING DIALOG */}
       {activeRatingSession && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-          <div className="relative w-full max-w-md overflow-hidden rounded-3xl border border-stone-200 bg-white p-7 shadow-2xl">
-            {/* Close Button (×) */}
+          <div className="relative w-full max-w-md overflow-hidden rounded-card border border-brand-light/50 bg-surface/95 p-7 shadow-card-hover backdrop-blur-xl">
             <button
               type="button"
               onClick={handleDismissDialog}
@@ -1016,35 +954,29 @@ export default function UserDashboard() {
             </button>
 
             <div className="text-center">
-              <div
-                className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl text-2xl font-black text-white shadow-md"
-                style={{
-                  background: "linear-gradient(135deg, #10b981, #059669)",
-                }}
-              >
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-card bg-brand-light/50 border border-brand-light text-2xl font-extrabold text-brand-dark shadow-card">
                 {activeRatingSession.professional?.firstName?.[0]?.toUpperCase() ||
                   "P"}
               </div>
 
-              <span className="mt-4 inline-block rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-black text-emerald-800 uppercase tracking-wider">
+              <span className="mt-4 inline-block rounded-full border border-brand-light bg-brand-light/30 px-3 py-1 text-[11px] font-extrabold text-brand-dark uppercase tracking-wider">
                 Session Completed
               </span>
 
-              <h2 className="mt-2 text-xl font-black text-stone-900 leading-tight">
+              <h2 className="mt-2 text-xl font-extrabold text-gray-800 leading-tight">
                 How was your experience with{" "}
-                <span className="text-emerald-700">
+                <span className="text-brand-dark">
                   {activeRatingSession.professional?.firstName}{" "}
                   {activeRatingSession.professional?.lastName}
                 </span>
                 ?
               </h2>
 
-              <p className="mt-1 text-xs text-stone-500 font-medium">
+              <p className="mt-1 text-xs text-gray-500 font-medium">
                 {activeRatingSession.appointmentDay} •{" "}
                 {activeRatingSession.appointmentSlot}
               </p>
 
-              {/* Star Selector */}
               <form onSubmit={handleSubmitRating} className="mt-6 space-y-6">
                 <div className="flex flex-col items-center">
                   <div className="flex items-center gap-2 p-2">
@@ -1071,7 +1003,7 @@ export default function UserDashboard() {
                     ))}
                   </div>
 
-                  <p className="mt-1 text-xs font-black text-stone-700">
+                  <p className="mt-1 text-xs font-extrabold text-gray-700">
                     {hoverRating || selectedRating} out of 5 Stars
                   </p>
                 </div>
@@ -1081,7 +1013,7 @@ export default function UserDashboard() {
                     type="button"
                     onClick={handleDismissDialog}
                     disabled={submittingRating}
-                    className="flex-1 rounded-2xl border border-stone-200 bg-stone-100 py-3.5 text-sm font-bold text-stone-700 transition-colors hover:bg-stone-200 disabled:opacity-50"
+                    className="flex-1 rounded-btn border border-stone-200 bg-stone-100 py-3.5 text-sm font-bold text-stone-700 transition-colors hover:bg-stone-200 disabled:opacity-50"
                   >
                     Maybe Later
                   </button>
@@ -1089,11 +1021,7 @@ export default function UserDashboard() {
                   <button
                     type="submit"
                     disabled={submittingRating}
-                    className="flex-1 rounded-2xl py-3.5 text-sm font-bold text-white shadow-md transition-all hover:opacity-90 disabled:opacity-50"
-                    style={{
-                      background:
-                        "linear-gradient(135deg, #10b981, #059669)",
-                    }}
+                    className="flex-1 rounded-btn bg-gray-800 py-3.5 text-sm font-bold text-white shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:bg-gray-700 hover:shadow-card-hover disabled:opacity-50 disabled:hover:translate-y-0"
                   >
                     {submittingRating ? "Submitting..." : "Submit Rating"}
                   </button>

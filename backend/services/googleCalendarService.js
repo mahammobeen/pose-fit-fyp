@@ -2,10 +2,7 @@ const { google } = require("googleapis");
 const fs = require("fs");
 const path = require("path");
 
-const TOKEN_PATH = path.join(
-  __dirname,
-  "../google-token.json"
-);
+const TOKEN_PATH = path.join(__dirname, "../google-token.json");
 
 const getOAuth2Client = () => {
   const clientId = process.env.GOOGLE_CLIENT_ID;
@@ -13,40 +10,30 @@ const getOAuth2Client = () => {
   const redirectUri = process.env.GOOGLE_REDIRECT_URI;
 
   if (!clientId || !clientSecret || !redirectUri) {
-    throw new Error(
-      "Google OAuth credentials are not configured"
-    );
+    throw new Error("Google OAuth credentials are not configured");
   }
 
-  return new google.auth.OAuth2(
-    clientId,
-    clientSecret,
-    redirectUri
-  );
+  return new google.auth.OAuth2(clientId, clientSecret, redirectUri);
 };
 
 const getGoogleCalendarClient = () => {
   if (!fs.existsSync(TOKEN_PATH)) {
     throw new Error(
-      "Google Calendar is not connected. Please authorize PoseFit with Google first."
+      "Google Calendar is not connected. Please authorize PoseFit with Google first.",
     );
   }
 
   let tokens;
 
   try {
-    tokens = JSON.parse(
-      fs.readFileSync(TOKEN_PATH, "utf8")
-    );
+    tokens = JSON.parse(fs.readFileSync(TOKEN_PATH, "utf8"));
   } catch (error) {
-    throw new Error(
-      "Google Calendar token file could not be read."
-    );
+    throw new Error("Google Calendar token file could not be read.");
   }
 
   if (!tokens.refresh_token) {
     throw new Error(
-      "Google Calendar refresh token is missing. Please authorize PoseFit again."
+      "Google Calendar refresh token is missing. Please authorize PoseFit again.",
     );
   }
 
@@ -96,9 +83,7 @@ const createGoogleMeetEvent = async ({
 
     const value = timeString.trim();
 
-    const match = value.match(
-      /^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i
-    );
+    const match = value.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
 
     if (!match) {
       return null;
@@ -134,16 +119,12 @@ const createGoogleMeetEvent = async ({
     };
   };
 
-  const slotParts = appointmentSlot.split(
-    /\s*-\s*/
-  );
+  const slotParts = appointmentSlot.split(/\s*-\s*/);
 
   const startTime = parseTime(slotParts[0]);
 
   if (!startTime) {
-    throw new Error(
-      `Unable to parse appointment slot: ${appointmentSlot}`
-    );
+    throw new Error(`Unable to parse appointment slot: ${appointmentSlot}`);
   }
 
   let endTime = null;
@@ -161,41 +142,27 @@ const createGoogleMeetEvent = async ({
 
   const start = new Date(startDate);
 
-  start.setHours(
-    startTime.hours,
-    startTime.minutes,
-    0,
-    0
-  );
+  start.setHours(startTime.hours, startTime.minutes, 0, 0);
 
   const end = new Date(startDate);
 
-  end.setHours(
-    endTime.hours,
-    endTime.minutes,
-    0,
-    0
-  );
+  end.setHours(endTime.hours, endTime.minutes, 0, 0);
 
   if (end <= start) {
     end.setDate(end.getDate() + 1);
   }
 
   const userName =
-    `${user?.firstName || ""} ${user?.lastName || ""}`.trim() ||
-    "PoseFit User";
+    `${user?.firstName || ""} ${user?.lastName || ""}`.trim() || "PoseFit User";
 
   const professionalName =
     `${professional?.firstName || ""} ${professional?.lastName || ""}`.trim() ||
     "PoseFit Professional";
 
-  const timeZone =
-    process.env.GOOGLE_CALENDAR_TIMEZONE ||
-    "Asia/Karachi";
+  const timeZone = process.env.GOOGLE_CALENDAR_TIMEZONE || "Asia/Karachi";
 
   const event = {
-    summary:
-      `PoseFit Session - ${userName} & ${professionalName}`,
+    summary: `PoseFit Session - ${userName} & ${professionalName}`,
 
     description:
       `PoseFit professional session.\n\n` +
@@ -229,10 +196,9 @@ const createGoogleMeetEvent = async ({
 
     conferenceData: {
       createRequest: {
-        requestId:
-          `posefit-${Date.now()}-${Math.random()
-            .toString(36)
-            .substring(2, 10)}`,
+        requestId: `posefit-${Date.now()}-${Math.random()
+          .toString(36)
+          .substring(2, 10)}`,
 
         conferenceSolutionKey: {
           type: "hangoutsMeet",
@@ -246,9 +212,7 @@ const createGoogleMeetEvent = async ({
   };
 
   const response = await calendar.events.insert({
-    calendarId:
-      process.env.GOOGLE_CALENDAR_ID ||
-      "primary",
+    calendarId: process.env.GOOGLE_CALENDAR_ID || "primary",
 
     resource: event,
 
@@ -262,14 +226,11 @@ const createGoogleMeetEvent = async ({
   const meetingLink =
     createdEvent.hangoutLink ||
     createdEvent.conferenceData?.entryPoints?.find(
-      (entry) =>
-        entry.entryPointType === "video"
+      (entry) => entry.entryPointType === "video",
     )?.uri;
 
   if (!meetingLink) {
-    throw new Error(
-      "Google Meet link could not be generated"
-    );
+    throw new Error("Google Meet link could not be generated");
   }
 
   return {

@@ -60,10 +60,7 @@ export default function WorkoutSession() {
   };
 
   const [hasPermission, setHasPermission] = useState(() => {
-    return (
-      localStorage.getItem("posefit_cam_permission") ===
-      "granted"
-    );
+    return localStorage.getItem("posefit_cam_permission") === "granted";
   });
 
   const [isActive, setIsActive] = useState(false);
@@ -134,9 +131,7 @@ export default function WorkoutSession() {
       eventSourceRef.current.close();
     }
 
-    const es = new EventSource(
-      "http://localhost:5002/metrics"
-    );
+    const es = new EventSource("http://localhost:5002/metrics");
 
     eventSourceRef.current = es;
 
@@ -149,9 +144,7 @@ export default function WorkoutSession() {
         setFeedback(data.feedback || "Ready");
         setWarning(data.warning || "");
         setDirection(data.direction || "none");
-        setPersonDetected(
-          data.person_detected || false
-        );
+        setPersonDetected(data.person_detected || false);
       } catch (err) {
         console.error("Metric parse error", err);
       }
@@ -174,25 +167,19 @@ export default function WorkoutSession() {
   // Permission Request
   const requestCamera = async () => {
     try {
-      const stream =
-        await navigator.mediaDevices.getUserMedia({
-          video: true,
-        });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+      });
 
       stream.getTracks().forEach((t) => t.stop());
 
       setHasPermission(true);
 
-      localStorage.setItem(
-        "posefit_cam_permission",
-        "granted"
-      );
+      localStorage.setItem("posefit_cam_permission", "granted");
 
       toast.success("Camera permitted!");
     } catch {
-      toast.error(
-        "Camera permission denied in browser settings."
-      );
+      toast.error("Camera permission denied in browser settings.");
     }
   };
 
@@ -209,25 +196,18 @@ export default function WorkoutSession() {
     startListening();
 
     try {
-      await axios.post(
-        "http://localhost:5002/start",
-        {
-          exercise: exerciseId,
-        }
-      );
+      await axios.post("http://localhost:5002/start", {
+        exercise: exerciseId,
+      });
 
-      toast.success(
-        `${currentEx.name} tracking started.`
-      );
+      toast.success(`${currentEx.name} tracking started.`);
 
       setServerOnline(true);
     } catch {
       setIsActive(false);
       setServerOnline(false);
 
-      toast.error(
-        "Python pose service is offline (port 5002)."
-      );
+      toast.error("Python pose service is offline (port 5002).");
     }
   };
 
@@ -235,9 +215,7 @@ export default function WorkoutSession() {
     window.speechSynthesis.cancel();
 
     try {
-      await axios.post(
-        "http://localhost:5002/stop"
-      );
+      await axios.post("http://localhost:5002/stop");
 
       setIsActive(false);
 
@@ -257,9 +235,7 @@ export default function WorkoutSession() {
 
   const handleReset = async () => {
     try {
-      await axios.post(
-        "http://localhost:5002/reset"
-      );
+      await axios.post("http://localhost:5002/reset");
 
       setReps(0);
 
@@ -269,22 +245,26 @@ export default function WorkoutSession() {
     }
   };
 
+  // Calculations
+  const absAngle = Math.abs(angle);
+  const percentage = Math.min(100, Math.round((absAngle / 90) * 100));
+
   // Permission Prompt Screen
   if (!hasPermission) {
     return (
       <UserLayout>
-        <div className="p-8 bg-white min-h-screen flex items-center justify-center">
-          <div className="max-w-md w-full text-center space-y-6 p-8 rounded-3xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] border border-gray-100 bg-white">
-            <div className="w-16 h-16 bg-blue-50 text-[#3b82f6] rounded-2xl flex items-center justify-center mx-auto">
+        <div className="flex min-h-screen items-center justify-center bg-transparent px-4 py-8 font-sans">
+          <div className="w-full max-w-md rounded-card border border-brand-light/60 bg-surface/85 p-8 text-center shadow-card-hover backdrop-blur-xl">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-card bg-brand-light/40 text-brand-dark shadow-card">
               <Camera size={32} />
             </div>
 
-            <div className="space-y-2">
-              <h2 className="text-2xl font-black text-gray-900 tracking-tight">
+            <div className="mt-6 space-y-2">
+              <h2 className="text-2xl font-extrabold tracking-tight text-gray-800">
                 Camera Permission Required
               </h2>
 
-              <p className="text-gray-500 text-xs leading-relaxed">
+              <p className="text-xs leading-relaxed text-gray-500">
                 PoseFit needs your camera to track your{" "}
                 <span className="font-bold text-gray-800">
                   {currentEx.name}
@@ -295,16 +275,14 @@ export default function WorkoutSession() {
 
             <button
               onClick={requestCamera}
-              className="w-full py-4 bg-[#fde2c4] hover:bg-[#ffd0a5] text-gray-900 font-bold uppercase tracking-widest text-xs rounded-2xl transition-all"
+              className="btn-primary mt-6 w-full py-4"
             >
               Allow Camera Access
             </button>
 
             <button
-              onClick={() =>
-                navigate("/posture-detection")
-              }
-              className="text-gray-400 hover:text-gray-700 text-xs font-semibold"
+              onClick={() => navigate("/posture-detection")}
+              className="mt-4 text-xs font-semibold text-gray-400 transition-colors hover:text-brand-dark"
             >
               Back to exercises
             </button>
@@ -314,296 +292,264 @@ export default function WorkoutSession() {
     );
   }
 
-  // Main Workout UI
-  const absAngle = Math.abs(angle);
-  const percentage = Math.min(
-    100,
-    Math.round((absAngle / 90) * 100)
-  );
-
   return (
     <UserLayout>
-      <div className="p-4 sm:p-6 md:p-8 bg-white min-h-screen space-y-6">
-        {/* Header */}
-        <div className="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() =>
-                navigate("/user/workout")
-              }
-              className="p-2 rounded-xl hover:bg-gray-100 text-gray-400 transition-all"
-            >
-              <ArrowLeft size={20} />
-            </button>
+      <div className="min-h-screen bg-transparent p-4 font-sans sm:p-6 md:p-8">
+        <div className="space-y-6">
+          {/* Header */}
+          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => navigate("/user/workout")}
+                className="rounded-btn p-2 text-gray-400 transition-all hover:bg-brand-light/25 hover:text-gray-800"
+              >
+                <ArrowLeft size={20} />
+              </button>
 
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight flex flex-wrap items-center gap-2">
-                <Dumbbell className="h-6 w-6 sm:h-7 sm:w-7 text-indigo-500" />
+              <div>
+                <h1 className="flex flex-wrap items-center gap-2 text-2xl font-extrabold tracking-tight text-gray-800 sm:text-3xl">
+                  <Dumbbell className="h-6 w-6 text-brand-dark sm:h-7 sm:w-7" />
 
-                {currentEx.name}
+                  {currentEx.name}
 
-                <span className="bg-blue-50 text-[#3b82f6] px-3 sm:px-4 py-1 rounded-xl text-base sm:text-lg font-bold">
-                  Posture Check
-                </span>
-              </h1>
+                  <span className="rounded-btn bg-brand-light/40 px-3 py-1 text-base font-bold text-brand-dark sm:px-4 sm:text-lg">
+                    Posture Check
+                  </span>
+                </h1>
+              </div>
+            </div>
+
+            {/* Action Badges */}
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                onClick={() => {
+                  const next = !isMuted;
+
+                  setIsMuted(next);
+
+                  if (next) {
+                    window.speechSynthesis.cancel();
+                  }
+                }}
+                className={`flex items-center gap-2 rounded-btn border px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all ${
+                  isMuted
+                    ? "border-rose-200 bg-rose-50 text-rose-600"
+                    : "border-brand-light bg-brand-light/30 text-brand-dark"
+                }`}
+              >
+                {isMuted ? <VolumeX size={15} /> : <Volume2 size={15} />}
+
+                <span>{isMuted ? "Muted" : "Voice On"}</span>
+              </button>
+
+              <span
+                className={`flex items-center gap-2 rounded-btn border px-4 py-2 text-xs font-bold uppercase tracking-wider ${
+                  serverOnline
+                    ? "border-brand-light bg-brand-light/30 text-brand-dark"
+                    : "border-rose-200 bg-rose-50 text-rose-600"
+                }`}
+              >
+                <span
+                  className={`h-2 w-2 rounded-full ${
+                    serverOnline ? "bg-brand" : "bg-rose-500"
+                  }`}
+                />
+
+                {serverOnline ? "AI Online" : "AI Offline"}
+              </span>
             </div>
           </div>
 
-          {/* Action Badges */}
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => {
-                const next = !isMuted;
-
-                setIsMuted(next);
-
-                if (next) {
-                  window.speechSynthesis.cancel();
-                }
-              }}
-              className={`flex items-center gap-2 px-4 py-2 rounded-2xl border font-bold text-xs uppercase tracking-wider transition-all ${
-                isMuted
-                  ? "bg-red-50 border-red-200 text-red-500"
-                  : "bg-green-50 border-green-200 text-green-600"
-              }`}
-            >
-              {isMuted ? (
-                <VolumeX size={15} />
-              ) : (
-                <Volume2 size={15} />
-              )}
+          {/* Offline Alert */}
+          {!serverOnline && (
+            <div className="mx-auto flex max-w-6xl items-center gap-3 rounded-card border border-rose-200 bg-rose-50 p-4 text-xs text-rose-700">
+              <ShieldAlert size={20} />
 
               <span>
-                {isMuted ? "Muted" : "Voice On"}
-              </span>
-            </button>
-
-            <span
-              className={`flex items-center gap-2 px-4 py-2 rounded-2xl border font-bold text-xs uppercase tracking-wider ${
-                serverOnline
-                  ? "bg-green-50 border-green-200 text-green-600"
-                  : "bg-red-50 border-red-200 text-red-500"
-              }`}
-            >
-              <span
-                className={`h-2 w-2 rounded-full ${
-                  serverOnline
-                    ? "bg-green-500"
-                    : "bg-red-500"
-                }`}
-              />
-
-              {serverOnline
-                ? "AI Online"
-                : "AI Offline"}
-            </span>
-          </div>
-        </div>
-
-        {/* Offline Alert */}
-        {!serverOnline && (
-          <div className="max-w-6xl mx-auto p-4 bg-red-50 border border-red-200 rounded-2xl text-red-700 text-xs flex items-center gap-3">
-            <ShieldAlert size={20} />
-
-            <span>
-              Python service is offline. Please run{" "}
-              <code className="font-mono font-bold bg-red-100 px-1 rounded">
-                python app.py
-              </code>{" "}
-              in python-pose-service folder.
-            </span>
-          </div>
-        )}
-
-        {/* Main Grid */}
-        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-          {/* Large Camera Feed */}
-          <div className="lg:col-span-8 overflow-hidden rounded-3xl shadow-[0_4px_20px_rgba(0,0,0,0.05)] border border-gray-100 bg-gray-50 flex flex-col justify-center relative min-h-[460px] md:min-h-[520px]">
-            {isActive ? (
-              <>
-                <img
-                  src="http://localhost:5002/video_feed"
-                  alt="Camera Stream"
-                  className="w-full h-full object-cover aspect-video"
-                  onError={() => {
-                    setServerOnline(false);
-                    setIsActive(false);
-                    toast.error(
-                      "Camera connection lost."
-                    );
-                  }}
-                />
-              </>
-            ) : (
-              <div className="flex flex-col items-center justify-center p-12 text-center space-y-5">
-                {currentEx.image && (
-                  <div className="h-44 w-72 overflow-hidden rounded-2xl shadow-sm">
-                    <img
-                      src={currentEx.image}
-                      alt={currentEx.name}
-                      className="w-full h-full object-cover opacity-80"
-                    />
-                  </div>
-                )}
-
-                <div>
-                  <h3 className="text-lg font-black text-gray-800 uppercase tracking-wide">
-                    Camera Ready
-                  </h3>
-
-                  <p className="text-xs text-gray-400 mt-1">
-                    Position your full body in view and
-                    start detection.
-                  </p>
-                </div>
-
-                <button
-                  onClick={handleStart}
-                  disabled={!serverOnline}
-                  className="py-3 px-8 bg-[#fde2c4] hover:bg-[#ffd0a5] text-gray-900 font-bold uppercase tracking-widest text-xs rounded-2xl transition-all shadow-sm flex items-center gap-2"
-                >
-                  <Play size={14} />
-                  Start Detection
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Stats Column */}
-          <div className="lg:col-span-4 flex flex-col justify-between gap-4">
-            {/* Rep Count */}
-            <div className="rounded-3xl shadow-[0_4px_20px_rgba(0,0,0,0.04)] border border-gray-100 bg-white p-6 text-center space-y-2">
-              <span className="text-[10px] font-black tracking-widest text-indigo-400 uppercase">
-                {exerciseId === "plank"
-                  ? "Hold Time (Seconds)"
-                  : "Total Repetitions"}
-              </span>
-
-              <div className="text-7xl font-black text-gray-900 tracking-tight">
-                {reps}
-              </div>
-
-              <span className="inline-block bg-blue-50 text-[#3b82f6] px-4 py-1 rounded-xl font-bold text-xs uppercase">
-                {currentEx.name}
+                Python service is offline. Please run{" "}
+                <code className="rounded bg-rose-100 px-1 font-mono font-bold">
+                  python app.py
+                </code>{" "}
+                in python-pose-service folder.
               </span>
             </div>
+          )}
 
-            {/* Posture Gauge */}
-            <div className="rounded-3xl shadow-[0_4px_20px_rgba(0,0,0,0.04)] border border-gray-100 bg-white p-6 flex flex-col items-center space-y-4">
-              <span className="text-[10px] font-black tracking-widest text-indigo-400 uppercase">
-                Form & Angle
-              </span>
-
-              <div className="relative h-28 w-28 flex items-center justify-center">
-                <svg
-                  className="h-full w-full -rotate-90"
-                  viewBox="0 0 100 100"
-                >
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="40"
-                    stroke="#f1f5f9"
-                    strokeWidth="8"
-                    fill="transparent"
+          {/* Main Grid */}
+          <div className="mx-auto grid max-w-6xl grid-cols-1 items-stretch gap-6 lg:grid-cols-12">
+            {/* Large Camera Feed */}
+            <div className="relative flex min-h-[460px] flex-col justify-center overflow-hidden rounded-card border border-brand-light/50 bg-surface/70 shadow-card backdrop-blur-xl lg:col-span-8 md:min-h-[520px]">
+              {isActive ? (
+                <>
+                  <img
+                    src="http://localhost:5002/video_feed"
+                    alt="Camera Stream"
+                    className="aspect-video h-full w-full object-cover"
+                    onError={() => {
+                      setServerOnline(false);
+                      setIsActive(false);
+                      toast.error("Camera connection lost.");
+                    }}
                   />
+                </>
+              ) : (
+                <div className="flex flex-col items-center justify-center space-y-5 p-12 text-center">
+                  {currentEx.image && (
+                    <div className="h-44 w-72 overflow-hidden rounded-card border border-brand-light/40 shadow-card">
+                      <img
+                        src={currentEx.image}
+                        alt={currentEx.name}
+                        className="h-full w-full object-cover opacity-80"
+                      />
+                    </div>
+                  )}
 
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="40"
-                    stroke={
-                      warning
-                        ? "#ef4444"
-                        : direction !== "none"
-                        ? "#22c55e"
-                        : "#3b82f6"
-                    }
-                    strokeWidth="8"
-                    fill="transparent"
-                    strokeDasharray={251.2}
-                    strokeDashoffset={
-                      251.2 -
-                      (251.2 * percentage) / 100
-                    }
-                    strokeLinecap="round"
-                    className="transition-all duration-300"
-                  />
-                </svg>
+                  <div>
+                    <h3 className="text-lg font-extrabold uppercase tracking-wide text-gray-800">
+                      Camera Ready
+                    </h3>
 
-                <div className="absolute flex flex-col items-center">
-                  <span className="text-2xl font-black text-gray-900">
-                    {absAngle}°
-                  </span>
+                    <p className="mt-1 text-xs text-gray-400">
+                      Position your full body in view and start detection.
+                    </p>
+                  </div>
 
-                  <span className="text-[9px] font-bold text-gray-400 uppercase">
-                    {direction !== "none"
-                      ? direction
-                      : "tilt"}
-                  </span>
+                  <button
+                    onClick={handleStart}
+                    disabled={!serverOnline}
+                    className="btn-primary flex items-center gap-2 py-3 px-8 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Play size={14} />
+                    Start Detection
+                  </button>
                 </div>
+              )}
+            </div>
+
+            {/* Stats Column */}
+            <div className="flex flex-col justify-between gap-4 lg:col-span-4">
+              {/* Rep Count */}
+              <div className="rounded-card border border-brand-light/50 bg-surface/80 p-6 text-center shadow-card backdrop-blur-xl">
+                <span className="text-[10px] font-extrabold uppercase tracking-widest text-brand-dark">
+                  {exerciseId === "plank"
+                    ? "Hold Time (Seconds)"
+                    : "Total Repetitions"}
+                </span>
+
+                <div className="text-7xl font-extrabold tracking-tight text-gray-800">
+                  {reps}
+                </div>
+
+                <span className="inline-block rounded-btn bg-brand-light/40 px-4 py-1 text-xs font-bold uppercase text-brand-dark">
+                  {currentEx.name}
+                </span>
               </div>
 
-              {/* Feedback Banner */}
-              <div className="w-full text-center">
-                {warning ? (
-                  <div className="p-3 bg-red-50 border border-red-200 rounded-2xl text-red-600 text-xs font-bold flex items-center justify-center gap-2">
-                    <AlertTriangle size={15} />
+              {/* Posture Gauge */}
+              <div className="flex flex-col items-center space-y-4 rounded-card border border-brand-light/50 bg-surface/80 p-6 shadow-card backdrop-blur-xl">
+                <span className="text-[10px] font-extrabold uppercase tracking-widest text-brand-dark">
+                  Form & Angle
+                </span>
 
-                    <span>{warning}</span>
-                  </div>
-                ) : isActive &&
-                  !personDetected ? (
-                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-2xl text-amber-700 text-xs font-bold flex items-center justify-center gap-2">
-                    <AlertTriangle size={15} />
+                <div className="relative flex h-28 w-28 items-center justify-center">
+                  <svg
+                    className="h-full w-full -rotate-90"
+                    viewBox="0 0 100 100"
+                  >
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="40"
+                      stroke="#e5e7eb"
+                      strokeWidth="8"
+                      fill="transparent"
+                    />
 
-                    <span>
-                      Position yourself in front of
-                      camera
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="40"
+                      stroke={
+                        warning
+                          ? "#ef4444"
+                          : direction !== "none"
+                          ? "#53b889"
+                          : "#16845b"
+                      }
+                      strokeWidth="8"
+                      fill="transparent"
+                      strokeDasharray={251.2}
+                      strokeDashoffset={251.2 - (251.2 * percentage) / 100}
+                      strokeLinecap="round"
+                      className="transition-all duration-300"
+                    />
+                  </svg>
+
+                  <div className="absolute flex flex-col items-center">
+                    <span className="text-2xl font-extrabold text-gray-800">
+                      {absAngle}°
+                    </span>
+
+                    <span className="text-[9px] font-bold uppercase text-gray-400">
+                      {direction !== "none" ? direction : "tilt"}
                     </span>
                   </div>
-                ) : direction !== "none" ? (
-                  <div className="p-3 bg-green-50 border border-green-200 rounded-2xl text-green-700 text-xs font-bold flex items-center justify-center gap-2">
-                    <CheckCircle2 size={15} />
+                </div>
 
-                    <span>{feedback}</span>
-                  </div>
-                ) : (
-                  <div className="p-3 bg-gray-50 border border-gray-100 rounded-2xl text-gray-600 text-xs font-bold">
-                    {feedback}
-                  </div>
-                )}
+                {/* Feedback Banner */}
+                <div className="w-full text-center">
+                  {warning ? (
+                    <div className="flex items-center justify-center gap-2 rounded-btn border border-rose-200 bg-rose-50 p-3 text-xs font-bold text-rose-600">
+                      <AlertTriangle size={15} />
+                      <span>{warning}</span>
+                    </div>
+                  ) : isActive && !personDetected ? (
+                    <div className="flex items-center justify-center gap-2 rounded-btn border border-accent-orange bg-accent-orange/40 p-3 text-xs font-bold text-accent-orange-dark">
+                      <AlertTriangle size={15} />
+                      <span>Position yourself in front of camera</span>
+                    </div>
+                  ) : direction !== "none" ? (
+                    <div className="flex items-center justify-center gap-2 rounded-btn border border-brand-light bg-brand-light/30 p-3 text-xs font-bold text-brand-dark">
+                      <CheckCircle2 size={15} />
+                      <span>{feedback}</span>
+                    </div>
+                  ) : (
+                    <div className="rounded-btn border border-gray-200 bg-white/60 p-3 text-xs font-bold text-gray-600">
+                      {feedback}
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
 
-            {/* Action Buttons */}
-            <div className="rounded-3xl shadow-[0_4px_20px_rgba(0,0,0,0.04)] border border-gray-100 bg-white p-4 flex gap-3">
-              {isActive ? (
-                <button
-                  onClick={handleStop}
-                  className="flex-1 py-3.5 bg-red-50 hover:bg-red-100 text-red-600 font-bold uppercase tracking-wider text-xs rounded-2xl border border-red-200 transition-all flex items-center justify-center gap-2"
-                >
-                  <Square size={14} />
-                  Stop
-                </button>
-              ) : (
-                <button
-                  onClick={handleStart}
-                  disabled={!serverOnline}
-                  className="flex-1 py-3.5 bg-[#fde2c4] hover:bg-[#ffd0a5] text-gray-900 font-bold uppercase tracking-wider text-xs rounded-2xl transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  <Play size={14} />
-                  Start
-                </button>
-              )}
+              {/* Action Buttons */}
+              <div className="flex gap-3 rounded-card border border-brand-light/50 bg-surface/80 p-4 shadow-card backdrop-blur-xl">
+                {isActive ? (
+                  <button
+                    onClick={handleStop}
+                    className="flex flex-1 items-center justify-center gap-2 rounded-btn border border-rose-200 bg-rose-50 py-3.5 text-xs font-bold uppercase tracking-wider text-rose-600 transition-all hover:bg-rose-100"
+                  >
+                    <Square size={14} />
+                    Stop
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleStart}
+                    disabled={!serverOnline}
+                    className="flex flex-1 items-center justify-center gap-2 rounded-btn bg-gray-800 py-3.5 text-xs font-bold uppercase tracking-wider text-white transition-all hover:-translate-y-0.5 hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Play size={14} />
+                    Start
+                  </button>
+                )}
 
-              <button
-                onClick={handleReset}
-                className="flex-1 py-3.5 bg-gray-50 hover:bg-gray-100 text-gray-700 font-bold uppercase tracking-wider text-xs rounded-2xl border border-gray-200 transition-all flex items-center justify-center gap-2"
-              >
-                <RotateCcw size={14} />
-                Reset
-              </button>
+                <button
+                  onClick={handleReset}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-btn border border-gray-200 bg-white/60 py-3.5 text-xs font-bold uppercase tracking-wider text-gray-700 transition-all hover:bg-white"
+                >
+                  <RotateCcw size={14} />
+                  Reset
+                </button>
+              </div>
             </div>
           </div>
         </div>
