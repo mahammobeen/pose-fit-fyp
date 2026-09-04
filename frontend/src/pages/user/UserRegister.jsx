@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { httpClient } from "../../lib/http";
-import { IconAlertTriangle, IconCheck } from "../../components/admin/Icons";
+import { AlertTriangle, Check } from "lucide-react";
 import posefit_logo from "../../assets/posefit_logo.png";
 
 export default function UserRegister() {
@@ -278,9 +278,9 @@ export default function UserRegister() {
           }`}
         >
           {toast.type === "error" ? (
-            <IconAlertTriangle className="h-5 w-5 shrink-0" />
+            <AlertTriangle className="h-5 w-5 shrink-0" />
           ) : (
-            <IconCheck className="h-5 w-5 shrink-0" />
+            <Check className="h-5 w-5 shrink-0" />
           )}
 
           <span>{toast.message}</span>
@@ -501,7 +501,9 @@ export default function UserRegister() {
                   placeholder="123456"
                   value={code}
                   onChange={(e) => {
-                    const value = e.target.value.replace(/\D/g, "").slice(0, 6);
+                    const value = e.target.value
+                      .replace(/\D/g, "")
+                      .slice(0, 6);
 
                     setCode(value);
                   }}

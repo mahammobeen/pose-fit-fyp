@@ -3,14 +3,14 @@ import AdminLayout from "../../components/admin/AdminLayout";
 import Modal from "../../components/admin/Modal";
 import StatusBadge from "../../components/admin/StatusBadge";
 import { httpClient } from "../../lib/http";
-
 import {
-  IconCheck,
-  IconX,
-  IconCheckCircle,
-  IconLock,
-  IconLink,
-} from "../../components/admin/Icons";
+  Check,
+  X,
+  CheckCircle,
+  Lock,
+  Link,
+  SearchCheck,
+} from "lucide-react";
 
 export default function AdminProfessionalRequests() {
   const [requests, setRequests] = useState([]);
@@ -52,14 +52,10 @@ export default function AdminProfessionalRequests() {
     fetchRequests();
   }, [fetchRequests]);
 
-  /* ---- OPEN DETAIL MODAL ---- */
-
   const openDetailModal = (pro) => {
     setDetailPro(pro);
     setDetailOpen(true);
   };
-
-  /* ---- APPROVE / REJECT ---- */
 
   const openStatus = (pro, action) => {
     setSelectedPro(pro);
@@ -158,11 +154,10 @@ export default function AdminProfessionalRequests() {
             <div className="w-8 h-8 border-4 border-brand-light border-t-brand rounded-full animate-spin" />
           </div>
         ) : requests.length === 0 ? (
-          /* Empty */
           <div className="px-4 sm:px-6 lg:px-8">
             <div className="rounded-card border border-brand-light/60 bg-surface/80 shadow-card p-16 text-center backdrop-blur-xl">
               <div className="w-16 h-16 rounded-full bg-brand-light/45 text-brand-dark flex items-center justify-center mx-auto mb-4">
-                <IconCheckCircle className="w-8 h-8" />
+                <CheckCircle className="w-8 h-8" />
               </div>
 
               <p className="text-xl font-extrabold text-gray-800 mb-1">
@@ -175,7 +170,6 @@ export default function AdminProfessionalRequests() {
             </div>
           </div>
         ) : (
-          /* Requests */
           <div className="px-4 sm:px-6 lg:px-8 grid gap-5">
             {requests.map((pro) => (
               <div
@@ -222,7 +216,9 @@ export default function AdminProfessionalRequests() {
 
                         <span>•</span>
 
-                        <span>Spec: {pro.specialization || "General"}</span>
+                        <span>
+                          Spec: {pro.specialization || "General"}
+                        </span>
 
                         <span>•</span>
 
@@ -239,16 +235,17 @@ export default function AdminProfessionalRequests() {
                   <div className="flex items-center gap-2 flex-wrap">
                     <button
                       onClick={() => openDetailModal(pro)}
-                      className="px-3.5 py-2 rounded-btn text-xs font-bold text-gray-700 bg-white/70 hover:bg-brand-light/20 border border-gray-200 transition-colors"
+                      className="flex items-center gap-1.5 px-3.5 py-2 rounded-btn text-xs font-bold text-gray-700 bg-white/70 hover:bg-brand-light/20 border border-gray-200 transition-colors"
                     >
-                      🔍 Review Full Application
+                      <SearchCheck className="w-3.5 h-3.5" />
+                      <span>Review Full Application</span>
                     </button>
 
                     <button
                       onClick={() => openStatus(pro, "approved")}
                       className="flex items-center gap-1.5 px-4 py-2 rounded-btn text-xs font-bold text-brand-dark bg-brand-light/35 hover:bg-brand-light/55 border border-brand-light transition-colors"
                     >
-                      <IconCheck className="w-3.5 h-3.5" />
+                      <Check className="w-3.5 h-3.5" />
                       <span>Approve (Make Live)</span>
                     </button>
 
@@ -256,7 +253,7 @@ export default function AdminProfessionalRequests() {
                       onClick={() => openStatus(pro, "rejected")}
                       className="flex items-center gap-1.5 px-4 py-2 rounded-btn text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-colors"
                     >
-                      <IconX className="w-3.5 h-3.5" />
+                      <X className="w-3.5 h-3.5" />
                       <span>Reject</span>
                     </button>
                   </div>
@@ -277,7 +274,6 @@ export default function AdminProfessionalRequests() {
         )}
 
         {/* FULL APPLICATION REVIEW MODAL */}
-
         <Modal
           isOpen={detailOpen}
           onClose={() => setDetailOpen(false)}
@@ -316,7 +312,8 @@ export default function AdminProfessionalRequests() {
 
                     <StatusBadge
                       status={
-                        detailPro.professionalStatus || "pending_verification"
+                        detailPro.professionalStatus ||
+                        "pending_verification"
                       }
                     />
                   </div>
@@ -387,7 +384,7 @@ export default function AdminProfessionalRequests() {
                             rel="noreferrer"
                             className="text-brand-dark font-bold hover:underline flex items-center gap-1"
                           >
-                            <IconLink className="w-3.5 h-3.5" />
+                            <Link className="w-3.5 h-3.5" />
                             View Document
                           </a>
                         )}
@@ -407,17 +404,22 @@ export default function AdminProfessionalRequests() {
                   Submitted Availability Schedule
                 </p>
 
-                {detailPro.availability && detailPro.availability.length > 0 ? (
+                {detailPro.availability &&
+                detailPro.availability.length > 0 ? (
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     {detailPro.availability.map((item, idx) => (
                       <div
                         key={idx}
                         className="p-2.5 bg-white/70 rounded-btn border border-gray-200"
                       >
-                        <p className="font-bold text-gray-800">{item.day}</p>
+                        <p className="font-bold text-gray-800">
+                          {item.day}
+                        </p>
 
                         <p className="text-gray-500 font-medium text-[11px] mt-0.5">
-                          {item.slots ? item.slots.join(", ") : "No slots"}
+                          {item.slots
+                            ? item.slots.join(", ")
+                            : "No slots"}
                         </p>
                       </div>
                     ))}
@@ -433,7 +435,7 @@ export default function AdminProfessionalRequests() {
               <div className="bg-accent-orange/20 p-4 rounded-card border border-accent-orange/70">
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-xs font-bold text-[#8f541f] uppercase tracking-wider flex items-center gap-1.5">
-                    <IconLock className="w-3.5 h-3.5" />
+                    <Lock className="w-3.5 h-3.5" />
                     Stripe Connect Payout Account (Secured)
                   </p>
                 </div>
@@ -487,16 +489,18 @@ export default function AdminProfessionalRequests() {
               <div className="flex gap-3 pt-2">
                 <button
                   onClick={() => openStatus(detailPro, "rejected")}
-                  className="flex-1 py-2.5 rounded-btn bg-rose-50 text-rose-700 border border-rose-200 font-bold text-xs hover:bg-rose-100 transition-colors"
+                  className="flex-1 py-2.5 rounded-btn bg-rose-50 text-rose-700 border border-rose-200 font-bold text-xs hover:bg-rose-100 transition-colors flex items-center justify-center gap-1.5"
                 >
-                  ✕ Reject Application
+                  <X className="w-4 h-4" />
+                  Reject Application
                 </button>
 
                 <button
                   onClick={() => openStatus(detailPro, "approved")}
-                  className="flex-1 py-2.5 rounded-btn bg-gray-800 text-white font-bold text-xs hover:bg-gray-700 shadow-card transition-colors"
+                  className="flex-1 py-2.5 rounded-btn bg-gray-800 text-white font-bold text-xs hover:bg-gray-700 shadow-card transition-colors flex items-center justify-center gap-1.5"
                 >
-                  ✓ Approve & Make Live
+                  <Check className="w-4 h-4" />
+                  Approve & Make Live
                 </button>
               </div>
             </div>
@@ -504,7 +508,6 @@ export default function AdminProfessionalRequests() {
         </Modal>
 
         {/* DECISION MODAL */}
-
         <Modal
           isOpen={statusOpen}
           onClose={() => setStatusOpen(false)}
@@ -531,12 +534,15 @@ export default function AdminProfessionalRequests() {
             {statusAction === "rejected" && (
               <div>
                 <label className="block text-xs font-bold text-gray-600 mb-1.5 uppercase tracking-wider">
-                  Rejection Reason <span className="text-rose-600">*</span>
+                  Rejection Reason{" "}
+                  <span className="text-rose-600">*</span>
                 </label>
 
                 <textarea
                   value={rejectionReasonInput}
-                  onChange={(e) => setRejectionReasonInput(e.target.value)}
+                  onChange={(e) =>
+                    setRejectionReasonInput(e.target.value)
+                  }
                   placeholder="State clear reason for rejection..."
                   rows={3}
                   className="w-full px-3.5 py-2.5 rounded-btn border border-gray-200 bg-white/70 text-sm text-gray-800 outline-none focus:border-brand focus:ring-2 focus:ring-brand-light/60 resize-none font-medium"
@@ -568,8 +574,8 @@ export default function AdminProfessionalRequests() {
                 {actionLoading
                   ? "Processing..."
                   : statusAction === "approved"
-                  ? "Approve Live"
-                  : "Confirm Reject"}
+                    ? "Approve Live"
+                    : "Confirm Reject"}
               </button>
             </div>
           </div>
@@ -577,4 +583,4 @@ export default function AdminProfessionalRequests() {
       </div>
     </AdminLayout>
   );
-}
+};

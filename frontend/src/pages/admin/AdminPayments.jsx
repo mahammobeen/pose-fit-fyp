@@ -2,14 +2,13 @@ import { useState, useEffect, useCallback } from "react";
 import AdminLayout from "../../components/admin/AdminLayout";
 import StatusBadge from "../../components/admin/StatusBadge";
 import { httpClient } from "../../lib/http";
-
 import {
-  IconDollarSign,
-  IconBuilding,
-  IconTrendingUp,
-  IconCheckCircle,
-  IconSearch,
-} from "../../components/admin/Icons";
+  DollarSign,
+  Building2,
+  TrendingUp,
+  CheckCircle,
+  Search,
+} from "lucide-react";
 
 const STATUS_FILTERS = ["all", "completed", "pending", "failed"];
 
@@ -17,7 +16,8 @@ export default function AdminPayments() {
   const [payments, setPayments] = useState([]);
   const [totalRevenue, setTotalRevenue] = useState(0);
   const [totalCommission, setTotalCommission] = useState(0);
-  const [totalProfessionalEarnings, setTotalProfessionalEarnings] = useState(0);
+  const [totalProfessionalEarnings, setTotalProfessionalEarnings] =
+    useState(0);
 
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("all");
@@ -38,7 +38,9 @@ export default function AdminPayments() {
       setPayments(res.data?.payments || []);
       setTotalRevenue(res.data?.totalRevenue || 0);
       setTotalCommission(res.data?.totalCommission || 0);
-      setTotalProfessionalEarnings(res.data?.totalProfessionalEarnings || 0);
+      setTotalProfessionalEarnings(
+        res.data?.totalProfessionalEarnings || 0,
+      );
     } catch (error) {
       console.error("Fetch payments error:", error);
       showToast("Failed to load payments", "error");
@@ -51,7 +53,6 @@ export default function AdminPayments() {
     fetchPayments();
   }, [fetchPayments]);
 
-  // Delete payment from admin history
   const handleDelete = async (paymentId) => {
     const confirmed = window.confirm(
       "Are you sure you want to delete this payment record? This will only remove it from the admin payment history.",
@@ -69,14 +70,16 @@ export default function AdminPayments() {
       console.error("Delete payment error:", error);
 
       showToast(
-        error?.response?.data?.message || "Failed to delete payment record.",
+        error?.response?.data?.message ||
+          "Failed to delete payment record.",
         "error",
       );
     }
   };
 
   const filtered = payments.filter((p) => {
-    const matchStatus = statusFilter === "all" || p.status === statusFilter;
+    const matchStatus =
+      statusFilter === "all" || p.status === statusFilter;
 
     const q = search.toLowerCase();
 
@@ -96,7 +99,7 @@ export default function AdminPayments() {
     {
       label: "Total Revenue",
       value: `$${totalRevenue.toFixed(2)}`,
-      Icon: IconDollarSign,
+      Icon: DollarSign,
       bg: "linear-gradient(135deg, rgba(183, 228, 199, 0.45) 0%, rgba(255, 253, 245, 0.96) 100%)",
       border: "#b7e4c7",
       iconBg: "rgba(183, 228, 199, 0.65)",
@@ -105,7 +108,7 @@ export default function AdminPayments() {
     {
       label: "PoseFit Commission (20%)",
       value: `$${totalCommission.toFixed(2)}`,
-      Icon: IconBuilding,
+      Icon: Building2,
       bg: "linear-gradient(135deg, rgba(255, 216, 177, 0.42) 0%, rgba(255, 253, 245, 0.96) 100%)",
       border: "#ffd8b1",
       iconBg: "rgba(255, 216, 177, 0.65)",
@@ -114,7 +117,7 @@ export default function AdminPayments() {
     {
       label: "Pro Earnings (80%)",
       value: `$${totalProfessionalEarnings.toFixed(2)}`,
-      Icon: IconTrendingUp,
+      Icon: TrendingUp,
       bg: "linear-gradient(135deg, rgba(208, 235, 255, 0.48) 0%, rgba(255, 253, 245, 0.96) 100%)",
       border: "#d0ebff",
       iconBg: "rgba(208, 235, 255, 0.7)",
@@ -123,7 +126,7 @@ export default function AdminPayments() {
     {
       label: "Successful Payments",
       value: payments.filter((p) => p.status === "completed").length,
-      Icon: IconCheckCircle,
+      Icon: CheckCircle,
       bg: "linear-gradient(135deg, rgba(183, 228, 199, 0.38) 0%, rgba(255, 253, 245, 0.96) 100%)",
       border: "#b7e4c7",
       iconBg: "rgba(183, 228, 199, 0.6)",
@@ -134,7 +137,6 @@ export default function AdminPayments() {
   return (
     <AdminLayout>
       <div className="min-h-screen pb-16 bg-transparent font-sans">
-        {/* Toast */}
         {toast && (
           <div
             className={`fixed top-5 right-5 z-50 px-5 py-3 rounded-btn shadow-card-hover text-white text-sm font-bold border transition-all ${
@@ -147,7 +149,6 @@ export default function AdminPayments() {
           </div>
         )}
 
-        {/* Header */}
         <div className="px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 pb-5">
           <div className="rounded-card border border-brand-light/60 bg-surface/75 backdrop-blur-xl shadow-card p-6 sm:p-7">
             <span className="inline-flex text-xs font-extrabold uppercase tracking-widest px-3 py-1 rounded-full bg-brand-light/45 text-brand-dark border border-brand-light">
@@ -159,13 +160,12 @@ export default function AdminPayments() {
             </h1>
 
             <p className="text-gray-500 font-medium text-sm mt-1">
-              Track transactions, 20% platform commissions, and 80% professional
-              Connect payouts.
+              Track transactions, 20% platform commissions, and 80%
+              professional Connect payouts.
             </p>
           </div>
         </div>
 
-        {/* Summary Cards */}
         <div className="px-4 sm:px-6 lg:px-8 mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {summaryCards.map((card) => (
             <div
@@ -183,7 +183,9 @@ export default function AdminPayments() {
                 <card.Icon className={`w-6 h-6 ${card.text}`} />
               </div>
 
-              <p className={`text-2xl font-black ${card.text}`}>{card.value}</p>
+              <p className={`text-2xl font-black ${card.text}`}>
+                {card.value}
+              </p>
 
               <p className="text-xs text-gray-500 font-bold mt-1 uppercase tracking-wider">
                 {card.label}
@@ -192,7 +194,6 @@ export default function AdminPayments() {
           ))}
         </div>
 
-        {/* Filters */}
         <div className="px-4 sm:px-6 lg:px-8 mb-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 justify-between">
           <div className="flex items-center gap-1 bg-surface/80 rounded-btn border border-brand-light/60 p-1.5 shadow-card overflow-x-auto backdrop-blur-xl">
             {STATUS_FILTERS.map((s) => (
@@ -212,7 +213,7 @@ export default function AdminPayments() {
 
           <div className="relative w-full sm:w-72">
             <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">
-              <IconSearch className="w-4 h-4" />
+              <Search className="w-4 h-4" />
             </span>
 
             <input
@@ -225,7 +226,6 @@ export default function AdminPayments() {
           </div>
         </div>
 
-        {/* Table */}
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="rounded-card shadow-card border border-brand-light/50 overflow-hidden bg-surface/85 backdrop-blur-xl">
             {loading ? (

@@ -4,16 +4,15 @@ import ProfessionalLayout from "../../components/professional/ProfessionalLayout
 import StatusBadge from "../../components/admin/StatusBadge";
 import { httpClient } from "../../lib/http";
 import {
-  IconCalendar,
-  IconTrendingUp,
-  IconDollarSign,
-  IconStar,
-  IconCheckCircle,
-  IconAlertTriangle,
-  IconLock,
-  IconBuilding,
-  IconChevronRight,
-} from "../../components/admin/Icons";
+  Calendar,
+  TrendingUp,
+  DollarSign,
+  Star,
+  CheckCircle,
+  AlertTriangle,
+  Building2,
+  ChevronRight,
+} from "lucide-react";
 
 export default function ProfessionalDashboard() {
   const [dashboardData, setDashboardData] = useState(null);
@@ -142,7 +141,7 @@ export default function ProfessionalDashboard() {
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-brand-light/70 bg-brand-light/25 p-4 shadow-card">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-brand-light/60 text-brand-dark">
-                  <IconCheckCircle className="h-5 w-5" />
+                  <CheckCircle className="h-5 w-5" />
                 </div>
 
                 <div>
@@ -164,7 +163,7 @@ export default function ProfessionalDashboard() {
             <div className="space-y-2 rounded-card border border-rose-200 bg-rose-50 p-5 shadow-card">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <IconAlertTriangle className="h-5 w-5 shrink-0 text-rose-600" />
+                  <AlertTriangle className="h-5 w-5 shrink-0 text-rose-600" />
 
                   <p className="text-sm font-extrabold text-rose-900">
                     Application Rejection Notice
@@ -195,7 +194,7 @@ export default function ProfessionalDashboard() {
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-amber-200 bg-amber-50 p-4 shadow-card">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-800">
-                  <IconCalendar className="h-5 w-5" />
+                  <Calendar className="h-5 w-5" />
                 </div>
 
                 <div>
@@ -220,7 +219,7 @@ export default function ProfessionalDashboard() {
           <div className="flex flex-wrap items-center justify-between gap-4 rounded-card border border-brand-light/50 bg-surface/80 p-5 shadow-card backdrop-blur-xl">
             <div className="flex items-center gap-3.5">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-accent-blue bg-accent-blue/50 text-sky-700">
-                <IconBuilding className="h-6 w-6" />
+                <Building2 className="h-6 w-6" />
               </div>
 
               <div>
@@ -280,7 +279,7 @@ export default function ProfessionalDashboard() {
           {/* Upcoming Sessions */}
           <div className="rounded-card border border-brand-light/50 bg-surface/80 p-5 shadow-card transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover">
             <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-2xl bg-brand-light/40 text-brand-dark">
-              <IconCalendar className="h-5 w-5" />
+              <Calendar className="h-5 w-5" />
             </div>
 
             <p className="text-2xl font-extrabold text-gray-800">
@@ -295,7 +294,7 @@ export default function ProfessionalDashboard() {
           {/* Total Sessions */}
           <div className="rounded-card border border-brand-light/50 bg-surface/80 p-5 shadow-card transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover">
             <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-2xl bg-accent-blue/50 text-sky-700">
-              <IconTrendingUp className="h-5 w-5" />
+              <TrendingUp className="h-5 w-5" />
             </div>
 
             <p className="text-2xl font-extrabold text-gray-800">
@@ -310,11 +309,14 @@ export default function ProfessionalDashboard() {
           {/* Earnings This Month */}
           <div className="rounded-card border border-brand-light/50 bg-surface/80 p-5 shadow-card transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover">
             <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-2xl bg-brand-light/40 text-brand-dark">
-              <IconDollarSign className="h-5 w-5" />
+              <DollarSign className="h-5 w-5" />
             </div>
 
             <p className="text-2xl font-extrabold text-brand-dark">
-              ${loading ? "-" : metrics?.monthlyEarnings?.toFixed(2) || "0.00"}
+              $
+              {loading
+                ? "-"
+                : metrics?.monthlyEarnings?.toFixed(2) || "0.00"}
             </p>
 
             <p className="mt-1 text-xs font-bold uppercase tracking-wider text-gray-500">
@@ -325,7 +327,7 @@ export default function ProfessionalDashboard() {
           {/* Average Rating */}
           <div className="rounded-card border border-brand-light/50 bg-surface/80 p-5 shadow-card transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover">
             <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
-              <IconStar className="h-5 w-5 fill-amber-400 text-amber-500" />
+              <Star className="h-5 w-5 fill-amber-400 text-amber-500" />
             </div>
 
             <p className="text-2xl font-extrabold text-gray-800">
@@ -356,7 +358,7 @@ export default function ProfessionalDashboard() {
               className="flex items-center gap-1 text-xs font-bold text-brand-dark transition-colors hover:text-brand"
             >
               View All Bookings
-              <IconChevronRight className="h-3.5 w-3.5" />
+              <ChevronRight className="h-3.5 w-3.5" />
             </Link>
           </div>
 
@@ -427,14 +429,13 @@ export default function ProfessionalDashboard() {
 
                         {/* Date */}
                         <td className="whitespace-nowrap px-5 py-4 text-xs font-medium text-gray-500">
-                          {new Date(b.paidAt || b.createdAt).toLocaleDateString(
-                            "en-US",
-                            {
-                              month: "short",
-                              day: "numeric",
-                              year: "numeric",
-                            },
-                          )}
+                          {new Date(
+                            b.paidAt || b.createdAt,
+                          ).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          })}
                         </td>
                       </tr>
                     ))}

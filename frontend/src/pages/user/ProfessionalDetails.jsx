@@ -4,11 +4,11 @@ import { httpClient } from "../../lib/http";
 import { toast } from "sonner";
 import UserLayout from "../../components/user/UserLayout";
 import {
-  IconCheckCircle,
-  IconClock,
-  IconCalendar,
-  IconStar,
-} from "../../components/admin/Icons";
+  CheckCircle,
+  Clock,
+  Calendar,
+  Star,
+} from "lucide-react";
 
 const DAYS_ORDER = [
   "Monday",
@@ -122,6 +122,7 @@ function parseSlotTime(slot) {
   };
 }
 
+// eslint-disable-next-line no-unused-vars
 function getSlotEndTime(slot) {
   if (!slot || typeof slot !== "string") return null;
 
@@ -148,9 +149,13 @@ function getSlotEndTime(slot) {
     if (meridiemMatch) {
       const meridiem = meridiemMatch[1].toLowerCase();
 
-      let hour = Number(endPart.match(/^(\d{1,2})/)?.[1] || end.hour);
+      let hour = Number(
+        endPart.match(/^(\d{1,2})/)?.[1] || end.hour,
+      );
 
-      const minute = Number(endPart.match(/:(\d{2})/)?.[1] || end.minute);
+      const minute = Number(
+        endPart.match(/:(\d{2})/)?.[1] || end.minute,
+      );
 
       if (meridiem === "am") {
         if (hour === 12) hour = 0;
@@ -229,7 +234,6 @@ export default function ProfessionalDetails() {
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [bookingCancelled, setBookingCancelled] = useState(false);
 
-  // Reviews & Rating state
   const [proReviews, setProReviews] = useState([]);
   const [reviewsLoading, setReviewsLoading] = useState(true);
   const [pendingEligibleSessions, setPendingEligibleSessions] = useState([]);
@@ -243,7 +247,9 @@ export default function ProfessionalDetails() {
     try {
       setLoading(true);
 
-      const response = await httpClient.get(`/user/public-professionals/${id}`);
+      const response = await httpClient.get(
+        `/user/public-professionals/${id}`,
+      );
 
       setPro(response.data?.professional || null);
     } catch (error) {
@@ -363,7 +369,9 @@ export default function ProfessionalDetails() {
         rating: userRating,
       });
 
-      toast.success(res.data?.message || "Rating submitted successfully!");
+      toast.success(
+        res.data?.message || "Rating submitted successfully!",
+      );
 
       setShowRatingModal(false);
       setUserRating(5);
@@ -456,15 +464,19 @@ export default function ProfessionalDetails() {
         return false;
       }
 
-      const bookingDay = booking.appointmentDay?.trim().toLowerCase() || "";
+      const bookingDay =
+        booking.appointmentDay?.trim().toLowerCase() || "";
 
-      const bookingSlot = booking.appointmentSlot?.trim().toLowerCase() || "";
+      const bookingSlot =
+        booking.appointmentSlot?.trim().toLowerCase() || "";
 
       const bookingDate = normalizeDate(booking.appointmentDate);
 
-      const sameDay = bookingDay === day?.trim().toLowerCase();
+      const sameDay =
+        bookingDay === day?.trim().toLowerCase();
 
-      const sameSlot = bookingSlot === slot?.trim().toLowerCase();
+      const sameSlot =
+        bookingSlot === slot?.trim().toLowerCase();
 
       if (!sameDay || !sameSlot) {
         return false;
@@ -480,7 +492,9 @@ export default function ProfessionalDetails() {
 
   const getAvailableSlots = (day) => {
     const dayData = availability.find(
-      (item) => item.day?.trim().toLowerCase() === day?.trim().toLowerCase(),
+      (item) =>
+        item.day?.trim().toLowerCase() ===
+        day?.trim().toLowerCase(),
     );
 
     if (!dayData) return [];
@@ -535,14 +549,21 @@ export default function ProfessionalDetails() {
 
     const appointmentDate = getNextDateForDay(selectedDay);
 
-    const formattedAppointmentDate = formatDateForApi(appointmentDate);
+    const formattedAppointmentDate =
+      formatDateForApi(appointmentDate);
 
     if (!appointmentDate || !formattedAppointmentDate) {
       toast.error("Invalid appointment date.");
       return;
     }
 
-    if (isSlotBooked(selectedDay, selectedSlot, formattedAppointmentDate)) {
+    if (
+      isSlotBooked(
+        selectedDay,
+        selectedSlot,
+        formattedAppointmentDate,
+      )
+    ) {
       toast.error(
         "This session has already been booked. Please select another slot.",
       );
@@ -557,7 +578,13 @@ export default function ProfessionalDetails() {
 
       await fetchBookedSlots();
 
-      if (isSlotBooked(selectedDay, selectedSlot, formattedAppointmentDate)) {
+      if (
+        isSlotBooked(
+          selectedDay,
+          selectedSlot,
+          formattedAppointmentDate,
+        )
+      ) {
         toast.error(
           "This session was just booked by another user. Please select another slot.",
         );
@@ -626,7 +653,8 @@ export default function ProfessionalDetails() {
 
   const selectedDayData = availability.find(
     (item) =>
-      item.day?.trim().toLowerCase() === selectedDay?.trim().toLowerCase(),
+      item.day?.trim().toLowerCase() ===
+      selectedDay?.trim().toLowerCase(),
   );
 
   const daySlots = selectedDayData?.slots || [];
@@ -639,10 +667,6 @@ export default function ProfessionalDetails() {
     selectedAppointmentDate,
   );
 
-  // =====================================================
-  // LOADING
-  // =====================================================
-
   if (loading) {
     return (
       <UserLayout>
@@ -652,10 +676,6 @@ export default function ProfessionalDetails() {
       </UserLayout>
     );
   }
-
-  // =====================================================
-  // PROFESSIONAL NOT FOUND
-  // =====================================================
 
   if (!pro) {
     return (
@@ -686,17 +706,9 @@ export default function ProfessionalDetails() {
     );
   }
 
-  // =====================================================
-  // MAIN UI
-  // =====================================================
-
   return (
     <UserLayout>
       <div className="min-h-full bg-transparent pb-20 font-sans">
-        {/* =====================================================
-            PAGE HEADER
-        ===================================================== */}
-
         <div className="flex items-center justify-between gap-4 px-4 pb-4 pt-6 sm:px-6 sm:pt-8 lg:px-8">
           <span className="rounded-full border border-brand-light bg-brand-light/35 px-3 py-1 text-xs font-extrabold uppercase tracking-widest text-brand-dark">
             Professional Details
@@ -710,14 +722,10 @@ export default function ProfessionalDetails() {
           </button>
         </div>
 
-        {/* =====================================================
-            BOOKING SUCCESS
-        ===================================================== */}
-
         {bookingSuccess && (
           <div className="mx-auto mb-6 max-w-5xl px-4 sm:px-6 lg:px-8">
             <div className="flex items-center gap-3 rounded-card border border-brand-light bg-brand-light/20 p-4">
-              <IconCheckCircle className="h-5 w-5 shrink-0 text-brand-dark" />
+              <CheckCircle className="h-5 w-5 shrink-0 text-brand-dark" />
 
               <div>
                 <p className="text-sm font-bold text-brand-dark">
@@ -732,10 +740,6 @@ export default function ProfessionalDetails() {
             </div>
           </div>
         )}
-
-        {/* =====================================================
-            BOOKING CANCELLED
-        ===================================================== */}
 
         {bookingCancelled && (
           <div className="mx-auto mb-6 max-w-5xl px-4 sm:px-6 lg:px-8">
@@ -752,14 +756,9 @@ export default function ProfessionalDetails() {
         )}
 
         <div className="mx-auto max-w-5xl space-y-6 px-4 sm:px-6 lg:px-8">
-          {/* =====================================================
-              PROFESSIONAL PROFILE CARD
-          ===================================================== */}
-
           <div className="rounded-card border border-brand-light/50 bg-surface/85 p-5 shadow-card backdrop-blur-xl sm:p-8">
             <div className="flex flex-wrap items-start justify-between gap-6">
               <div className="flex items-start gap-5">
-                {/* Profile Image */}
                 {profilePhoto ? (
                   <img
                     src={profilePhoto}
@@ -773,7 +772,8 @@ export default function ProfessionalDetails() {
                   <div
                     className="flex h-24 w-24 shrink-0 items-center justify-center rounded-card text-3xl font-black text-white shadow-sm"
                     style={{
-                      background: "linear-gradient(135deg, #53b889, #16845b)",
+                      background:
+                        "linear-gradient(135deg, #53b889, #16845b)",
                     }}
                   >
                     {pro.firstName?.charAt(0)?.toUpperCase() || "P"}
@@ -787,7 +787,7 @@ export default function ProfessionalDetails() {
                     </h1>
 
                     <span className="flex items-center gap-1 rounded-full border border-brand-light bg-brand-light/30 px-3 py-1 text-xs font-bold text-brand-dark">
-                      <IconCheckCircle className="h-3.5 w-3.5 text-brand" />
+                      <CheckCircle className="h-3.5 w-3.5 text-brand" />
                       PoseFit Certified
                     </span>
                   </div>
@@ -801,7 +801,8 @@ export default function ProfessionalDetails() {
                     <div className="rounded-btn border border-brand-light/50 bg-brand-light/10 px-3.5 py-1.5 text-xs font-extrabold text-gray-800">
                       {pro.rating?.count > 0 ? (
                         <span>
-                          Rating: {Number(pro.rating?.average || 0).toFixed(1)}{" "}
+                          Rating:{" "}
+                          {Number(pro.rating?.average || 0).toFixed(1)}{" "}
                           ({pro.rating.count})
                         </span>
                       ) : (
@@ -818,11 +819,10 @@ export default function ProfessionalDetails() {
                 </div>
               </div>
 
-              {/* Actions */}
               <div className="flex flex-wrap items-center gap-3">
                 {myRating ? (
                   <div className="flex items-center gap-1.5 rounded-btn border border-brand-light bg-brand-light/25 px-4 py-3 text-xs font-black text-brand-dark shadow-sm">
-                    <IconStar className="h-4 w-4 fill-amber-400 text-amber-500" />
+                    <Star className="h-4 w-4 fill-amber-400 text-amber-500" />
                     You Rated: {Number(myRating.rating).toFixed(1)} ★
                   </div>
                 ) : (
@@ -831,7 +831,7 @@ export default function ProfessionalDetails() {
                     onClick={() => setShowRatingModal(true)}
                     className="flex items-center gap-2 rounded-btn border border-brand-light/60 bg-white/70 px-5 py-3.5 text-sm font-bold text-gray-700 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-white hover:shadow-card"
                   >
-                    <IconStar className="h-4 w-4 text-amber-400" />
+                    <Star className="h-4 w-4 text-amber-400" />
                     Rate Professional
                   </button>
                 )}
@@ -846,7 +846,6 @@ export default function ProfessionalDetails() {
               </div>
             </div>
 
-            {/* Bio */}
             {pro.bio && (
               <div className="mt-8 border-t border-brand-light/40 pt-6">
                 <h3 className="mb-2 text-xs font-extrabold uppercase tracking-wider text-gray-400">
@@ -860,13 +859,9 @@ export default function ProfessionalDetails() {
             )}
           </div>
 
-          {/* =====================================================
-              WEEKLY AVAILABILITY
-          ===================================================== */}
-
           <div className="rounded-card border border-brand-light/50 bg-surface/85 p-6 shadow-card backdrop-blur-xl sm:p-8">
             <h3 className="mb-4 flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-gray-400">
-              <IconCalendar className="h-4 w-4 text-brand-dark" />
+              <Calendar className="h-4 w-4 text-brand-dark" />
               Weekly Availability Schedule
             </h3>
 
@@ -907,15 +902,11 @@ export default function ProfessionalDetails() {
             )}
           </div>
 
-          {/* =====================================================
-              CLIENT RATINGS & REVIEWS
-          ===================================================== */}
-
           <div className="rounded-card border border-brand-light/50 bg-surface/85 p-6 shadow-card backdrop-blur-xl sm:p-8">
             <div className="flex flex-wrap items-center justify-between gap-4 border-b border-brand-light/40 pb-5">
               <div>
                 <h3 className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-gray-400">
-                  <IconStar className="h-4 w-4 text-amber-400" />
+                  <Star className="h-4 w-4 text-amber-400" />
                   Client Ratings & Reviews
                 </h3>
 
@@ -936,7 +927,7 @@ export default function ProfessionalDetails() {
 
                 {myRating ? (
                   <span className="inline-flex items-center gap-1 rounded-btn border border-brand-light bg-brand-light/25 px-3.5 py-2 text-xs font-bold text-brand-dark">
-                    <IconCheckCircle className="h-3.5 w-3.5 text-brand" />
+                    <CheckCircle className="h-3.5 w-3.5 text-brand" />
                     You Rated ({Number(myRating.rating).toFixed(1)} ★)
                   </span>
                 ) : (
@@ -944,7 +935,7 @@ export default function ProfessionalDetails() {
                     onClick={() => setShowRatingModal(true)}
                     className="flex items-center gap-1.5 rounded-btn border border-brand-light bg-brand-light/25 px-4 py-2 text-xs font-bold text-brand-dark shadow-sm transition-all hover:bg-brand-light/40"
                   >
-                    <IconStar className="h-3.5 w-3.5 fill-amber-400 text-amber-500" />
+                    <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-500" />
                     Rate Professional
                   </button>
                 )}
@@ -962,14 +953,17 @@ export default function ProfessionalDetails() {
                 </p>
 
                 <p className="mt-1 text-xs text-gray-400">
-                  Ratings become available after scheduled client sessions have
-                  ended.
+                  Ratings become available after scheduled client sessions
+                  have ended.
                 </p>
               </div>
             ) : (
               <div className="mt-6 divide-y divide-brand-light/30">
                 {proReviews.map((review) => (
-                  <div key={review._id} className="py-4 first:pt-0 last:pb-0">
+                  <div
+                    key={review._id}
+                    className="py-4 first:pt-0 last:pb-0"
+                  >
                     <div className="flex items-center justify-between gap-4">
                       <div className="flex items-center gap-3">
                         <div
@@ -979,7 +973,8 @@ export default function ProfessionalDetails() {
                               "linear-gradient(135deg, #53b889, #16845b)",
                           }}
                         >
-                          {review.user?.firstName?.[0]?.toUpperCase() || "U"}
+                          {review.user?.firstName?.[0]?.toUpperCase() ||
+                            "U"}
                         </div>
 
                         <div>
@@ -991,14 +986,13 @@ export default function ProfessionalDetails() {
 
                           <p className="text-[11px] text-gray-400">
                             Verified Client Session •{" "}
-                            {new Date(review.createdAt).toLocaleDateString(
-                              "en-US",
-                              {
-                                month: "short",
-                                day: "numeric",
-                                year: "numeric",
-                              },
-                            )}
+                            {new Date(
+                              review.createdAt,
+                            ).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            })}
                           </p>
                         </div>
                       </div>
@@ -1031,10 +1025,6 @@ export default function ProfessionalDetails() {
           </div>
         </div>
 
-        {/* =====================================================
-            BOOKING MODAL
-        ===================================================== */}
-
         {showBooking && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
             <div
@@ -1043,7 +1033,6 @@ export default function ProfessionalDetails() {
                 maxHeight: "92vh",
               }}
             >
-              {/* Modal Header */}
               <div className="flex items-start justify-between border-b border-brand-light/40 p-6">
                 <div>
                   <h2 className="text-lg font-black text-gray-800">
@@ -1070,7 +1059,6 @@ export default function ProfessionalDetails() {
               </div>
 
               <div className="space-y-5 p-6">
-                {/* Step 1 */}
                 <div>
                   <label className="mb-2 block text-xs font-extrabold uppercase tracking-wider text-gray-500">
                     Step 1: Choose a Day
@@ -1078,7 +1066,8 @@ export default function ProfessionalDetails() {
 
                   {availability.length === 0 ? (
                     <p className="text-xs font-medium text-gray-400">
-                      No availability slots configured by this professional yet.
+                      No availability slots configured by this professional
+                      yet.
                     </p>
                   ) : (
                     <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
@@ -1116,7 +1105,6 @@ export default function ProfessionalDetails() {
                   )}
                 </div>
 
-                {/* Step 2 */}
                 {selectedDay && (
                   <div>
                     <label className="mb-2 block text-xs font-extrabold uppercase tracking-wider text-gray-500">
@@ -1154,7 +1142,7 @@ export default function ProfessionalDetails() {
                                   : "border-brand-light/50 bg-brand-light/10 text-gray-700 hover:border-brand hover:bg-brand-light/25"
                               }`}
                             >
-                              <IconClock
+                              <Clock
                                 className={`h-4 w-4 shrink-0 ${
                                   booked
                                     ? "text-rose-400"
@@ -1173,7 +1161,7 @@ export default function ProfessionalDetails() {
                               )}
 
                               {selectedSlot === slot && !booked && (
-                                <IconCheckCircle className="ml-auto h-4 w-4 text-white" />
+                                <CheckCircle className="ml-auto h-4 w-4 text-white" />
                               )}
                             </button>
                           );
@@ -1183,7 +1171,6 @@ export default function ProfessionalDetails() {
                   </div>
                 )}
 
-                {/* Step 3 */}
                 {selectedSlot && (
                   <div>
                     <label className="mb-2 block text-xs font-extrabold uppercase tracking-wider text-gray-500">
@@ -1205,7 +1192,6 @@ export default function ProfessionalDetails() {
                   </div>
                 )}
 
-                {/* Booking Summary */}
                 {selectedDay && selectedSlot && (
                   <div className="flex flex-wrap items-start justify-between gap-4 rounded-card border border-brand-light bg-brand-light/20 p-4">
                     <div>
@@ -1223,11 +1209,14 @@ export default function ProfessionalDetails() {
 
                       <p className="mt-1 text-xs font-medium text-gray-500">
                         Date:{" "}
-                        {selectedAppointmentDate?.toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                        })}
+                        {selectedAppointmentDate?.toLocaleDateString(
+                          "en-US",
+                          {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          },
+                        )}
                       </p>
                     </div>
 
@@ -1237,7 +1226,6 @@ export default function ProfessionalDetails() {
                   </div>
                 )}
 
-                {/* Modal Buttons */}
                 <div className="flex items-center gap-3 pt-2">
                   <button
                     type="button"
@@ -1284,14 +1272,9 @@ export default function ProfessionalDetails() {
           </div>
         )}
 
-        {/* =====================================================
-            RATING MODAL
-        ===================================================== */}
-
         {showRatingModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
             <div className="w-full max-w-md overflow-hidden rounded-card border border-brand-light/60 bg-surface/95 shadow-card-hover backdrop-blur-xl">
-              {/* Modal Header */}
               <div className="flex items-start justify-between border-b border-brand-light/40 p-6">
                 <div>
                   <h2 className="text-lg font-black text-gray-800">
@@ -1313,8 +1296,10 @@ export default function ProfessionalDetails() {
                 </button>
               </div>
 
-              <form onSubmit={handleRateProfessional} className="space-y-5 p-6">
-                {/* Completed Session */}
+              <form
+                onSubmit={handleRateProfessional}
+                className="space-y-5 p-6"
+              >
                 {pendingEligibleSessions[0] && (
                   <div className="rounded-card border border-brand-light bg-brand-light/20 p-3 text-xs text-brand-dark">
                     <p className="font-bold">Completed Session:</p>
@@ -1326,7 +1311,6 @@ export default function ProfessionalDetails() {
                   </div>
                 )}
 
-                {/* Rating */}
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-gray-500">
                     Star Rating (1 to 5)
@@ -1344,7 +1328,8 @@ export default function ProfessionalDetails() {
                       >
                         <span
                           className={
-                            star <= (userHoverRating || userRating)
+                            star <=
+                            (userHoverRating || userRating)
                               ? "text-amber-400 drop-shadow-sm"
                               : "text-gray-200"
                           }
@@ -1360,7 +1345,6 @@ export default function ProfessionalDetails() {
                   </p>
                 </div>
 
-                {/* Rating Buttons */}
                 <div className="flex items-center gap-3 pt-2">
                   <button
                     type="button"
@@ -1376,7 +1360,9 @@ export default function ProfessionalDetails() {
                     disabled={ratingSubmitting}
                     className="flex-1 rounded-btn bg-gray-800 py-3 text-sm font-bold text-white shadow-card transition-all hover:-translate-y-0.5 hover:bg-gray-700 hover:shadow-card-hover disabled:opacity-50"
                   >
-                    {ratingSubmitting ? "Submitting..." : "Submit Rating"}
+                    {ratingSubmitting
+                      ? "Submitting..."
+                      : "Submit Rating"}
                   </button>
                 </div>
               </form>

@@ -1,26 +1,35 @@
 import { useState, useEffect, useCallback } from "react";
 
 import ProfessionalLayout from "../../components/professional/ProfessionalLayout";
+
 import StatusBadge from "../../components/admin/StatusBadge";
+
 import { httpClient } from "../../lib/http";
 
 import {
-  IconSave,
-  IconPlus,
-  IconTrash,
-  IconAlertTriangle,
-  IconCheckCircle,
-  IconBuilding,
-} from "../../components/admin/Icons";
+  Save,
+  Plus,
+  Trash2,
+  AlertTriangle,
+  CheckCircle,
+  Building2,
+} from "lucide-react";
 
 export default function ProfessionalProfileSettings() {
   const [profile, setProfile] = useState(null);
+
   const [loading, setLoading] = useState(true);
+
   const [saving, setSaving] = useState(false);
+
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+
   const [uploadingDoc, setUploadingDoc] = useState(false);
+
   const [actionLoading, setActionLoading] = useState(false);
+
   const [photoPreview, setPhotoPreview] = useState("");
+
   const [newDocTitle, setNewDocTitle] = useState("");
 
   const [form, setForm] = useState({
@@ -37,6 +46,7 @@ export default function ProfessionalProfileSettings() {
 
   const showToast = (msg, type = "success") => {
     setToast({ msg, type });
+
     setTimeout(() => setToast(null), 3500);
   };
 
@@ -45,6 +55,7 @@ export default function ProfessionalProfileSettings() {
       setLoading(true);
 
       const res = await httpClient.get("/professional/profile");
+
       const p = res.data?.professional;
 
       setProfile(p);
@@ -109,11 +120,13 @@ export default function ProfessionalProfileSettings() {
     const reader = new FileReader();
 
     reader.onload = () => setPhotoPreview(reader.result);
+
     reader.readAsDataURL(file);
 
     setUploadingPhoto(true);
 
     const formData = new FormData();
+
     formData.append("photo", file);
 
     try {
@@ -169,11 +182,14 @@ export default function ProfessionalProfileSettings() {
       return;
     }
 
-    const title = (newDocTitle || file.name.replace(/\.[^/.]+$/, "")).trim();
+    const title = (
+      newDocTitle || file.name.replace(/\.[^/.]+$/, "")
+    ).trim();
 
     setUploadingDoc(true);
 
     const formData = new FormData();
+
     formData.append("document", file);
 
     try {
@@ -195,6 +211,7 @@ export default function ProfessionalProfileSettings() {
       }));
 
       setNewDocTitle("");
+
       showToast("Certificate document uploaded from device!");
     } catch (err) {
       showToast(
@@ -257,6 +274,7 @@ export default function ProfessionalProfileSettings() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     setSaving(true);
 
     try {
@@ -360,7 +378,7 @@ export default function ProfessionalProfileSettings() {
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-2.5">
                         <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-brand-light bg-brand-light/40 text-brand-dark">
-                          <IconBuilding className="h-4 w-4" />
+                          <Building2 className="h-4 w-4" />
                         </div>
 
                         <div>
@@ -420,7 +438,7 @@ export default function ProfessionalProfileSettings() {
                 {/* Rejection Reason */}
                 {profile?.professionalStatus === "rejected" && (
                   <div className="mt-5 flex items-start gap-3 rounded-card border border-rose-200 bg-rose-50 p-4">
-                    <IconAlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-rose-600" />
+                    <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-rose-600" />
 
                     <div>
                       <p className="text-xs font-extrabold text-rose-900">
@@ -679,10 +697,12 @@ export default function ProfessionalProfileSettings() {
                           uploadingDoc ? "pointer-events-none opacity-60" : ""
                         }`}
                       >
-                        <IconPlus className="h-3.5 w-3.5" />
+                        <Plus className="h-3.5 w-3.5" />
 
                         <span>
-                          {uploadingDoc ? "Uploading..." : "Upload Certificate"}
+                          {uploadingDoc
+                            ? "Uploading..."
+                            : "Upload Certificate"}
                         </span>
 
                         <input
@@ -714,7 +734,7 @@ export default function ProfessionalProfileSettings() {
                           >
                             <div className="flex min-w-0 items-center gap-3">
                               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-brand-light bg-brand-light/40 text-brand-dark">
-                                <IconCheckCircle className="h-4 w-4" />
+                                <CheckCircle className="h-4 w-4" />
                               </div>
 
                               <div className="min-w-0">
@@ -734,7 +754,7 @@ export default function ProfessionalProfileSettings() {
                               className="shrink-0 rounded-xl p-2 text-rose-700 transition-colors hover:bg-rose-50"
                               title="Remove certificate"
                             >
-                              <IconTrash className="h-4 w-4" />
+                              <Trash2 className="h-4 w-4" />
                             </button>
                           </div>
                         ))}
@@ -754,7 +774,7 @@ export default function ProfessionalProfileSettings() {
                     disabled={saving}
                     className="inline-flex items-center justify-center gap-2 rounded-btn bg-gray-800 px-7 py-3 text-sm font-bold text-white shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:bg-gray-700 hover:shadow-card-hover disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
                   >
-                    <IconSave className="h-4 w-4" />
+                    <Save className="h-4 w-4" />
 
                     <span>
                       {saving ? "Saving Changes..." : "Save Profile Details"}

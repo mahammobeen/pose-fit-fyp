@@ -3,10 +3,10 @@ import UserLayout from "../../components/user/UserLayout";
 import { httpClient } from "../../lib/http";
 import { toast } from "sonner";
 import {
-  IconStar,
-  IconTrash,
-  IconCheckCircle,
-} from "../../components/admin/Icons";
+  Star,
+  Trash2,
+  CheckCircle,
+} from "lucide-react";
 
 const RATING_LABELS = {
   1: "1 - Poor",
@@ -141,9 +141,11 @@ export default function UserReviews() {
                   : "border-transparent text-gray-500 hover:text-gray-800"
               }`}
             >
-              <IconStar
+              <Star
                 className={`h-4 w-4 ${
-                  activeTab === "platform" ? "text-brand-dark" : "text-gray-400"
+                  activeTab === "platform"
+                    ? "text-brand-dark"
+                    : "text-gray-400"
                 }`}
               />
               PoseFit Platform Reviews
@@ -160,7 +162,7 @@ export default function UserReviews() {
                   : "border-transparent text-gray-500 hover:text-gray-800"
               }`}
             >
-              <IconStar
+              <Star
                 className={`h-4 w-4 ${
                   activeTab === "professional"
                     ? "text-brand-dark"
@@ -339,7 +341,7 @@ export default function UserReviews() {
                               title="Delete feedback"
                               className="rounded-btn border border-gray-200 p-2 text-gray-400 transition-colors hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
                             >
-                              <IconTrash className="h-3.5 w-3.5" />
+                              <Trash2 className="h-3.5 w-3.5" />
                             </button>
                           </div>
                         </div>
@@ -507,7 +509,7 @@ export default function UserReviews() {
                               title="Delete rating"
                               className="rounded-btn border border-gray-200 p-2 text-gray-400 transition-colors hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
                             >
-                              <IconTrash className="h-3.5 w-3.5" />
+                              <Trash2 className="h-3.5 w-3.5" />
                             </button>
                           </div>
 
@@ -536,7 +538,7 @@ export default function UserReviews() {
                           {/* Session & Date info */}
                           <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-brand-light/30 pt-3 text-[11px] font-medium text-gray-400">
                             <span className="flex items-center gap-1 font-bold text-brand-dark">
-                              <IconCheckCircle className="h-3.5 w-3.5 text-brand" />
+                              <CheckCircle className="h-3.5 w-3.5 text-brand" />
                               Session Verified (
                               {item.payment?.appointmentDay || "Completed"})
                             </span>

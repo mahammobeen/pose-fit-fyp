@@ -3,11 +3,11 @@ import AdminLayout from "../../components/admin/AdminLayout";
 import { httpClient } from "../../lib/http";
 import { getUser } from "../../lib/local-storage";
 import {
-  IconLock,
-  IconUsers,
-  IconCheckCircle,
-  IconAlertTriangle,
-} from "../../components/admin/Icons";
+  Lock,
+  Users,
+  CheckCircle,
+  AlertTriangle,
+} from "lucide-react";
 
 export default function AdminSettings() {
   const currentUser = getUser() || {
@@ -69,7 +69,9 @@ export default function AdminSettings() {
     }
 
     if (passForm.newPassword === passForm.currentPassword) {
-      setPassError("New password must be different from the current password.");
+      setPassError(
+        "New password must be different from the current password.",
+      );
       return;
     }
 
@@ -190,7 +192,7 @@ export default function AdminSettings() {
             <div className="px-7 pb-7">
               <div className="border-t border-brand-light/40 pt-6">
                 <div className="mb-4 flex items-center gap-2">
-                  <IconUsers className="h-4 w-4 text-brand-dark" />
+                  <Users className="h-4 w-4 text-brand-dark" />
 
                   <h3 className="text-xs font-extrabold uppercase tracking-wider text-gray-600">
                     Account Information
@@ -256,7 +258,7 @@ export default function AdminSettings() {
             <div className="border-b border-brand-light/40 px-7 py-6">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent-orange/40 text-accent-orange-dark">
-                  <IconLock className="h-5 w-5" />
+                  <Lock className="h-5 w-5" />
                 </div>
 
                 <div>
@@ -277,7 +279,7 @@ export default function AdminSettings() {
                 {/* Error */}
                 {passError && (
                   <div className="mb-5 flex items-center gap-2 rounded-card border border-rose-200 bg-rose-50 p-3.5 text-xs font-semibold text-rose-700">
-                    <IconAlertTriangle className="h-4 w-4 shrink-0" />
+                    <AlertTriangle className="h-4 w-4 shrink-0" />
                     <span>{passError}</span>
                   </div>
                 )}
@@ -285,7 +287,7 @@ export default function AdminSettings() {
                 {/* Success */}
                 {passSuccess && (
                   <div className="mb-5 flex items-center gap-2 rounded-card border border-brand-light/70 bg-brand-light/25 p-3.5 text-xs font-semibold text-brand-dark">
-                    <IconCheckCircle className="h-4 w-4 shrink-0" />
+                    <CheckCircle className="h-4 w-4 shrink-0" />
                     <span>{passSuccess}</span>
                   </div>
                 )}

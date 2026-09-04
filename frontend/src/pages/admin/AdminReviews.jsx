@@ -1,16 +1,16 @@
 import { useState, useEffect, useCallback } from "react";
 import AdminLayout from "../../components/admin/AdminLayout";
-import StatusBadge from "../../components/admin/StatusBadge";
+// import StatusBadge from "../../components/admin/StatusBadge";
 import { httpClient } from "../../lib/http";
 import { toast } from "sonner";
 import {
-  IconSearch,
-  IconStar,
-  IconTrash,
-  IconCheckCircle,
-  IconUsers,
-  IconProfessional,
-} from "../../components/admin/Icons";
+  Search,
+  Star,
+  Trash2,
+  CheckCircle,
+  Users,
+  UserRound,
+} from "lucide-react";
 
 const TYPE_FILTERS = [
   { key: "all", label: "All Reviews" },
@@ -124,7 +124,7 @@ export default function AdminReviews() {
               </span>
 
               <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-brand-light/40 text-brand-dark">
-                <IconStar className="h-4 w-4" />
+                <Star className="h-4 w-4" />
               </div>
             </div>
 
@@ -145,7 +145,7 @@ export default function AdminReviews() {
               </span>
 
               <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-accent-blue/50 text-sky-700">
-                <IconCheckCircle className="h-4 w-4" />
+                <CheckCircle className="h-4 w-4" />
               </div>
             </div>
 
@@ -166,7 +166,7 @@ export default function AdminReviews() {
               </span>
 
               <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-accent-orange/50 text-accent-orange-dark">
-                <IconProfessional className="h-4 w-4" />
+                <UserRound className="h-4 w-4" />
               </div>
             </div>
 
@@ -202,7 +202,7 @@ export default function AdminReviews() {
           {/* Search */}
           <div className="relative w-full sm:w-72">
             <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">
-              <IconSearch className="h-4 w-4" />
+              <Search className="h-4 w-4" />
             </span>
 
             <input

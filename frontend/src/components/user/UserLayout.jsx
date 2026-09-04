@@ -2,42 +2,49 @@ import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import posefit_logo from "../../assets/posefit_logo.png";
 
-import { IconDashboard, IconProfessional, IconLogOut } from "../admin/Icons";
-
-import { FiMessageSquare } from "react-icons/fi";
-import { GiMeal } from "react-icons/gi";
-import { MdFitnessCenter } from "react-icons/md";
+import {
+  LayoutDashboard,
+  UserCheck,
+  LogOut,
+  Star,
+  MessageSquare,
+  Utensils,
+  Dumbbell,
+  X,
+  PanelLeft,
+  PanelRight,
+} from "lucide-react";
 
 const NAV_ITEMS = [
   {
     path: "/user/dashboard",
-    Icon: IconDashboard,
+    Icon: LayoutDashboard,
     label: "Dashboard",
   },
   {
     path: "/user/chatbot",
-    Icon: FiMessageSquare,
+    Icon: MessageSquare,
     label: "Chatbot",
   },
   {
-    path: "/user/review",
-    Icon: FiMessageSquare,
-    label: "Review",
-  },
-  {
     path: "/user/dietplan",
-    Icon: GiMeal,
+    Icon: Utensils,
     label: "Diet Plan",
   },
   {
     path: "/user/workout",
-    Icon: MdFitnessCenter,
+    Icon: Dumbbell,
     label: "Workout",
   },
   {
     path: "/user/professionals",
-    Icon: IconProfessional,
+    Icon: UserCheck,
     label: "Browse Professionals",
+  },
+  {
+    path: "/user/reviews",
+    Icon: Star,
+    label: "Reviews",
   },
 ];
 
@@ -45,10 +52,7 @@ export default function UserLayout({ children }) {
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // =====================================================
-  // DESKTOP SIDEBAR STATE
-  // =====================================================
-
+  // Desktop sidebar state
   const [sidebarOpen, setSidebarOpen] = useState(() => {
     const savedState = localStorage.getItem("user-sidebar-open");
 
@@ -67,10 +71,7 @@ export default function UserLayout({ children }) {
     });
   };
 
-  // =====================================================
-  // GET USER FROM LOCAL STORAGE
-  // =====================================================
-
+  // Get user from local storage
   const getStoredUser = () => {
     try {
       const storedUser = localStorage.getItem("pose-fit-user");
@@ -87,10 +88,7 @@ export default function UserLayout({ children }) {
 
   const user = getStoredUser();
 
-  // =====================================================
-  // LOGOUT
-  // =====================================================
-
+  // Logout
   const handleLogout = () => {
     localStorage.removeItem("pose-fit");
     localStorage.removeItem("pose-fit-user");
@@ -104,27 +102,19 @@ export default function UserLayout({ children }) {
 
   return (
     <div className="relative flex h-screen overflow-hidden bg-surface font-sans">
-      {/* =================================================
-          BACKGROUND THEME
-      ================================================= */}
+      {/* Background theme */}
 
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        {/* Green */}
         <div className="absolute -left-32 -top-32 h-80 w-80 rounded-full bg-brand-light/35 blur-3xl" />
 
-        {/* Blue */}
         <div className="absolute right-[-100px] top-[15%] h-72 w-72 rounded-full bg-accent-blue/35 blur-3xl" />
 
-        {/* Orange */}
         <div className="absolute bottom-[-120px] left-[35%] h-80 w-80 rounded-full bg-accent-orange/25 blur-3xl" />
 
-        {/* Soft White Glow */}
         <div className="absolute left-[45%] top-[20%] h-72 w-72 rounded-full bg-white/40 blur-3xl" />
       </div>
 
-      {/* =================================================
-          MOBILE BACKDROP
-      ================================================= */}
+      {/* Mobile backdrop */}
 
       {mobileMenuOpen && (
         <div
@@ -133,16 +123,14 @@ export default function UserLayout({ children }) {
         />
       )}
 
-      {/* =================================================
-          MOBILE DRAWER
-      ================================================= */}
+      {/* Mobile drawer */}
 
       <div
         className={`dashboard-mobile-drawer border-r border-brand-light/50 bg-surface/95 backdrop-blur-xl ${
           mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        {/* Mobile Drawer Header */}
+        {/* Mobile drawer header */}
 
         <div className="dashboard-mobile-header border-brand-light/50">
           <div className="dashboard-brand-wrapper gap-3">
@@ -170,11 +158,11 @@ export default function UserLayout({ children }) {
             className="dashboard-mobile-close"
             aria-label="Close menu"
           >
-            <span className="material-symbols-outlined">close</span>
+            <X className="h-5 w-5" />
           </button>
         </div>
 
-        {/* Mobile Navigation Links */}
+        {/* Mobile navigation links */}
 
         <nav className="dashboard-nav px-4">
           <p className="dashboard-menu-title">User Menu</p>
@@ -210,7 +198,7 @@ export default function UserLayout({ children }) {
           ))}
         </nav>
 
-        {/* Mobile Drawer Footer User Section */}
+        {/* Mobile drawer footer */}
 
         <div className="dashboard-sidebar-footer border-brand-light/50 bg-white/30 p-4">
           <div className="dashboard-user-wrapper mb-3 gap-3">
@@ -238,16 +226,14 @@ export default function UserLayout({ children }) {
             onClick={handleLogout}
             className="dashboard-logout w-full justify-center gap-2 px-4 py-2"
           >
-            <IconLogOut className="h-3.5 w-3.5 shrink-0" />
+            <LogOut className="h-3.5 w-3.5 shrink-0" />
 
             <span>Logout</span>
           </button>
         </div>
       </div>
 
-      {/* =================================================
-          DESKTOP SIDEBAR
-      ================================================= */}
+      {/* Desktop sidebar */}
 
       <aside
         className={`dashboard-sidebar relative z-10 border-r border-brand-light/50 bg-surface/85 backdrop-blur-xl ${
@@ -261,7 +247,7 @@ export default function UserLayout({ children }) {
             sidebarOpen ? "h-24 px-6 py-6" : "h-24 px-2 py-3"
           }`}
         >
-          {/* Sidebar Toggle */}
+          {/* Sidebar toggle */}
 
           <button
             type="button"
@@ -271,24 +257,11 @@ export default function UserLayout({ children }) {
               sidebarOpen ? "right-3" : "right-1"
             }`}
           >
-            <svg
-              width="17"
-              height="17"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <rect x="3" y="4" width="18" height="16" rx="2" />
-
-              {sidebarOpen ? (
-                <line x1="9" y1="4" x2="9" y2="20" />
-              ) : (
-                <line x1="15" y1="4" x2="15" y2="20" />
-              )}
-            </svg>
+            {sidebarOpen ? (
+              <PanelLeft className="h-[17px] w-[17px]" />
+            ) : (
+              <PanelRight className="h-[17px] w-[17px]" />
+            )}
           </button>
 
           {/* Brand */}
@@ -319,10 +292,12 @@ export default function UserLayout({ children }) {
           </div>
         </div>
 
-        {/* Desktop Navigation */}
+        {/* Desktop navigation */}
 
         <nav className={`dashboard-nav ${sidebarOpen ? "px-3" : "px-2"}`}>
-          {sidebarOpen && <p className="dashboard-menu-title">User Menu</p>}
+          {sidebarOpen && (
+            <p className="dashboard-menu-title">User Menu</p>
+          )}
 
           {NAV_ITEMS.map(({ path, Icon, label }) => (
             <NavLink
@@ -332,7 +307,9 @@ export default function UserLayout({ children }) {
               title={!sidebarOpen ? label : ""}
               className={({ isActive }) =>
                 `dashboard-nav-link ${
-                  sidebarOpen ? "gap-3 px-3 py-3" : "justify-center px-2 py-3"
+                  sidebarOpen
+                    ? "gap-3 px-3 py-3"
+                    : "justify-center px-2 py-3"
                 } ${
                   isActive
                     ? "dashboard-nav-link-active"
@@ -361,7 +338,7 @@ export default function UserLayout({ children }) {
           ))}
         </nav>
 
-        {/* Desktop Footer User Section */}
+        {/* Desktop footer */}
 
         <div
           className={`dashboard-sidebar-footer border-brand-light/50 bg-white/30 ${
@@ -370,7 +347,9 @@ export default function UserLayout({ children }) {
         >
           <div
             className={`dashboard-user-wrapper transition-all duration-300 ${
-              sidebarOpen ? "mb-3 gap-3 px-1" : "mb-2 justify-center"
+              sidebarOpen
+                ? "mb-3 gap-3 px-1"
+                : "mb-2 justify-center"
             }`}
           >
             <div className="dashboard-logo h-10 w-10 border border-brand-light/60 bg-white/80 shadow-card">
@@ -404,23 +383,19 @@ export default function UserLayout({ children }) {
                 : "w-full justify-center py-2"
             }`}
           >
-            <IconLogOut className="h-3.5 w-3.5 shrink-0" />
+            <LogOut className="h-3.5 w-3.5 shrink-0" />
 
             {sidebarOpen && <span>Logout</span>}
           </button>
         </div>
       </aside>
 
-      {/* =================================================
-          MAIN AREA
-      ================================================= */}
+      {/* Main area */}
 
       <div className="dashboard-main-wrapper relative z-10">
-        {/* Top Header REMOVED */}
-
-        {/* Page Content */}
-
-        <main className="dashboard-content bg-transparent">{children}</main>
+        <main className="dashboard-content bg-transparent">
+          {children}
+        </main>
       </div>
     </div>
   );

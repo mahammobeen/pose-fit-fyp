@@ -1,111 +1,154 @@
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { deleteToken, getUser } from "../../lib/local-storage";
 import posefit_logo from "../../assets/posefit_logo.png";
 
 import {
-  IconDashboard,
-  IconUsers,
-  IconProfessional,
-  IconClipboard,
-  IconPayment,
-  IconReview,
-  IconSettings,
-  IconLogOut,
-} from "./Icons";
+  LayoutDashboard,
+  Users,
+  UserCheck,
+  ClipboardList,
+  CreditCard,
+  Star,
+  Settings,
+  LogOut,
+  Menu,
+  X,
+  PanelLeft,
+  PanelRight,
+} from "lucide-react";
 
 const NAV_ITEMS = [
-  { path: "/admin/dashboard", Icon: IconDashboard, label: "Dashboard" },
-  { path: "/admin/users", Icon: IconUsers, label: "Users" },
+  {
+    path: "/admin/dashboard",
+    Icon: LayoutDashboard,
+    label: "Dashboard",
+  },
+  {
+    path: "/admin/users",
+    Icon: Users,
+    label: "Users",
+  },
   {
     path: "/admin/professionals",
-    Icon: IconProfessional,
+    Icon: UserCheck,
     label: "Professionals",
   },
   {
     path: "/admin/requests",
-    Icon: IconClipboard,
+    Icon: ClipboardList,
     label: "Pro Requests",
   },
-  { path: "/admin/payments", Icon: IconPayment, label: "Payments" },
-  { path: "/admin/reviews", Icon: IconReview, label: "Reviews" },
-  { path: "/admin/settings", Icon: IconSettings, label: "Settings" },
+  {
+    path: "/admin/payments",
+    Icon: CreditCard,
+    label: "Payments",
+  },
+  {
+    path: "/admin/reviews",
+    Icon: Star,
+    label: "Reviews",
+  },
+  {
+    path: "/admin/settings",
+    Icon: Settings,
+    label: "Settings",
+  },
 ];
 
 export default function AdminLayout({ children }) {
   const navigate = useNavigate();
-  const user = getUser();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  // Desktop sidebar state
   const [sidebarOpen, setSidebarOpen] = useState(() => {
     const savedState = localStorage.getItem("admin-sidebar-open");
+
     if (savedState === null) return true;
+
     return savedState === "true";
   });
 
   const toggleSidebar = () => {
     setSidebarOpen((previousState) => {
       const newState = !previousState;
+
       localStorage.setItem("admin-sidebar-open", String(newState));
+
       return newState;
     });
   };
 
+  // Get user from local storage
+  const getStoredUser = () => {
+    try {
+      const storedUser = localStorage.getItem("pose-fit-user");
+
+      if (!storedUser) return null;
+
+      return JSON.parse(storedUser);
+    } catch (error) {
+      console.error("Failed to read user from localStorage:", error);
+
+      return null;
+    }
+  };
+
+  const user = getStoredUser();
+
+  // Logout
   const handleLogout = () => {
-    deleteToken();
+    localStorage.removeItem("pose-fit");
     localStorage.removeItem("pose-fit-user");
-    navigate("/admin/login");
+    localStorage.removeItem("posefit-token");
+    localStorage.removeItem("posefit-user");
+
+    navigate("/user/login", {
+      replace: true,
+    });
   };
 
   const getUserName = () => {
     if (user?.name) return user.name;
 
-    const fullName = `${user?.firstName || ""} ${user?.lastName || ""}`.trim();
+    const fullName = `${user?.firstName || ""} ${
+      user?.lastName || ""
+    }`.trim();
 
     return fullName || "Admin";
   };
 
   return (
     <div className="relative flex h-screen overflow-hidden bg-surface font-sans">
-      {/* =====================================================
-          BACKGROUND THEME
-      ===================================================== */}
+      {/* Background theme */}
 
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        {/* Green */}
         <div className="absolute -left-32 -top-32 h-80 w-80 rounded-full bg-brand-light/35 blur-3xl" />
 
-        {/* Blue */}
         <div className="absolute right-[-100px] top-[15%] h-72 w-72 rounded-full bg-accent-blue/35 blur-3xl" />
 
-        {/* Orange */}
         <div className="absolute bottom-[-120px] left-[35%] h-80 w-80 rounded-full bg-accent-orange/25 blur-3xl" />
 
-        {/* Soft white glow */}
         <div className="absolute left-[45%] top-[20%] h-72 w-72 rounded-full bg-white/40 blur-3xl" />
       </div>
 
-      {/* =====================================================
-          MOBILE BACKDROP
-      ===================================================== */}
+      {/* Mobile backdrop */}
 
       {mobileMenuOpen && (
         <div
-          className="dashboard-mobile-backdrop"
           onClick={() => setMobileMenuOpen(false)}
+          className="dashboard-mobile-backdrop"
         />
       )}
 
-      {/* =====================================================
-          MOBILE DRAWER
-      ===================================================== */}
+      {/* Mobile drawer */}
 
-      <aside
+      <div
         className={`dashboard-mobile-drawer border-r border-brand-light/50 bg-surface/95 backdrop-blur-xl ${
           mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        {/* Mobile Header */}
+        {/* Mobile drawer header */}
+
         <div className="dashboard-mobile-header border-brand-light/50">
           <div className="dashboard-brand-wrapper gap-3">
             <div className="dashboard-logo border border-brand-light/60 bg-white/80 shadow-card">
@@ -117,10 +160,10 @@ export default function AdminLayout({ children }) {
             </div>
 
             <div>
-              <h2 className="dashboard-brand-name">
+              <p className="dashboard-brand-name">
                 Pose
                 <span className="dashboard-brand-highlight">Fit</span>
-              </h2>
+              </p>
 
               <p className="dashboard-portal-name">Admin Control</p>
             </div>
@@ -132,11 +175,12 @@ export default function AdminLayout({ children }) {
             className="dashboard-mobile-close"
             aria-label="Close menu"
           >
-            <span className="material-symbols-outlined">close</span>
+            <X className="h-5 w-5" />
           </button>
         </div>
 
-        {/* Mobile Navigation */}
+        {/* Mobile navigation links */}
+
         <nav className="dashboard-nav px-4">
           <p className="dashboard-menu-title">Admin Menu</p>
 
@@ -144,6 +188,7 @@ export default function AdminLayout({ children }) {
             <NavLink
               key={path}
               to={path}
+              end={path === "/admin/dashboard"}
               onClick={() => setMobileMenuOpen(false)}
               className={({ isActive }) =>
                 `dashboard-nav-link gap-3 px-4 py-3 ${
@@ -170,9 +215,10 @@ export default function AdminLayout({ children }) {
           ))}
         </nav>
 
-        {/* Mobile Footer */}
+        {/* Mobile drawer footer */}
+
         <div className="dashboard-sidebar-footer border-brand-light/50 bg-white/30 p-4">
-          <div className="dashboard-user-wrapper gap-3">
+          <div className="dashboard-user-wrapper mb-3 gap-3">
             <div className="dashboard-logo h-10 w-10 border border-brand-light/60 bg-white/80 shadow-card">
               <img
                 src={posefit_logo}
@@ -181,42 +227,63 @@ export default function AdminLayout({ children }) {
               />
             </div>
 
-            <div className="min-w-0 flex-1">
+            <div className="min-w-0 flex-1 overflow-hidden">
               <p className="dashboard-user-name">{getUserName()}</p>
 
-              <p className="dashboard-user-email">{user?.email || ""}</p>
+              <p className="dashboard-user-email">
+                {user?.email || ""}
+              </p>
             </div>
-
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="dashboard-logout p-2"
-              title="Logout"
-            >
-              <IconLogOut className="h-4 w-4" />
-            </button>
           </div>
-        </div>
-      </aside>
 
-      {/* =====================================================
-          DESKTOP SIDEBAR
-      ===================================================== */}
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="dashboard-logout w-full justify-center gap-2 px-4 py-2"
+          >
+            <LogOut className="h-3.5 w-3.5 shrink-0" />
+
+            <span>Logout</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Desktop sidebar */}
 
       <aside
         className={`dashboard-sidebar relative z-10 border-r border-brand-light/50 bg-surface/85 backdrop-blur-xl ${
           sidebarOpen ? "w-64" : "w-20"
         }`}
       >
-        {/* Sidebar Header */}
+        {/* Header */}
+
         <div
           className={`dashboard-sidebar-header border-brand-light/40 ${
-            sidebarOpen ? "h-20 px-5" : "h-20 px-3"
+            sidebarOpen ? "h-24 px-6 py-6" : "h-24 px-2 py-3"
           }`}
         >
+          {/* Sidebar toggle */}
+
+          <button
+            type="button"
+            onClick={toggleSidebar}
+            title={sidebarOpen ? "Close sidebar" : "Open sidebar"}
+            className={`dashboard-sidebar-toggle ${
+              sidebarOpen ? "right-3" : "right-1"
+            }`}
+          >
+            {sidebarOpen ? (
+              <PanelLeft className="h-[17px] w-[17px]" />
+            ) : (
+              <PanelRight className="h-[17px] w-[17px]" />
+            )}
+          </button>
+
+          {/* Brand */}
+
           <div
-            className={`dashboard-brand-wrapper h-full ${
-              sidebarOpen ? "gap-3" : "justify-center"
+            className={`dashboard-brand-wrapper ${
+              sidebarOpen ? "mt-4 gap-3" : "mt-8 justify-center"
             }`}
           >
             <div className="dashboard-logo border border-brand-light/60 bg-white/80 shadow-card">
@@ -228,50 +295,42 @@ export default function AdminLayout({ children }) {
             </div>
 
             {sidebarOpen && (
-              <div className="min-w-0">
-                <h2 className="dashboard-brand-name">
+              <div className="min-w-0 overflow-hidden whitespace-nowrap">
+                <p className="dashboard-brand-name">
                   Pose
                   <span className="dashboard-brand-highlight">Fit</span>
-                </h2>
+                </p>
 
                 <p className="dashboard-portal-name">Admin Control</p>
               </div>
             )}
           </div>
-
-          {/* Sidebar Toggle */}
-          <button
-            type="button"
-            onClick={toggleSidebar}
-            className={`dashboard-sidebar-toggle ${
-              sidebarOpen ? "right-3" : "left-1/2 -translate-x-1/2"
-            }`}
-            title={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
-          >
-            <span className="material-symbols-outlined text-[20px]">
-              {sidebarOpen ? "chevron_left" : "chevron_right"}
-            </span>
-          </button>
         </div>
 
-        {/* Desktop Navigation */}
+        {/* Desktop navigation */}
+
         <nav className={`dashboard-nav ${sidebarOpen ? "px-3" : "px-2"}`}>
-          {sidebarOpen && <p className="dashboard-menu-title">Admin Menu</p>}
+          {sidebarOpen && (
+            <p className="dashboard-menu-title">Admin Menu</p>
+          )}
 
           {NAV_ITEMS.map(({ path, Icon, label }) => (
             <NavLink
               key={path}
               to={path}
+              end={path === "/admin/dashboard"}
+              title={!sidebarOpen ? label : ""}
               className={({ isActive }) =>
                 `dashboard-nav-link ${
-                  sidebarOpen ? "gap-3 px-3 py-3" : "justify-center px-2 py-3"
+                  sidebarOpen
+                    ? "gap-3 px-3 py-3"
+                    : "justify-center px-2 py-3"
                 } ${
                   isActive
                     ? "dashboard-nav-link-active"
                     : "dashboard-nav-link-inactive"
                 }`
               }
-              title={!sidebarOpen ? label : undefined}
             >
               {({ isActive }) => (
                 <>
@@ -284,7 +343,9 @@ export default function AdminLayout({ children }) {
                   />
 
                   {sidebarOpen && (
-                    <span className="whitespace-nowrap">{label}</span>
+                    <span className="overflow-hidden whitespace-nowrap">
+                      {label}
+                    </span>
                   )}
                 </>
               )}
@@ -292,19 +353,21 @@ export default function AdminLayout({ children }) {
           ))}
         </nav>
 
-        {/* Desktop Sidebar Footer */}
+        {/* Desktop footer */}
+
         <div
           className={`dashboard-sidebar-footer border-brand-light/50 bg-white/30 ${
             sidebarOpen ? "p-3" : "p-2"
           }`}
         >
           <div
-            className={`dashboard-user-wrapper ${
-              sidebarOpen ? "gap-3 px-2 py-2" : "justify-center py-2"
+            className={`dashboard-user-wrapper transition-all duration-300 ${
+              sidebarOpen
+                ? "mb-3 gap-3 px-1"
+                : "mb-2 justify-center"
             }`}
           >
-            {/* PoseFit Logo */}
-            <div className="dashboard-logo border border-brand-light/60 bg-white/80 shadow-card">
+            <div className="dashboard-logo h-10 w-10 border border-brand-light/60 bg-white/80 shadow-card">
               <img
                 src={posefit_logo}
                 alt="PoseFit"
@@ -313,33 +376,38 @@ export default function AdminLayout({ children }) {
             </div>
 
             {sidebarOpen && (
-              <>
-                <div className="min-w-0 flex-1">
-                  <p className="dashboard-user-name">{getUserName()}</p>
+              <div className="min-w-0 flex-1 overflow-hidden">
+                <p className="dashboard-user-name">{getUserName()}</p>
 
-                  <p className="dashboard-user-email">{user?.email || ""}</p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  className="dashboard-logout p-2"
-                  title="Logout"
-                >
-                  <IconLogOut className="h-4 w-4" />
-                </button>
-              </>
+                <p className="dashboard-user-email">
+                  {user?.email || ""}
+                </p>
+              </div>
             )}
           </div>
+
+          <button
+            type="button"
+            onClick={handleLogout}
+            title={!sidebarOpen ? "Logout" : ""}
+            className={`dashboard-logout ${
+              sidebarOpen
+                ? "w-full justify-center gap-2 px-4 py-2"
+                : "w-full justify-center py-2"
+            }`}
+          >
+            <LogOut className="h-3.5 w-3.5 shrink-0" />
+
+            {sidebarOpen && <span>Logout</span>}
+          </button>
         </div>
       </aside>
 
-      {/* =====================================================
-          MAIN AREA
-      ===================================================== */}
+      {/* Main area */}
 
       <div className="dashboard-main-wrapper relative z-10">
-        {/* Mobile Header */}
+        {/* Mobile header */}
+
         <header className="dashboard-header border-brand-light/50 bg-surface/80 backdrop-blur-xl lg:hidden">
           <div className="flex min-w-0 items-center gap-3">
             <button
@@ -348,7 +416,7 @@ export default function AdminLayout({ children }) {
               className="dashboard-mobile-menu-button"
               aria-label="Open menu"
             >
-              <span className="material-symbols-outlined">menu</span>
+              <Menu className="h-5 w-5" />
             </button>
 
             <div className="min-w-0">
@@ -363,13 +431,17 @@ export default function AdminLayout({ children }) {
             onClick={handleLogout}
             className="dashboard-mobile-logout"
           >
-            <IconLogOut className="h-4 w-4" />
+            <LogOut className="h-4 w-4" />
+
             <span>Logout</span>
           </button>
         </header>
 
-        {/* Dashboard Content */}
-        <main className="dashboard-content bg-transparent">{children}</main>
+        {/* Main content */}
+
+        <main className="dashboard-content bg-transparent">
+          {children}
+        </main>
       </div>
     </div>
   );

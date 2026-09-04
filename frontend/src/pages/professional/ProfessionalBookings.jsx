@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import ProfessionalLayout from "../../components/professional/ProfessionalLayout";
 import StatusBadge from "../../components/admin/StatusBadge";
 import { httpClient } from "../../lib/http";
-import { IconSearch, IconClock } from "../../components/admin/Icons";
+import { Search, Clock } from "lucide-react";
 
 const STATUS_FILTERS = ["all", "completed", "pending"];
 
@@ -130,7 +130,7 @@ export default function ProfessionalBookings() {
           {/* Search */}
           <div className="relative w-full sm:w-72">
             <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">
-              <IconSearch className="h-4 w-4" />
+              <Search className="h-4 w-4" />
             </span>
 
             <input
@@ -212,7 +212,7 @@ export default function ProfessionalBookings() {
                           {b.appointmentDay && b.appointmentSlot ? (
                             <div className="flex items-center gap-1.5">
                               <span className="inline-flex items-center gap-1.5 rounded-xl border border-brand-light/70 bg-brand-light/25 px-3 py-1.5 text-xs font-bold text-brand-dark">
-                                <IconClock className="h-3 w-3 text-brand-dark" />
+                                <Clock className="h-3 w-3 text-brand-dark" />
                                 {b.appointmentDay.slice(0, 3)} -{" "}
                                 {b.appointmentSlot}
                               </span>
@@ -241,14 +241,13 @@ export default function ProfessionalBookings() {
 
                         {/* Date */}
                         <td className="whitespace-nowrap px-6 py-4 text-xs font-medium text-gray-500">
-                          {new Date(b.paidAt || b.createdAt).toLocaleDateString(
-                            "en-US",
-                            {
-                              month: "short",
-                              day: "numeric",
-                              year: "numeric",
-                            },
-                          )}
+                          {new Date(
+                            b.paidAt || b.createdAt,
+                          ).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          })}
                         </td>
 
                         {/* Action */}

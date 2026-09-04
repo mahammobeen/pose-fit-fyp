@@ -3,15 +3,15 @@ import { httpClient } from "../../lib/http";
 import AdminLayout from "../../components/admin/AdminLayout";
 
 import {
-  IconUsers,
-  IconTrendingUp,
-  IconUserPlus,
-  IconProfessional,
-  IconPayment,
-  IconDollarSign,
-  IconBuilding,
-  IconReceipt,
-} from "../../components/admin/Icons";
+  Users,
+  TrendingUp,
+  UserPlus,
+  UserCheck,
+  CreditCard,
+  DollarSign,
+  Building2,
+  Receipt,
+} from "lucide-react";
 
 /* =========================================================
    STAT CARD
@@ -106,7 +106,10 @@ export default function AdminDashboard() {
     fetchAll();
   }, []);
 
-  const maxReg = Math.max(...analytics.map((a) => a.registrations || 0), 1);
+  const maxReg = Math.max(
+    ...analytics.map((a) => a.registrations || 0),
+    1
+  );
 
   /* =========================================================
      LOADING
@@ -137,7 +140,7 @@ export default function AdminDashboard() {
       title: "Total Users",
       value: stats?.totalUsers ?? 0,
       description: "Lifetime registered users",
-      Icon: IconUsers,
+      Icon: Users,
       bgGradient:
         "linear-gradient(135deg, rgba(183, 228, 199, 0.38) 0%, rgba(255, 253, 245, 0.95) 100%)",
       border: "#b7e4c7",
@@ -148,7 +151,7 @@ export default function AdminDashboard() {
       title: "Active Today",
       value: stats?.activeToday ?? 0,
       description: "Users active in last 24h",
-      Icon: IconTrendingUp,
+      Icon: TrendingUp,
       bgGradient:
         "linear-gradient(135deg, rgba(255, 216, 177, 0.38) 0%, rgba(255, 253, 245, 0.95) 100%)",
       border: "#ffd8b1",
@@ -159,7 +162,7 @@ export default function AdminDashboard() {
       title: "New This Week",
       value: stats?.newUsers ?? 0,
       description: "Joined in last 7 days",
-      Icon: IconUserPlus,
+      Icon: UserPlus,
       bgGradient:
         "linear-gradient(135deg, rgba(183, 228, 199, 0.38) 0%, rgba(255, 253, 245, 0.95) 100%)",
       border: "#b7e4c7",
@@ -170,7 +173,7 @@ export default function AdminDashboard() {
       title: "Professionals",
       value: stats?.totalProfessionals ?? 0,
       description: "Registered professionals",
-      Icon: IconProfessional,
+      Icon: UserCheck,
       bgGradient:
         "linear-gradient(135deg, rgba(208, 235, 255, 0.45) 0%, rgba(255, 253, 245, 0.95) 100%)",
       border: "#d0ebff",
@@ -181,7 +184,7 @@ export default function AdminDashboard() {
       title: "Conversion Rate",
       value: stats?.conversionRate ?? "0%",
       description: "Verified vs total users",
-      Icon: IconReceipt,
+      Icon: Receipt,
       bgGradient:
         "linear-gradient(135deg, rgba(255, 216, 177, 0.32) 0%, rgba(255, 253, 245, 0.95) 100%)",
       border: "#ffd8b1",
@@ -192,7 +195,7 @@ export default function AdminDashboard() {
       title: "Total Revenue",
       value: `$${(paymentSummary.totalRevenue || 0).toFixed(2)}`,
       description: "From completed payments",
-      Icon: IconDollarSign,
+      Icon: DollarSign,
       bgGradient:
         "linear-gradient(135deg, rgba(183, 228, 199, 0.42) 0%, rgba(255, 253, 245, 0.95) 100%)",
       border: "#b7e4c7",
@@ -203,7 +206,7 @@ export default function AdminDashboard() {
       title: "Admin Commission",
       value: `$${(paymentSummary.totalCommission || 0).toFixed(2)}`,
       description: "20% platform fee earned",
-      Icon: IconBuilding,
+      Icon: Building2,
       bgGradient:
         "linear-gradient(135deg, rgba(255, 216, 177, 0.38) 0%, rgba(255, 253, 245, 0.95) 100%)",
       border: "#ffd8b1",
@@ -214,7 +217,7 @@ export default function AdminDashboard() {
       title: "Transactions",
       value: paymentSummary.count,
       description: "Total payment records",
-      Icon: IconPayment,
+      Icon: CreditCard,
       bgGradient:
         "linear-gradient(135deg, rgba(208, 235, 255, 0.4) 0%, rgba(255, 253, 245, 0.95) 100%)",
       border: "#d0ebff",
@@ -278,7 +281,7 @@ export default function AdminDashboard() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
               <div>
                 <h2 className="text-lg font-black text-gray-800 flex items-center gap-2">
-                  <IconTrendingUp className="w-5 h-5 text-brand-dark" />
+                  <TrendingUp className="w-5 h-5 text-brand-dark" />
                   User Registrations (Last 7 Days)
                 </h2>
 
@@ -306,7 +309,7 @@ export default function AdminDashboard() {
                         style={{
                           width: `${Math.max(
                             (item.registrations / maxReg) * 100,
-                            item.registrations > 0 ? 6 : 0,
+                            item.registrations > 0 ? 6 : 0
                           )}%`,
                           background:
                             "linear-gradient(90deg, #b7e4c7, #53b889, #16845b)",

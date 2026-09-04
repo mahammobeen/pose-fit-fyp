@@ -7,8 +7,8 @@ const transporter = nodemailer.createTransport({
   port: 465,
   secure: true,
   auth: {
-    user: process.env.USER_EMAIL,
-    pass: process.env.USER_PASS,
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASSWORD,
   },
 });
 
@@ -250,7 +250,7 @@ const addProfessional = async (req, res) => {
 
     try {
       await transporter.sendMail({
-        from: `"PoseFit Admin" <${process.env.USER_EMAIL}>`,
+        from: `"PoseFit Admin" <${process.env.EMAIL_USER}>`,
         to: email.toLowerCase(),
         subject: "Welcome to PoseFit - Professional Onboarding Credentials",
         text: `Hi ${firstName} ${lastName},
@@ -499,7 +499,7 @@ PoseFit Team`;
 
     try {
       await transporter.sendMail({
-        from: process.env.USER_EMAIL,
+        from: process.env.EMAIL_USER,
         to: professional.email,
         subject,
         text,

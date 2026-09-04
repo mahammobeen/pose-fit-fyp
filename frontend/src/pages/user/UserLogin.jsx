@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { httpClient } from "../../lib/http";
-import { IconAlertTriangle } from "../../components/admin/Icons";
+import { AlertTriangle } from "lucide-react";
 import posefit_logo from "../../assets/posefit_logo.png";
 
 export default function UserLogin() {
@@ -164,7 +164,7 @@ export default function UserLogin() {
           }`}
         >
           {toast.type === "error" && (
-            <IconAlertTriangle className="h-5 w-5 shrink-0" />
+            <AlertTriangle className="h-5 w-5 shrink-0" />
           )}
 
           <span>{toast.message}</span>

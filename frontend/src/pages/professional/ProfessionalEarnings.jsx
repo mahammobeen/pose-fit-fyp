@@ -3,12 +3,12 @@ import ProfessionalLayout from "../../components/professional/ProfessionalLayout
 import StatusBadge from "../../components/admin/StatusBadge";
 import { httpClient } from "../../lib/http";
 import {
-  IconDollarSign,
-  IconBuilding,
-  IconTrendingUp,
-  IconCheckCircle,
-  IconClock,
-} from "../../components/admin/Icons";
+  DollarSign,
+  Building2,
+  TrendingUp,
+  CheckCircle,
+  Clock,
+} from "lucide-react";
 
 export default function ProfessionalEarnings() {
   const [earningsData, setEarningsData] = useState(null);
@@ -69,7 +69,7 @@ export default function ProfessionalEarnings() {
     {
       label: "Total Earnings (80%)",
       value: `$${metrics?.totalEarnings?.toFixed(2) || "0.00"}`,
-      Icon: IconDollarSign,
+      Icon: DollarSign,
       iconBg: "bg-brand-light/40",
       iconColor: "text-brand-dark",
       valueColor: "text-brand-dark",
@@ -77,7 +77,7 @@ export default function ProfessionalEarnings() {
     {
       label: "Current Month",
       value: `$${metrics?.currentMonthEarnings?.toFixed(2) || "0.00"}`,
-      Icon: IconTrendingUp,
+      Icon: TrendingUp,
       iconBg: "bg-accent-blue/50",
       iconColor: "text-sky-700",
       valueColor: "text-gray-800",
@@ -85,7 +85,7 @@ export default function ProfessionalEarnings() {
     {
       label: "Released to Connect",
       value: `$${metrics?.releasedEarnings?.toFixed(2) || "0.00"}`,
-      Icon: IconCheckCircle,
+      Icon: CheckCircle,
       iconBg: "bg-brand-light/40",
       iconColor: "text-brand-dark",
       valueColor: "text-brand-dark",
@@ -93,7 +93,7 @@ export default function ProfessionalEarnings() {
     {
       label: "Pending Clearance",
       value: `$${metrics?.pendingEarnings?.toFixed(2) || "0.00"}`,
-      Icon: IconClock,
+      Icon: Clock,
       iconBg: "bg-amber-50",
       iconColor: "text-amber-700",
       valueColor: "text-amber-800",
@@ -138,7 +138,7 @@ export default function ProfessionalEarnings() {
           <div className="flex flex-wrap items-center justify-between gap-4 rounded-card border border-brand-light/50 bg-surface/80 p-5 shadow-card backdrop-blur-xl">
             <div className="flex items-center gap-3.5">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-brand-light bg-brand-light/30 text-brand-dark">
-                <IconBuilding className="h-6 w-6" />
+                <Building2 className="h-6 w-6" />
               </div>
 
               <div>
@@ -289,33 +289,32 @@ export default function ProfessionalEarnings() {
                               p.status === "failed"
                                 ? "border-rose-200 bg-rose-50 text-rose-800"
                                 : p.payoutStatus === "transferred" ||
-                                  p.payoutStatus === "paid" ||
-                                  p.status === "completed"
-                                ? "border-brand-light bg-brand-light/30 text-brand-dark"
-                                : "border-gray-200 bg-gray-100 text-gray-600"
+                                    p.payoutStatus === "paid" ||
+                                    p.status === "completed"
+                                  ? "border-brand-light bg-brand-light/30 text-brand-dark"
+                                  : "border-gray-200 bg-gray-100 text-gray-600"
                             }`}
                           >
                             {p.payoutStatus === "failed" ||
                             p.status === "failed"
                               ? "Failed"
                               : p.payoutStatus === "transferred" ||
-                                p.payoutStatus === "paid" ||
-                                p.status === "completed"
-                              ? "Transferred to Connect"
-                              : "Pending"}
+                                  p.payoutStatus === "paid" ||
+                                  p.status === "completed"
+                                ? "Transferred to Connect"
+                                : "Pending"}
                           </span>
                         </td>
 
                         {/* Date */}
                         <td className="whitespace-nowrap px-5 py-4 text-xs font-medium text-gray-500">
-                          {new Date(p.paidAt || p.createdAt).toLocaleDateString(
-                            "en-US",
-                            {
-                              month: "short",
-                              day: "numeric",
-                              year: "numeric",
-                            },
-                          )}
+                          {new Date(
+                            p.paidAt || p.createdAt,
+                          ).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          })}
                         </td>
                       </tr>
                     ))}

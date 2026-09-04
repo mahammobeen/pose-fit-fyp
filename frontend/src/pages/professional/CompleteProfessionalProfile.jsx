@@ -2,14 +2,13 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { httpClient } from "../../lib/http";
 import { getUser, deleteToken } from "../../lib/local-storage";
-
 import {
-  IconClock,
-  IconPlus,
-  IconTrash,
-  IconLogOut,
-  IconAlertTriangle,
-} from "../../components/admin/Icons";
+  Clock3,
+  Plus,
+  Trash2,
+  LogOut,
+  AlertTriangle,
+} from "lucide-react";
 
 const DAYS_OF_WEEK = [
   "Monday",
@@ -21,14 +20,12 @@ const DAYS_OF_WEEK = [
   "Sunday",
 ];
 
-// Convert 24-hour HH:MM to 12-hour HH:MM AM/PM
 function formatTo12Hour(time24) {
   if (!time24) return "";
 
   const [hStr, mStr] = time24.split(":");
   let h = parseInt(hStr, 10);
   const m = mStr || "00";
-
   const modifier = h >= 12 ? "PM" : "AM";
 
   if (h === 0) {
@@ -42,7 +39,6 @@ function formatTo12Hour(time24) {
   return `${formattedH}:${m} ${modifier}`;
 }
 
-// Convert 12-hour time to 24-hour time
 function convertTo24Hour(time12) {
   if (!time12) return "";
 
@@ -51,7 +47,6 @@ function convertTo24Hour(time12) {
   if (!time || !modifier) return "";
 
   let [hours, minutes] = time.split(":");
-
   hours = parseInt(hours, 10);
 
   if (modifier === "AM") {
@@ -77,10 +72,6 @@ export default function CompleteProfessionalProfile() {
   const [uploadingDoc, setUploadingDoc] = useState(false);
   const [toast, setToast] = useState(null);
 
-  // =========================
-  // Form State
-  // =========================
-
   const [photoPreview, setPhotoPreview] = useState("");
   const [profilePhotoUrl, setProfilePhotoUrl] = useState("");
   const [specialization, setSpecialization] = useState("");
@@ -104,14 +95,9 @@ export default function CompleteProfessionalProfile() {
     },
   ]);
 
-  // Slot input state
   const [selectedDay, setSelectedDay] = useState("Monday");
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("12:00");
-
-  // =========================
-  // Toast
-  // =========================
 
   const showToast = useCallback((msg, type = "success") => {
     setToast({
@@ -123,10 +109,6 @@ export default function CompleteProfessionalProfile() {
       setToast(null);
     }, 3500);
   }, []);
-
-  // =========================
-  // Fetch Professional Profile
-  // =========================
 
   const fetchProfile = useCallback(async () => {
     try {
@@ -141,45 +123,37 @@ export default function CompleteProfessionalProfile() {
 
       setUser(p);
 
-      // Profile photo
       if (p.profilePhoto) {
         setProfilePhotoUrl(p.profilePhoto);
         setPhotoPreview(p.profilePhoto);
       }
 
-      // Specialization
       if (p.specialization) {
         setSpecialization(p.specialization);
       }
 
-      // Session fee
       if (p.sessionFee !== undefined && p.sessionFee !== null) {
         setSessionFee(p.sessionFee);
       }
 
-      // Bio
       if (p.bio) {
         setBio(p.bio);
       }
 
-      // Credential documents
       if (Array.isArray(p.credentialDocs)) {
         setCredentialDocs(p.credentialDocs);
       }
 
-      // Availability
       if (Array.isArray(p.availability) && p.availability.length > 0) {
         setAvailability(p.availability);
       }
 
-      // Already approved -> Dashboard
       const status = String(p.professionalStatus || "").toLowerCase();
 
       if (status === "approved") {
         navigate("/professional/dashboard", {
           replace: true,
         });
-
         return;
       }
     } catch (error) {
@@ -198,10 +172,6 @@ export default function CompleteProfessionalProfile() {
     fetchProfile();
   }, [fetchProfile]);
 
-  // =========================
-  // Logout
-  // =========================
-
   const handleLogout = () => {
     deleteToken();
 
@@ -210,19 +180,23 @@ export default function CompleteProfessionalProfile() {
     });
   };
 
-  // =========================
-  // Profile Photo Upload
-  // =========================
-
   const handlePhotoSelect = async (e) => {
     const file = e.target.files?.[0];
 
     if (!file) return;
 
-    const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+    const allowedTypes = [
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "image/webp",
+    ];
 
     if (!allowedTypes.includes(file.type)) {
-      showToast("Please select a valid image file (PNG, JPG, WEBP).", "error");
+      showToast(
+        "Please select a valid image file (PNG, JPG, WEBP).",
+        "error",
+      );
 
       e.target.value = "";
       return;
@@ -235,7 +209,6 @@ export default function CompleteProfessionalProfile() {
       return;
     }
 
-    // Local preview
     const reader = new FileReader();
 
     reader.onload = () => {
@@ -244,11 +217,9 @@ export default function CompleteProfessionalProfile() {
 
     reader.readAsDataURL(file);
 
-    // Upload
     setUploadingPhoto(true);
 
     const formData = new FormData();
-
     formData.append("photo", file);
 
     try {
@@ -265,12 +236,10 @@ export default function CompleteProfessionalProfile() {
       }
 
       setProfilePhotoUrl(fileUrl);
-
       showToast("Profile photo uploaded successfully!");
     } catch (err) {
       console.error("Profile photo upload error:", err);
 
-      // Restore previous preview if upload fails
       setPhotoPreview(profilePhotoUrl);
 
       showToast(
@@ -287,10 +256,6 @@ export default function CompleteProfessionalProfile() {
     setPhotoPreview("");
     setProfilePhotoUrl("");
   };
-
-  // =========================
-  // Credential Document Upload
-  // =========================
 
   const handleDocSelect = async (e) => {
     const file = e.target.files?.[0];
@@ -322,12 +287,13 @@ export default function CompleteProfessionalProfile() {
       return;
     }
 
-    const title = (newDocTitle || file.name.replace(/\.[^/.]+$/, "")).trim();
+    const title = (
+      newDocTitle || file.name.replace(/\.[^/.]+$/, "")
+    ).trim();
 
     setUploadingDoc(true);
 
     const formData = new FormData();
-
     formData.append("document", file);
 
     try {
@@ -373,20 +339,14 @@ export default function CompleteProfessionalProfile() {
     setCredentialDocs((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // =========================
-  // Add Availability Slot
-  // =========================
-
   const handleAddSlot = () => {
     if (!startTime || !endTime) {
       showToast("Please select both start and end times.", "error");
-
       return;
     }
 
     if (startTime >= endTime) {
       showToast("Start time must be strictly before end time.", "error");
-
       return;
     }
 
@@ -396,14 +356,11 @@ export default function CompleteProfessionalProfile() {
 
     const dayObj = availability.find((item) => item.day === selectedDay);
 
-    // Exact duplicate check
     if (dayObj?.slots?.includes(formattedSlot)) {
       showToast("This exact slot is already added for this day.", "error");
-
       return;
     }
 
-    // Overlapping slot check
     if (dayObj?.slots?.length) {
       const hasOverlap = dayObj.slots.some((slot) => {
         const parts = slot.split(" - ");
@@ -432,7 +389,6 @@ export default function CompleteProfessionalProfile() {
       }
     }
 
-    // Add slot to existing day
     if (dayObj) {
       setAvailability((prev) =>
         prev.map((item) =>
@@ -445,7 +401,6 @@ export default function CompleteProfessionalProfile() {
         ),
       );
     } else {
-      // Add new day
       setAvailability((prev) => [
         ...prev,
         {
@@ -455,10 +410,6 @@ export default function CompleteProfessionalProfile() {
       ]);
     }
   };
-
-  // =========================
-  // Remove Slot
-  // =========================
 
   const handleRemoveSlot = (day, slotIndex) => {
     setAvailability((prev) =>
@@ -475,23 +426,16 @@ export default function CompleteProfessionalProfile() {
     );
   };
 
-  // =========================
-  // Submit Completed Profile
-  // =========================
-
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Required validation
     if (!bio.trim()) {
       showToast("Please provide a short professional bio.", "error");
-
       return;
     }
 
     if (!specialization.trim()) {
       showToast("Please enter your fitness specialization.", "error");
-
       return;
     }
 
@@ -500,7 +444,6 @@ export default function CompleteProfessionalProfile() {
         "Please select and upload a profile photo from your device.",
         "error",
       );
-
       return;
     }
 
@@ -509,7 +452,6 @@ export default function CompleteProfessionalProfile() {
         "Please upload at least one certificate or credential document.",
         "error",
       );
-
       return;
     }
 
@@ -522,44 +464,44 @@ export default function CompleteProfessionalProfile() {
         "Please configure at least one availability day and slot.",
         "error",
       );
-
       return;
     }
 
     setSubmitting(true);
 
     try {
-      const res = await httpClient.put("/auth/complete-professional-profile", {
-        profilePhoto: profilePhotoUrl,
-        specialization: specialization.trim(),
-        sessionFee: Number(sessionFee) || 50,
-        bio: bio.trim(),
-        credentialDocs,
-        availability: validAvailability,
-      });
+      const res = await httpClient.put(
+        "/auth/complete-professional-profile",
+        {
+          profilePhoto: profilePhotoUrl,
+          specialization: specialization.trim(),
+          sessionFee: Number(sessionFee) || 50,
+          bio: bio.trim(),
+          credentialDocs,
+          availability: validAvailability,
+        },
+      );
 
       const updated = res?.data?.professional;
 
       if (updated) {
         setUser(updated);
 
-        const status = String(updated.professionalStatus || "").toLowerCase();
+        const status = String(
+          updated.professionalStatus || "",
+        ).toLowerCase();
 
-        // Profile submitted for admin approval
         if (status === "pending_verification") {
           showToast(
             "Profile submitted successfully. Waiting for admin approval.",
           );
-
           return;
         }
 
-        // If backend already says approved
         if (status === "approved") {
           navigate("/professional/dashboard", {
             replace: true,
           });
-
           return;
         }
       }
@@ -577,10 +519,6 @@ export default function CompleteProfessionalProfile() {
     }
   };
 
-  // =========================
-  // Loading
-  // =========================
-
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-surface font-sans">
@@ -595,10 +533,6 @@ export default function CompleteProfessionalProfile() {
     );
   }
 
-  // =========================
-  // Pending Verification Card
-  // =========================
-
   const professionalStatus = String(
     user?.professionalStatus || "",
   ).toLowerCase();
@@ -606,18 +540,16 @@ export default function CompleteProfessionalProfile() {
   if (professionalStatus === "pending_verification") {
     return (
       <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-surface px-4 py-8 font-sans">
-        {/* Background Decorations */}
         <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-brand-light/30 blur-3xl" />
+
         <div className="pointer-events-none absolute -bottom-24 -right-24 h-72 w-72 rounded-full bg-accent-blue/40 blur-3xl" />
 
         <div className="relative w-full max-w-md rounded-card border border-brand-light/60 bg-surface/90 p-6 shadow-card-hover backdrop-blur-xl sm:p-8">
           <div className="text-center">
-            {/* Icon */}
             <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-card border border-accent-orange/70 bg-accent-orange/30 text-accent-orange-dark shadow-card">
-              <IconClock className="h-8 w-8" />
+              <Clock3 className="h-8 w-8" />
             </div>
 
-            {/* Status */}
             <span className="inline-flex rounded-full border border-accent-orange/70 bg-accent-orange/30 px-3 py-1 text-xs font-extrabold uppercase tracking-widest text-accent-orange-dark">
               Waiting for Admin Approval
             </span>
@@ -632,7 +564,6 @@ export default function CompleteProfessionalProfile() {
             </p>
           </div>
 
-          {/* What happens next */}
           <div className="mt-6 space-y-3 rounded-card border border-brand-light/50 bg-brand-light/10 p-4">
             <p className="text-sm font-extrabold text-gray-800">
               What happens next?
@@ -665,10 +596,9 @@ export default function CompleteProfessionalProfile() {
             </div>
           </div>
 
-          {/* Waiting message */}
           <div className="mt-5 rounded-card border border-accent-orange/60 bg-accent-orange/20 px-4 py-3">
             <p className="text-xs font-bold text-accent-orange-dark">
-              ⏳ Your account is currently awaiting approval.
+              Your account is currently awaiting approval.
             </p>
 
             <p className="mt-1 text-[11px] font-medium text-accent-orange-dark/80">
@@ -676,7 +606,6 @@ export default function CompleteProfessionalProfile() {
             </p>
           </div>
 
-          {/* Actions */}
           <div className="mt-7 flex flex-col gap-3 sm:flex-row">
             <button
               type="button"
@@ -691,7 +620,7 @@ export default function CompleteProfessionalProfile() {
               onClick={handleLogout}
               className="flex flex-1 items-center justify-center gap-1.5 rounded-btn border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-bold text-rose-700 transition-all hover:-translate-y-0.5 hover:bg-rose-100"
             >
-              <IconLogOut className="h-4 w-4" />
+              <LogOut className="h-4 w-4" />
               Sign Out
             </button>
           </div>
@@ -700,23 +629,14 @@ export default function CompleteProfessionalProfile() {
     );
   }
 
-  // =========================
-  // Rejected State
-  // =========================
-
   const isRejected = professionalStatus === "rejected";
-
-  // =========================
-  // Main Profile Form
-  // =========================
 
   return (
     <div className="min-h-screen bg-surface px-4 py-6 font-sans sm:py-10">
-      {/* Background Decorations */}
       <div className="pointer-events-none fixed -left-32 -top-32 h-80 w-80 rounded-full bg-brand-light/25 blur-3xl" />
+
       <div className="pointer-events-none fixed -bottom-32 -right-32 h-80 w-80 rounded-full bg-accent-blue/30 blur-3xl" />
 
-      {/* Toast */}
       {toast && (
         <div
           className={`fixed right-5 top-5 z-50 rounded-2xl border px-5 py-3 text-sm font-bold text-white shadow-card-hover transition-all ${
@@ -733,7 +653,6 @@ export default function CompleteProfessionalProfile() {
       )}
 
       <div className="relative mx-auto w-full max-w-3xl">
-        {/* Header */}
         <div className="mb-6 flex items-center justify-between gap-4 border-b border-brand-light/50 pb-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-light shadow-xs">
@@ -756,16 +675,15 @@ export default function CompleteProfessionalProfile() {
             onClick={handleLogout}
             className="flex items-center gap-1.5 rounded-btn border border-rose-200 bg-rose-50 px-3.5 py-2 text-xs font-bold text-rose-700 transition-all hover:-translate-y-0.5 hover:bg-rose-100"
           >
-            <IconLogOut className="h-3.5 w-3.5" />
+            <LogOut className="h-3.5 w-3.5" />
             Logout
           </button>
         </div>
 
-        {/* Rejection Alert */}
         {isRejected && (
           <div className="mb-6 rounded-card border border-rose-200 bg-rose-50/80 p-5 shadow-card">
             <p className="flex items-center gap-2 text-xs font-extrabold text-rose-900">
-              <IconAlertTriangle className="h-4 w-4 shrink-0 text-rose-600" />
+              <AlertTriangle className="h-4 w-4 shrink-0 text-rose-600" />
               Application Requires Updates
             </p>
 
@@ -777,12 +695,10 @@ export default function CompleteProfessionalProfile() {
           </div>
         )}
 
-        {/* Onboarding Form */}
         <form
           onSubmit={handleSubmit}
           className="space-y-8 rounded-card border border-brand-light/60 bg-surface/90 p-5 shadow-card-hover backdrop-blur-xl sm:p-8"
         >
-          {/* Form Header */}
           <div>
             <span className="inline-flex rounded-full border border-brand-light/70 bg-brand-light/30 px-3 py-1 text-xs font-extrabold uppercase tracking-widest text-brand-dark">
               Step 1 of 1
@@ -798,7 +714,6 @@ export default function CompleteProfessionalProfile() {
             </p>
           </div>
 
-          {/* Profile Photo */}
           <div className="space-y-3 border-t border-brand-light/40 pt-5">
             <label className="mb-2 block text-xs font-extrabold uppercase tracking-wider text-gray-700">
               Profile Photo <span className="text-rose-500">*</span>
@@ -828,7 +743,9 @@ export default function CompleteProfessionalProfile() {
               <div className="space-y-2">
                 <label className="inline-flex cursor-pointer items-center gap-2 rounded-btn border border-brand-light/70 bg-brand-light/25 px-4 py-2.5 text-xs font-bold text-brand-dark transition-all hover:-translate-y-0.5 hover:bg-brand-light/40">
                   <span>
-                    {photoPreview ? "Change Photo" : "Select Photo from Device"}
+                    {photoPreview
+                      ? "Change Photo"
+                      : "Select Photo from Device"}
                   </span>
 
                   <input
@@ -859,9 +776,7 @@ export default function CompleteProfessionalProfile() {
             </div>
           </div>
 
-          {/* Role & Specialization */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {/* Professional Type */}
             <div>
               <label className="mb-1.5 block text-xs font-extrabold uppercase tracking-wider text-gray-700">
                 Professional Role (Admin Set)
@@ -876,7 +791,6 @@ export default function CompleteProfessionalProfile() {
               </div>
             </div>
 
-            {/* Specialization */}
             <div>
               <label className="mb-1.5 block text-xs font-extrabold uppercase tracking-wider text-gray-700">
                 Specialization <span className="text-rose-500">*</span>
@@ -893,9 +807,7 @@ export default function CompleteProfessionalProfile() {
             </div>
           </div>
 
-          {/* Session Fee & Bio */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            {/* Session Fee */}
             <div>
               <label className="mb-1.5 block text-xs font-extrabold uppercase tracking-wider text-gray-700">
                 Session Fee ($) <span className="text-rose-500">*</span>
@@ -911,7 +823,6 @@ export default function CompleteProfessionalProfile() {
               />
             </div>
 
-            {/* Bio */}
             <div className="sm:col-span-2">
               <label className="mb-1.5 block text-xs font-extrabold uppercase tracking-wider text-gray-700">
                 Bio / Background Description{" "}
@@ -929,7 +840,6 @@ export default function CompleteProfessionalProfile() {
             </div>
           </div>
 
-          {/* Certificates */}
           <div className="space-y-3 border-t border-brand-light/40 pt-5">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <label className="block text-xs font-extrabold uppercase tracking-wider text-gray-700">
@@ -956,7 +866,7 @@ export default function CompleteProfessionalProfile() {
                   uploadingDoc ? "cursor-not-allowed opacity-60" : ""
                 }`}
               >
-                <IconPlus className="h-3.5 w-3.5" />
+                <Plus className="h-3.5 w-3.5" />
 
                 <span>
                   {uploadingDoc
@@ -974,7 +884,6 @@ export default function CompleteProfessionalProfile() {
               </label>
             </div>
 
-            {/* Documents List */}
             {credentialDocs.length > 0 && (
               <div className="space-y-2 pt-2">
                 {credentialDocs.map((doc, idx) => (
@@ -1004,7 +913,7 @@ export default function CompleteProfessionalProfile() {
                       className="shrink-0 rounded-xl p-1.5 text-rose-600 transition-all hover:bg-rose-50 hover:text-rose-700"
                       aria-label="Remove document"
                     >
-                      <IconTrash className="h-4 w-4" />
+                      <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
                 ))}
@@ -1012,15 +921,12 @@ export default function CompleteProfessionalProfile() {
             )}
           </div>
 
-          {/* Availability */}
           <div className="space-y-3 border-t border-brand-light/40 pt-5">
             <label className="block text-xs font-extrabold uppercase tracking-wider text-gray-700">
               Availability Schedule (12-Hour AM/PM)
             </label>
 
-            {/* Add Slot */}
             <div className="flex flex-wrap items-end gap-3 rounded-card border border-brand-light/50 bg-brand-light/10 p-4">
-              {/* Day */}
               <div className="w-full sm:w-36">
                 <label className="mb-1 block text-[10px] font-bold uppercase text-gray-500">
                   Day
@@ -1039,7 +945,6 @@ export default function CompleteProfessionalProfile() {
                 </select>
               </div>
 
-              {/* Start */}
               <div className="w-full sm:w-auto">
                 <label className="mb-1 block text-[10px] font-bold uppercase text-gray-500">
                   Start Time
@@ -1053,7 +958,6 @@ export default function CompleteProfessionalProfile() {
                 />
               </div>
 
-              {/* End */}
               <div className="w-full sm:w-auto">
                 <label className="mb-1 block text-[10px] font-bold uppercase text-gray-500">
                   End Time
@@ -1067,18 +971,16 @@ export default function CompleteProfessionalProfile() {
                 />
               </div>
 
-              {/* Add */}
               <button
                 type="button"
                 onClick={handleAddSlot}
                 className="flex items-center gap-1.5 rounded-btn border border-brand-light/70 bg-brand-light/30 px-4 py-2 text-xs font-extrabold text-brand-dark transition-all hover:-translate-y-0.5 hover:bg-brand-light/50"
               >
-                <IconPlus className="h-3.5 w-3.5" />
+                <Plus className="h-3.5 w-3.5" />
                 Add Slot
               </button>
             </div>
 
-            {/* Active Days */}
             <div className="space-y-2">
               {availability.map((item) => (
                 <div
@@ -1095,7 +997,7 @@ export default function CompleteProfessionalProfile() {
                         key={`${slot}-${sIdx}`}
                         className="inline-flex items-center gap-1.5 rounded-xl border border-brand-light/60 bg-brand-light/15 px-2.5 py-1 text-[11px] font-bold text-gray-700"
                       >
-                        <IconClock className="h-3 w-3 text-brand-dark" />
+                        <Clock3 className="h-3 w-3 text-brand-dark" />
 
                         {slot}
 
@@ -1105,7 +1007,7 @@ export default function CompleteProfessionalProfile() {
                           className="ml-0.5 text-gray-400 transition-colors hover:text-rose-600"
                           aria-label="Remove slot"
                         >
-                          ✕
+                          ×
                         </button>
                       </span>
                     ))}
@@ -1115,7 +1017,6 @@ export default function CompleteProfessionalProfile() {
             </div>
           </div>
 
-          {/* Submit */}
           <div className="border-t border-brand-light/40 pt-5">
             <button
               type="submit"
@@ -1136,7 +1037,6 @@ export default function CompleteProfessionalProfile() {
             opacity: 0;
             transform: scale(0.95) translateY(10px);
           }
-
           to {
             opacity: 1;
             transform: scale(1) translateY(0);

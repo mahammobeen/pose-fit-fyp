@@ -3,12 +3,7 @@ import AdminLayout from "../../components/admin/AdminLayout";
 import Modal from "../../components/admin/Modal";
 import StatusBadge from "../../components/admin/StatusBadge";
 import { httpClient } from "../../lib/http";
-import {
-  IconSearch,
-  IconEdit,
-  IconTrash,
-  IconLock,
-} from "../../components/admin/Icons";
+import { Search, Pencil, Trash2, Lock } from "lucide-react";
 
 const EMPTY_EDIT = { firstName: "", lastName: "", email: "" };
 
@@ -152,7 +147,7 @@ export default function AdminUsers() {
         <div className="mb-4 px-4 sm:px-6 lg:px-8">
           <div className="relative max-w-sm">
             <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">
-              <IconSearch className="h-4 w-4" />
+              <Search className="h-4 w-4" />
             </span>
 
             <input
@@ -244,7 +239,7 @@ export default function AdminUsers() {
                               onClick={() => openEdit(user)}
                               className="flex items-center gap-1 rounded-xl border border-brand-light/70 bg-brand-light/25 px-3 py-1.5 text-xs font-bold text-brand-dark transition-all duration-200 hover:-translate-y-0.5 hover:bg-brand-light/40"
                             >
-                              <IconEdit className="h-3.5 w-3.5" />
+                              <Pencil className="h-3.5 w-3.5" />
                               <span>Edit</span>
                             </button>
 
@@ -252,7 +247,7 @@ export default function AdminUsers() {
                               onClick={() => openDelete(user)}
                               className="flex items-center gap-1 rounded-xl border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-800 transition-all duration-200 hover:-translate-y-0.5 hover:bg-rose-100"
                             >
-                              <IconTrash className="h-3.5 w-3.5" />
+                              <Trash2 className="h-3.5 w-3.5" />
                               <span>Delete</span>
                             </button>
                           </div>
@@ -316,7 +311,7 @@ export default function AdminUsers() {
                 </label>
 
                 <span className="flex items-center gap-1 rounded-md border border-accent-orange/70 bg-accent-orange/30 px-2 py-0.5 text-[11px] font-bold text-accent-orange-dark">
-                  <IconLock className="h-3 w-3" />
+                  <Lock className="h-3 w-3" />
                   Locked
                 </span>
               </div>
@@ -363,7 +358,7 @@ export default function AdminUsers() {
         >
           <div className="text-center">
             <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-rose-100 text-rose-600">
-              <IconTrash className="h-6 w-6" />
+              <Trash2 className="h-6 w-6" />
             </div>
 
             <p className="mb-1 text-base font-bold text-gray-800">

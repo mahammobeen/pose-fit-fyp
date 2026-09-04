@@ -3,8 +3,7 @@ import AdminLayout from "../../components/admin/AdminLayout";
 import Modal from "../../components/admin/Modal";
 import StatusBadge from "../../components/admin/StatusBadge";
 import { httpClient } from "../../lib/http";
-
-import { IconSearch, IconPlus, IconTrash } from "../../components/admin/Icons";
+import { Search, Plus, Trash2 } from "lucide-react";
 
 const EMPTY_FORM = {
   firstName: "",
@@ -97,7 +96,9 @@ export default function AdminProfessionals() {
     setActionLoading(true);
 
     try {
-      await httpClient.delete(`/admin/delete-professional/${selectedPro._id}`);
+      await httpClient.delete(
+        `/admin/delete-professional/${selectedPro._id}`,
+      );
 
       showToast("Professional removed successfully", "error");
 
@@ -153,7 +154,7 @@ export default function AdminProfessionals() {
               }}
               className="flex items-center gap-2 px-5 py-2.5 rounded-btn font-bold text-white text-sm shadow-card hover:-translate-y-0.5 hover:shadow-card-hover active:scale-95 transition-all bg-gray-800 hover:bg-gray-700"
             >
-              <IconPlus className="w-4 h-4" />
+              <Plus className="w-4 h-4" />
               <span>Invite Professional</span>
             </button>
           </div>
@@ -221,7 +222,9 @@ export default function AdminProfessionals() {
                 {label}
               </span>
 
-              <span className={`text-xl font-black ${textColor}`}>{value}</span>
+              <span className={`text-xl font-black ${textColor}`}>
+                {value}
+              </span>
             </div>
           ))}
         </div>
@@ -230,7 +233,7 @@ export default function AdminProfessionals() {
         <div className="px-4 sm:px-6 lg:px-8 mb-4">
           <div className="relative max-w-sm">
             <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">
-              <IconSearch className="w-4 h-4" />
+              <Search className="w-4 h-4" />
             </span>
 
             <input
@@ -370,7 +373,7 @@ export default function AdminProfessionals() {
                             }}
                             className="flex items-center gap-1 px-3.5 py-1.5 rounded-btn text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-colors"
                           >
-                            <IconTrash className="w-3.5 h-3.5" />
+                            <Trash2 className="w-3.5 h-3.5" />
                             <span>Remove</span>
                           </button>
                         </td>
@@ -388,7 +391,6 @@ export default function AdminProfessionals() {
         </div>
 
         {/* ADD / INVITE MODAL */}
-
         <Modal
           isOpen={addOpen}
           onClose={() => setAddOpen(false)}
@@ -464,9 +466,7 @@ export default function AdminProfessionals() {
                   className="w-full px-3.5 py-2.5 rounded-btn border border-gray-200 bg-white/70 text-sm text-gray-800 outline-none focus:border-brand focus:ring-2 focus:ring-brand-light/60 font-medium"
                 >
                   <option value="Trainer">Trainer</option>
-
                   <option value="Nutritionist">Nutritionist</option>
-
                   <option value="OTHER">Other</option>
                 </select>
               </div>
@@ -561,7 +561,6 @@ export default function AdminProfessionals() {
         </Modal>
 
         {/* DELETE MODAL */}
-
         <Modal
           isOpen={deleteOpen}
           onClose={() => setDeleteOpen(false)}
@@ -570,7 +569,7 @@ export default function AdminProfessionals() {
         >
           <div className="text-center">
             <div className="w-14 h-14 rounded-full bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center mx-auto mb-3">
-              <IconTrash className="w-6 h-6" />
+              <Trash2 className="w-6 h-6" />
             </div>
 
             <p className="text-gray-800 font-bold text-base mb-1">
@@ -602,4 +601,4 @@ export default function AdminProfessionals() {
       </div>
     </AdminLayout>
   );
-}
+};

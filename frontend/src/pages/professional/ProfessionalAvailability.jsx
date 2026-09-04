@@ -1,12 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import ProfessionalLayout from "../../components/professional/ProfessionalLayout";
 import { httpClient } from "../../lib/http";
-import {
-  IconSave,
-  IconPlus,
-  IconTrash,
-  IconClock,
-} from "../../components/admin/Icons";
+import { Save, Plus, Trash2, Clock3 } from "lucide-react";
 
 const DAYS_OF_WEEK = [
   "Monday",
@@ -18,7 +13,6 @@ const DAYS_OF_WEEK = [
   "Sunday",
 ];
 
-// Convert 24-hour HH:MM to 12-hour "hh:mm AM/PM"
 function formatTo12Hour(time24) {
   if (!time24) return "";
 
@@ -36,7 +30,6 @@ function formatTo12Hour(time24) {
   return `${formattedH}:${m} ${modifier}`;
 }
 
-// Convert "09:00 AM" into minutes
 function convertToMinutes(time) {
   if (!time) return null;
 
@@ -142,7 +135,6 @@ export default function ProfessionalAvailability() {
     }
 
     const newStartMinutes = convertToMinutes(formatTo12Hour(start));
-
     const newEndMinutes = convertToMinutes(formatTo12Hour(end));
 
     if (newStartMinutes === null || newEndMinutes === null) {
@@ -151,22 +143,18 @@ export default function ProfessionalAvailability() {
     }
 
     const durationMinutes = newEndMinutes - newStartMinutes;
-
     const durationHours = durationMinutes / 60;
 
-    // Minimum session duration = 1 hour
     if (durationMinutes < 60) {
       showToast("Each session slot must be at least 1 hour long.", "error");
       return;
     }
 
-    // Maximum session duration = 3 hours
     if (durationMinutes > 180) {
       showToast("Each session slot cannot be longer than 3 hours.", "error");
       return;
     }
 
-    // Only complete 1, 2, or 3 hour slots are allowed
     if (!Number.isInteger(durationHours)) {
       showToast(
         "Session slots must be exactly 1, 2, or 3 hours long.",
@@ -176,15 +164,12 @@ export default function ProfessionalAvailability() {
     }
 
     const dayItem = availability.find((item) => item.day === day);
-
     const existingSlots = dayItem?.slots || [];
 
-    // Check overlap with existing slots
     const hasOverlap = existingSlots.some((slot) => {
       const [existingStart, existingEnd] = slot.split(" - ");
 
       const existingStartMinutes = convertToMinutes(existingStart);
-
       const existingEndMinutes = convertToMinutes(existingEnd);
 
       if (existingStartMinutes === null || existingEndMinutes === null) {
@@ -217,7 +202,6 @@ export default function ProfessionalAvailability() {
       }),
     );
 
-    // Reset picker to a default 1-hour slot
     setSlotInputs((prev) => ({
       ...prev,
       [day]: {
@@ -243,7 +227,6 @@ export default function ProfessionalAvailability() {
   };
 
   const handleSave = async () => {
-    // Final frontend validation before sending to backend
     for (const dayItem of availability) {
       for (const slot of dayItem.slots || []) {
         const parts = slot.split(" - ");
@@ -319,7 +302,6 @@ export default function ProfessionalAvailability() {
   return (
     <ProfessionalLayout>
       <div className="min-h-screen bg-transparent pb-16 font-sans">
-        {/* Toast */}
         {toast && (
           <div
             className={`fixed right-5 top-5 z-50 rounded-2xl border px-5 py-3 text-sm font-bold text-white shadow-card-hover transition-all ${
@@ -333,7 +315,6 @@ export default function ProfessionalAvailability() {
           </div>
         )}
 
-        {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-4 px-4 pb-4 pt-6 sm:px-6 sm:pt-8 lg:px-8">
           <div>
             <span className="inline-flex rounded-full border border-brand-light/70 bg-brand-light/40 px-3 py-1 text-xs font-extrabold uppercase tracking-widest text-brand-dark">
@@ -355,13 +336,12 @@ export default function ProfessionalAvailability() {
             disabled={saving}
             className="flex items-center gap-2 rounded-btn bg-gray-800 px-6 py-3 text-sm font-bold text-white shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:bg-gray-700 hover:shadow-card-hover disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
           >
-            <IconSave className="h-4 w-4" />
+            <Save className="h-4 w-4" />
 
             <span>{saving ? "Saving..." : "Save Availability Schedule"}</span>
           </button>
         </div>
 
-        {/* Duration Rule */}
         <div className="mb-5 max-w-4xl px-4 sm:px-6 lg:px-8">
           <div className="rounded-card border border-brand-light/70 bg-brand-light/25 px-4 py-3">
             <p className="text-xs font-extrabold text-brand-dark">
@@ -369,8 +349,8 @@ export default function ProfessionalAvailability() {
             </p>
 
             <p className="mt-1 text-xs font-medium leading-relaxed text-gray-600">
-              Each availability slot must be exactly 1, 2, or 3 hours long. For
-              example: 9:00 AM - 10:00 AM or 1:00 PM - 4:00 PM.
+              Each availability slot must be exactly 1, 2, or 3 hours long.
+              For example: 9:00 AM - 10:00 AM or 1:00 PM - 4:00 PM.
             </p>
           </div>
         </div>
@@ -383,7 +363,9 @@ export default function ProfessionalAvailability() {
           <div className="max-w-4xl space-y-4 px-4 sm:px-6 lg:px-8">
             <div className="grid gap-4">
               {DAYS_OF_WEEK.map((day) => {
-                const dayItem = availability.find((item) => item.day === day);
+                const dayItem = availability.find(
+                  (item) => item.day === day,
+                );
 
                 const isActive = !!dayItem;
 
@@ -401,7 +383,6 @@ export default function ProfessionalAvailability() {
                         : "border-gray-200 bg-white/60 opacity-75"
                     }`}
                   >
-                    {/* Day Header */}
                     <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
                       <div className="flex items-center gap-3">
                         <input
@@ -435,7 +416,6 @@ export default function ProfessionalAvailability() {
 
                     {isActive && (
                       <div className="space-y-3 border-t border-brand-light/30 pt-3">
-                        {/* Current Slots */}
                         <div className="flex flex-wrap gap-2">
                           {dayItem.slots && dayItem.slots.length > 0 ? (
                             dayItem.slots.map((slot, sIdx) => (
@@ -443,30 +423,31 @@ export default function ProfessionalAvailability() {
                                 key={sIdx}
                                 className="inline-flex items-center gap-2 rounded-xl border border-brand-light/60 bg-brand-light/20 px-3 py-1.5 text-xs font-bold text-gray-800"
                               >
-                                <IconClock className="h-3.5 w-3.5 text-brand-dark" />
+                                <Clock3 className="h-3.5 w-3.5 text-brand-dark" />
 
                                 {slot}
 
                                 <button
                                   type="button"
-                                  onClick={() => handleRemoveSlot(day, sIdx)}
+                                  onClick={() =>
+                                    handleRemoveSlot(day, sIdx)
+                                  }
                                   className="ml-1 text-gray-400 transition-colors hover:text-rose-600"
                                   aria-label="Remove slot"
                                 >
-                                  <IconTrash className="h-3.5 w-3.5" />
+                                  <Trash2 className="h-3.5 w-3.5" />
                                 </button>
                               </span>
                             ))
                           ) : (
                             <p className="text-xs font-medium text-gray-400">
-                              No time slots configured for {day}. Add one below.
+                              No time slots configured for {day}. Add one
+                              below.
                             </p>
                           )}
                         </div>
 
-                        {/* Add New Slot */}
                         <div className="flex max-w-lg flex-wrap items-center gap-3 rounded-card border border-brand-light/40 bg-brand-light/10 p-3">
-                          {/* Start */}
                           <div>
                             <label className="mb-0.5 block text-[10px] font-bold uppercase text-gray-500">
                               Start
@@ -476,13 +457,16 @@ export default function ProfessionalAvailability() {
                               type="time"
                               value={input.start}
                               onChange={(e) =>
-                                handleTimeChange(day, "start", e.target.value)
+                                handleTimeChange(
+                                  day,
+                                  "start",
+                                  e.target.value,
+                                )
                               }
                               className="rounded-xl border border-gray-200 bg-white/80 px-2.5 py-1.5 text-xs font-bold text-gray-800 outline-none transition-all focus:border-brand focus:ring-2 focus:ring-brand-light/60"
                             />
                           </div>
 
-                          {/* End */}
                           <div>
                             <label className="mb-0.5 block text-[10px] font-bold uppercase text-gray-500">
                               End
@@ -492,20 +476,23 @@ export default function ProfessionalAvailability() {
                               type="time"
                               value={input.end}
                               onChange={(e) =>
-                                handleTimeChange(day, "end", e.target.value)
+                                handleTimeChange(
+                                  day,
+                                  "end",
+                                  e.target.value,
+                                )
                               }
                               className="rounded-xl border border-gray-200 bg-white/80 px-2.5 py-1.5 text-xs font-bold text-gray-800 outline-none transition-all focus:border-brand focus:ring-2 focus:ring-brand-light/60"
                             />
                           </div>
 
-                          {/* Add */}
                           <div className="pt-3.5">
                             <button
                               type="button"
                               onClick={() => handleAddSlot(day)}
                               className="flex shrink-0 items-center gap-1 rounded-xl border border-brand-light bg-brand-light/35 px-3.5 py-2 text-xs font-bold text-brand-dark transition-all duration-200 hover:-translate-y-0.5 hover:bg-brand-light/50"
                             >
-                              <IconPlus className="h-3.5 w-3.5" />
+                              <Plus className="h-3.5 w-3.5" />
                               Add Slot
                             </button>
                           </div>
