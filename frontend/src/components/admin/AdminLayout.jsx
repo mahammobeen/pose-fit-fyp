@@ -34,28 +34,54 @@ const NAV_ITEMS = [
 
 export default function AdminLayout({ children }) {
   const navigate = useNavigate();
-  const user = getUser();
+
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // =====================================================
+  // GET USER
+  // =====================================================
+
+  const user = getUser();
+
+  // =====================================================
+  // DESKTOP SIDEBAR STATE
+  // =====================================================
 
   const [sidebarOpen, setSidebarOpen] = useState(() => {
     const savedState = localStorage.getItem("admin-sidebar-open");
+
     if (savedState === null) return true;
+
     return savedState === "true";
   });
 
   const toggleSidebar = () => {
     setSidebarOpen((previousState) => {
       const newState = !previousState;
+
       localStorage.setItem("admin-sidebar-open", String(newState));
+
       return newState;
     });
   };
 
+  // =====================================================
+  // LOGOUT
+  // =====================================================
+
   const handleLogout = () => {
     deleteToken();
+
     localStorage.removeItem("pose-fit-user");
-    navigate("/admin/login");
+
+    navigate("/admin/login", {
+      replace: true,
+    });
   };
+
+  // =====================================================
+  // USER NAME
+  // =====================================================
 
   const getUserName = () => {
     if (user?.name) return user.name;
@@ -106,6 +132,7 @@ export default function AdminLayout({ children }) {
         }`}
       >
         {/* Mobile Header */}
+
         <div className="dashboard-mobile-header border-brand-light/50">
           <div className="dashboard-brand-wrapper gap-3">
             <div className="dashboard-logo border border-brand-light/60 bg-white/80 shadow-card">
@@ -117,10 +144,10 @@ export default function AdminLayout({ children }) {
             </div>
 
             <div>
-              <h2 className="dashboard-brand-name">
+              <p className="dashboard-brand-name">
                 Pose
                 <span className="dashboard-brand-highlight">Fit</span>
-              </h2>
+              </p>
 
               <p className="dashboard-portal-name">Admin Control</p>
             </div>
@@ -137,6 +164,7 @@ export default function AdminLayout({ children }) {
         </div>
 
         {/* Mobile Navigation */}
+
         <nav className="dashboard-nav px-4">
           <p className="dashboard-menu-title">Admin Menu</p>
 
@@ -170,9 +198,15 @@ export default function AdminLayout({ children }) {
           ))}
         </nav>
 
-        {/* Mobile Footer */}
+        {/* =====================================================
+            MOBILE FOOTER
+            SAME AS USERLAYOUT
+        ===================================================== */}
+
         <div className="dashboard-sidebar-footer border-brand-light/50 bg-white/30 p-4">
-          <div className="dashboard-user-wrapper gap-3">
+          {/* User Information */}
+
+          <div className="dashboard-user-wrapper mb-3 gap-3">
             <div className="dashboard-logo h-10 w-10 border border-brand-light/60 bg-white/80 shadow-card">
               <img
                 src={posefit_logo}
@@ -181,21 +215,24 @@ export default function AdminLayout({ children }) {
               />
             </div>
 
-            <div className="min-w-0 flex-1">
+            <div className="min-w-0 flex-1 overflow-hidden">
               <p className="dashboard-user-name">{getUserName()}</p>
 
               <p className="dashboard-user-email">{user?.email || ""}</p>
             </div>
-
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="dashboard-logout p-2"
-              title="Logout"
-            >
-              <IconLogOut className="h-4 w-4" />
-            </button>
           </div>
+
+          {/* Logout */}
+
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="dashboard-logout w-full justify-center gap-2 px-4 py-2"
+          >
+            <IconLogOut className="h-3.5 w-3.5 shrink-0" />
+
+            <span>Logout</span>
+          </button>
         </div>
       </aside>
 
@@ -209,6 +246,7 @@ export default function AdminLayout({ children }) {
         }`}
       >
         {/* Sidebar Header */}
+
         <div
           className={`dashboard-sidebar-header border-brand-light/40 ${
             sidebarOpen ? "h-20 px-5" : "h-20 px-3"
@@ -229,10 +267,10 @@ export default function AdminLayout({ children }) {
 
             {sidebarOpen && (
               <div className="min-w-0">
-                <h2 className="dashboard-brand-name">
+                <p className="dashboard-brand-name">
                   Pose
                   <span className="dashboard-brand-highlight">Fit</span>
-                </h2>
+                </p>
 
                 <p className="dashboard-portal-name">Admin Control</p>
               </div>
@@ -240,6 +278,7 @@ export default function AdminLayout({ children }) {
           </div>
 
           {/* Sidebar Toggle */}
+
           <button
             type="button"
             onClick={toggleSidebar}
@@ -255,6 +294,7 @@ export default function AdminLayout({ children }) {
         </div>
 
         {/* Desktop Navigation */}
+
         <nav className={`dashboard-nav ${sidebarOpen ? "px-3" : "px-2"}`}>
           {sidebarOpen && <p className="dashboard-menu-title">Admin Menu</p>}
 
@@ -292,19 +332,24 @@ export default function AdminLayout({ children }) {
           ))}
         </nav>
 
-        {/* Desktop Sidebar Footer */}
+        {/* =====================================================
+            DESKTOP FOOTER
+            SAME AS USERLAYOUT
+        ===================================================== */}
+
         <div
           className={`dashboard-sidebar-footer border-brand-light/50 bg-white/30 ${
             sidebarOpen ? "p-3" : "p-2"
           }`}
         >
+          {/* User Information */}
+
           <div
-            className={`dashboard-user-wrapper ${
-              sidebarOpen ? "gap-3 px-2 py-2" : "justify-center py-2"
+            className={`dashboard-user-wrapper transition-all duration-300 ${
+              sidebarOpen ? "mb-3 gap-3 px-1" : "mb-2 justify-center"
             }`}
           >
-            {/* PoseFit Logo */}
-            <div className="dashboard-logo border border-brand-light/60 bg-white/80 shadow-card">
+            <div className="dashboard-logo h-10 w-10 border border-brand-light/60 bg-white/80 shadow-card">
               <img
                 src={posefit_logo}
                 alt="PoseFit"
@@ -313,24 +358,30 @@ export default function AdminLayout({ children }) {
             </div>
 
             {sidebarOpen && (
-              <>
-                <div className="min-w-0 flex-1">
-                  <p className="dashboard-user-name">{getUserName()}</p>
+              <div className="min-w-0 flex-1 overflow-hidden">
+                <p className="dashboard-user-name">{getUserName()}</p>
 
-                  <p className="dashboard-user-email">{user?.email || ""}</p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  className="dashboard-logout p-2"
-                  title="Logout"
-                >
-                  <IconLogOut className="h-4 w-4" />
-                </button>
-              </>
+                <p className="dashboard-user-email">{user?.email || ""}</p>
+              </div>
             )}
           </div>
+
+          {/* Logout Button */}
+
+          <button
+            type="button"
+            onClick={handleLogout}
+            title={!sidebarOpen ? "Logout" : ""}
+            className={`dashboard-logout ${
+              sidebarOpen
+                ? "w-full justify-center gap-2 px-4 py-2"
+                : "w-full justify-center py-2"
+            }`}
+          >
+            <IconLogOut className="h-3.5 w-3.5 shrink-0" />
+
+            {sidebarOpen && <span>Logout</span>}
+          </button>
         </div>
       </aside>
 
@@ -340,6 +391,7 @@ export default function AdminLayout({ children }) {
 
       <div className="dashboard-main-wrapper relative z-10">
         {/* Mobile Header */}
+
         <header className="dashboard-header border-brand-light/50 bg-surface/80 backdrop-blur-xl lg:hidden">
           <div className="flex min-w-0 items-center gap-3">
             <button
@@ -364,11 +416,13 @@ export default function AdminLayout({ children }) {
             className="dashboard-mobile-logout"
           >
             <IconLogOut className="h-4 w-4" />
+
             <span>Logout</span>
           </button>
         </header>
 
         {/* Dashboard Content */}
+
         <main className="dashboard-content bg-transparent">{children}</main>
       </div>
     </div>

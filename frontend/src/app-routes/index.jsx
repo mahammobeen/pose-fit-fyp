@@ -38,6 +38,7 @@ import PrivateRoute from "./private-route";
 import ForgotPassword from "../pages/user/ForgotPassword";
 import ResetPassword from "../pages/user/ResetPassword";
 import WorkoutSession from "../pages/user/WorkoutSession";
+import GuestProfessionals from "../pages/user/GuestProfessional";
 
 const AppRoutes = () => {
   return (
@@ -60,6 +61,7 @@ const AppRoutes = () => {
         <Route path="/forgot-password" element={<ForgotPassword />} />
 
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/guest-professional" element={<GuestProfessionals />} />
 
         {/* =====================================================
             USER PROTECTED ROUTES

@@ -176,10 +176,7 @@ export default function UserLogin() {
         <div className="rounded-card border border-brand-light/70 bg-surface/80 p-8 shadow-card-hover backdrop-blur-xl sm:p-10">
           {/* Logo */}
           <div className="mb-8 flex justify-center">
-            <Link
-              to="/"
-              className="flex h-16 w-16 items-center justify-center rounded-card bg-white/70 p-2 shadow-card transition-transform duration-300 hover:-translate-y-1"
-            >
+            <Link className="flex h-16 w-16 items-center justify-center rounded-card bg-white/70 p-2 shadow-card transition-transform duration-300 hover:-translate-y-1">
               <img
                 src={posefit_logo}
                 alt="PoseFit Logo"
