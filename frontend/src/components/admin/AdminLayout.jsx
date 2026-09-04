@@ -57,9 +57,11 @@ const NAV_ITEMS = [
 
 export default function AdminLayout({ children }) {
   const navigate = useNavigate();
+
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Desktop sidebar state
+  const user = getUser();
+
   const [sidebarOpen, setSidebarOpen] = useState(() => {
     const savedState = localStorage.getItem("admin-sidebar-open");
 
@@ -78,31 +80,12 @@ export default function AdminLayout({ children }) {
     });
   };
 
-  // Get user from local storage
-  const getStoredUser = () => {
-    try {
-      const storedUser = localStorage.getItem("pose-fit-user");
-
-      if (!storedUser) return null;
-
-      return JSON.parse(storedUser);
-    } catch (error) {
-      console.error("Failed to read user from localStorage:", error);
-
-      return null;
-    }
-  };
-
-  const user = getStoredUser();
-
-  // Logout
   const handleLogout = () => {
-    localStorage.removeItem("pose-fit");
-    localStorage.removeItem("pose-fit-user");
-    localStorage.removeItem("posefit-token");
-    localStorage.removeItem("posefit-user");
+    deleteToken();
 
-    navigate("/user/login", {
+    localStorage.removeItem("pose-fit-user");
+
+    navigate("/admin/login", {
       replace: true,
     });
   };
@@ -119,8 +102,6 @@ export default function AdminLayout({ children }) {
 
   return (
     <div className="relative flex h-screen overflow-hidden bg-surface font-sans">
-      {/* Background theme */}
-
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -left-32 -top-32 h-80 w-80 rounded-full bg-brand-light/35 blur-3xl" />
 
@@ -131,8 +112,6 @@ export default function AdminLayout({ children }) {
         <div className="absolute left-[45%] top-[20%] h-72 w-72 rounded-full bg-white/40 blur-3xl" />
       </div>
 
-      {/* Mobile backdrop */}
-
       {mobileMenuOpen && (
         <div
           onClick={() => setMobileMenuOpen(false)}
@@ -140,15 +119,11 @@ export default function AdminLayout({ children }) {
         />
       )}
 
-      {/* Mobile drawer */}
-
       <div
         className={`dashboard-mobile-drawer border-r border-brand-light/50 bg-surface/95 backdrop-blur-xl ${
           mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        {/* Mobile drawer header */}
-
         <div className="dashboard-mobile-header border-brand-light/50">
           <div className="dashboard-brand-wrapper gap-3">
             <div className="dashboard-logo border border-brand-light/60 bg-white/80 shadow-card">
@@ -178,8 +153,6 @@ export default function AdminLayout({ children }) {
             <X className="h-5 w-5" />
           </button>
         </div>
-
-        {/* Mobile navigation links */}
 
         <nav className="dashboard-nav px-4">
           <p className="dashboard-menu-title">Admin Menu</p>
@@ -215,8 +188,6 @@ export default function AdminLayout({ children }) {
           ))}
         </nav>
 
-        {/* Mobile drawer footer */}
-
         <div className="dashboard-sidebar-footer border-brand-light/50 bg-white/30 p-4">
           <div className="dashboard-user-wrapper mb-3 gap-3">
             <div className="dashboard-logo h-10 w-10 border border-brand-light/60 bg-white/80 shadow-card">
@@ -248,29 +219,23 @@ export default function AdminLayout({ children }) {
         </div>
       </div>
 
-      {/* Desktop sidebar */}
-
       <aside
         className={`dashboard-sidebar relative z-10 border-r border-brand-light/50 bg-surface/85 backdrop-blur-xl ${
           sidebarOpen ? "w-64" : "w-20"
         }`}
       >
-        {/* Header */}
-
         <div
           className={`dashboard-sidebar-header border-brand-light/40 ${
             sidebarOpen ? "h-24 px-6 py-6" : "h-24 px-2 py-3"
           }`}
         >
-          {/* Sidebar toggle */}
-
           <button
             type="button"
             onClick={toggleSidebar}
-            title={sidebarOpen ? "Close sidebar" : "Open sidebar"}
             className={`dashboard-sidebar-toggle ${
-              sidebarOpen ? "right-3" : "right-1"
+              sidebarOpen ? "right-3" : "left-1/2 -translate-x-1/2"
             }`}
+            title={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
           >
             {sidebarOpen ? (
               <PanelLeft className="h-[17px] w-[17px]" />
@@ -278,8 +243,6 @@ export default function AdminLayout({ children }) {
               <PanelRight className="h-[17px] w-[17px]" />
             )}
           </button>
-
-          {/* Brand */}
 
           <div
             className={`dashboard-brand-wrapper ${
@@ -295,7 +258,7 @@ export default function AdminLayout({ children }) {
             </div>
 
             {sidebarOpen && (
-              <div className="min-w-0 overflow-hidden whitespace-nowrap">
+              <div className="min-w-0">
                 <p className="dashboard-brand-name">
                   Pose
                   <span className="dashboard-brand-highlight">Fit</span>
@@ -307,9 +270,11 @@ export default function AdminLayout({ children }) {
           </div>
         </div>
 
-        {/* Desktop navigation */}
-
-        <nav className={`dashboard-nav ${sidebarOpen ? "px-3" : "px-2"}`}>
+        <nav
+          className={`dashboard-nav ${
+            sidebarOpen ? "px-3" : "px-2"
+          }`}
+        >
           {sidebarOpen && (
             <p className="dashboard-menu-title">Admin Menu</p>
           )}
@@ -353,8 +318,6 @@ export default function AdminLayout({ children }) {
           ))}
         </nav>
 
-        {/* Desktop footer */}
-
         <div
           className={`dashboard-sidebar-footer border-brand-light/50 bg-white/30 ${
             sidebarOpen ? "p-3" : "p-2"
@@ -377,7 +340,9 @@ export default function AdminLayout({ children }) {
 
             {sidebarOpen && (
               <div className="min-w-0 flex-1 overflow-hidden">
-                <p className="dashboard-user-name">{getUserName()}</p>
+                <p className="dashboard-user-name">
+                  {getUserName()}
+                </p>
 
                 <p className="dashboard-user-email">
                   {user?.email || ""}
@@ -403,11 +368,7 @@ export default function AdminLayout({ children }) {
         </div>
       </aside>
 
-      {/* Main area */}
-
       <div className="dashboard-main-wrapper relative z-10">
-        {/* Mobile header */}
-
         <header className="dashboard-header border-brand-light/50 bg-surface/80 backdrop-blur-xl lg:hidden">
           <div className="flex min-w-0 items-center gap-3">
             <button
@@ -436,8 +397,6 @@ export default function AdminLayout({ children }) {
             <span>Logout</span>
           </button>
         </header>
-
-        {/* Main content */}
 
         <main className="dashboard-content bg-transparent">
           {children}

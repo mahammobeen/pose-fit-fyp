@@ -476,7 +476,7 @@ export default function LandingPage() {
             {/* BROWSE BUTTON */}
             <div className="mt-9 flex justify-center">
               <Link
-                to="/professionals"
+                to="/guest-professional"
                 className="btn-primary w-full max-w-xs text-center sm:w-auto"
               >
                 Browse Professionals
