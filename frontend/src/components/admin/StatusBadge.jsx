@@ -3,8 +3,7 @@ const STATUS_STYLES = {
   completed:            { bg: "bg-emerald-50",  text: "text-emerald-800", border: "border-emerald-200/60", dot: "bg-emerald-400",  label: "Completed"  },
   pending:              { bg: "bg-amber-50",    text: "text-amber-800",   border: "border-amber-200/60",   dot: "bg-amber-400",    label: "Pending"    },
   failed:               { bg: "bg-rose-50",     text: "text-rose-800",    border: "border-rose-200/60",    dot: "bg-rose-400",     label: "Failed"     },
-  refunded:             { bg: "bg-sky-50",      text: "text-sky-800",     border: "border-sky-200/60",     dot: "bg-sky-400",      label: "Refunded"   },
-  cancelled:            { bg: "bg-stone-100",   text: "text-stone-700",   border: "border-stone-200/60",   dot: "bg-stone-400",    label: "Cancelled"  },
+
 
   // Professional statuses flow
   invited:              { bg: "bg-blue-50",     text: "text-blue-800",    border: "border-blue-200/60",    dot: "bg-blue-400",     label: "Invited"    },
