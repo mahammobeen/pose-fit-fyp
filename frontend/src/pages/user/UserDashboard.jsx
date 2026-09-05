@@ -2,20 +2,25 @@ import {
   Flame,
   Droplets,
   Target,
-  TrendingUp,
   Lock,
   Activity,
   Scale,
   HeartPulse,
-  Moon,
   X,
+  AlertCircle,
 } from "lucide-react";
 
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
 import UserLayout from "../../components/user/UserLayout";
 import { httpClient } from "../../lib/http";
+
+import breakfastImg from "../../assets/breakfast.jpg";
+import lunchImg from "../../assets/lunch.jpg";
+import dinnerImg from "../../assets/dinner.jpg";
+import snackImg from "../../assets/snack.jpg";
 
 // =====================================================
 // DUMMY DIET DATA
@@ -25,8 +30,7 @@ const dietData = [
   {
     id: 1,
     name: "Breakfast",
-    image:
-      "https://images.unsplash.com/photo-1494390248081-4e521a5940db?q=80&w=2606&auto=format&fit=crop",
+    image: breakfastImg,
     calories: "350 kcal",
     time: "8:00 AM",
     status: "Scheduled",
@@ -34,8 +38,7 @@ const dietData = [
   {
     id: 2,
     name: "Lunch",
-    image:
-      "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=2680&auto=format&fit=crop",
+    image: lunchImg,
     calories: "600 kcal",
     time: "1:30 PM",
     status: "Scheduled",
@@ -43,8 +46,7 @@ const dietData = [
   {
     id: 3,
     name: "Snack",
-    image:
-      "https://images.unsplash.com/photo-1543339308-43e59d6b73a6?q=80&w=2670&auto=format&fit=crop",
+    image: snackImg,
     calories: "200 kcal",
     time: "4:00 PM",
     status: "Scheduled",
@@ -52,8 +54,7 @@ const dietData = [
   {
     id: 4,
     name: "Dinner",
-    image:
-      "https://images.unsplash.com/photo-1490645935967-10de6ba17061?q=80&w=1153&auto=format&fit=crop",
+    image: dinnerImg,
     calories: "500 kcal",
     time: "8:30 PM",
     status: "Scheduled",
@@ -286,6 +287,40 @@ export default function UserDashboard() {
     };
 
     fetchMetrics();
+  }, [userId]);
+
+  // ===================================================
+  // FETCH TODAY'S DIET PLAN
+  // ===================================================
+
+  const [todayDiet, setTodayDiet] = useState(null);
+
+  useEffect(() => {
+    const fetchTodayDiet = async () => {
+      if (!userId) return;
+      try {
+        const res = await httpClient.get(`/user/diet-plan/${userId}/today`);
+        if (res.data?.success) {
+          setTodayDiet(res.data);
+        }
+      } catch (err) {
+        if (err?.response?.status !== 404) {
+          console.error("Fetch today diet error:", err);
+        }
+        setTodayDiet(null);
+      }
+    };
+
+    fetchTodayDiet();
+
+    const handleDietUpdated = () => {
+      fetchTodayDiet();
+    };
+
+    window.addEventListener("diet-plan-updated", handleDietUpdated);
+    return () => {
+      window.removeEventListener("diet-plan-updated", handleDietUpdated);
+    };
   }, [userId]);
 
   // ===================================================
@@ -575,83 +610,10 @@ export default function UserDashboard() {
                 {metrics?.activityLevel ?? "--"}
               </p>
             </div>
-
-            <div className="bg-brand-light/15 rounded-btn p-4 border border-brand-light/30">
-              <p className="text-xs text-gray-400 mb-1">Diet Preference</p>
-
-              <p className="font-bold text-gray-800 capitalize">
-                {metrics?.dietPref ?? "--"}
-              </p>
-            </div>
-
-            <div className="bg-accent-blue/15 rounded-btn p-4 border border-accent-blue/30">
-              <p className="text-xs text-gray-400 mb-1">Diabetes</p>
-
-              <p className="font-bold text-gray-800 capitalize">
-                {metrics?.diabetes ? "Yes" : "No"}
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-4 bg-accent-orange/10 rounded-btn p-4 border border-accent-orange/30">
-            <p className="text-xs text-gray-400 mb-1">Nut Allergy</p>
-
-            <p className="font-bold text-gray-800">
-              {metrics?.allergiesNuts ? "Yes" : "No"}
-            </p>
           </div>
         </section>
 
-        {/* MACROS */}
-        <section className="card bg-surface/85 border-brand-light/40 p-6 md:p-8">
-          <div className="mb-6">
-            <h2 className="text-2xl font-extrabold text-gray-800">
-              Daily Macro Targets
-            </h2>
 
-            <p className="text-gray-500 text-sm mt-1">
-              Your estimated daily macronutrient requirements.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            <div className="bg-brand-light/25 rounded-btn p-6 border border-brand-light/40">
-              <p className="text-xs font-extrabold uppercase text-brand-dark">
-                Protein
-              </p>
-
-              <p className="text-3xl font-extrabold text-gray-800 mt-2">
-                {metrics?.macros?.protein
-                  ? Math.round(metrics.macros.protein)
-                  : "--"}{" "}
-                g
-              </p>
-            </div>
-
-            <div className="bg-accent-blue/30 rounded-btn p-6 border border-accent-blue/50">
-              <p className="text-xs font-extrabold uppercase text-blue-700">
-                Carbs
-              </p>
-
-              <p className="text-3xl font-extrabold text-gray-800 mt-2">
-                {metrics?.macros?.carbs
-                  ? Math.round(metrics.macros.carbs)
-                  : "--"}{" "}
-                g
-              </p>
-            </div>
-
-            <div className="bg-accent-orange/35 rounded-btn p-6 border border-accent-orange/50">
-              <p className="text-xs font-extrabold uppercase text-accent-orange-dark">
-                Fat
-              </p>
-
-              <p className="text-3xl font-extrabold text-gray-800 mt-2">
-                {metrics?.macros?.fat ? Math.round(metrics.macros.fat) : "--"} g
-              </p>
-            </div>
-          </div>
-        </section>
 
         {/* DAILY HYDRATION */}
         <section>
@@ -725,217 +687,206 @@ export default function UserDashboard() {
           </div>
         </section>
 
-        {/* WEEKLY ACTIVITY + STREAK */}
-        <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="card bg-surface/85 border-accent-blue/40 p-8">
-            <div className="flex items-center gap-3 mb-5">
-              <div className="p-3 bg-accent-blue/40 rounded-btn">
-                <TrendingUp className="w-5 h-5 text-blue-600" />
-              </div>
 
-              <div>
-                <h2 className="text-xl font-extrabold text-gray-800">
-                  Weekly Activity
-                </h2>
-
-                <p className="text-xs text-gray-400">
-                  Workout activity tracking
-                </p>
-              </div>
-            </div>
-
-            <div className="py-8 text-center">
-              <p className="text-gray-400 text-sm">
-                Weekly workout activity is not available yet.
-              </p>
-
-              <p className="text-xs text-gray-400 mt-2">
-                It will be connected with your workout/posture tracking system.
-              </p>
-            </div>
-          </div>
-
-          <div className="card bg-surface/85 border-accent-orange/40 p-8">
-            <div className="flex items-center gap-3 mb-5">
-              <div className="p-3 bg-accent-orange/40 rounded-btn">
-                <Flame className="w-5 h-5 text-accent-orange-dark" />
-              </div>
-
-              <div>
-                <h2 className="text-xl font-extrabold text-gray-800">
-                  Workout Streak
-                </h2>
-
-                <p className="text-xs text-gray-400">Your consistency</p>
-              </div>
-            </div>
-
-            <div className="py-8 text-center">
-              <p className="text-4xl font-extrabold text-gray-800">--</p>
-
-              <p className="text-sm text-gray-400 mt-2">
-                Streak tracking will be available once workout activity is
-                recorded.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* HEALTH TRACKING */}
-        <section>
-          <div className="mb-6">
-            <h2 className="text-2xl font-extrabold text-gray-800">
-              Health Tracking
-            </h2>
-
-            <p className="text-gray-500 text-sm mt-1">
-              These features will be connected with future tracking systems.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="card bg-surface/85 border-accent-blue/40">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-3 bg-accent-blue/40 rounded-btn">
-                    <Droplets className="w-5 h-5 text-blue-500" />
-                  </div>
-
-                  <div>
-                    <h3 className="font-bold text-gray-800">Water Intake</h3>
-
-                    <p className="text-xs text-gray-400">Recommended today</p>
-                  </div>
-                </div>
-
-                <span className="text-xs font-bold px-3 py-1 rounded-full bg-accent-blue/40 text-blue-700 border border-accent-blue/60">
-                  Recommended
-                </span>
-              </div>
-
-              <div className="mt-6">
-                <p className="text-3xl font-extrabold text-gray-800">
-                  {metrics?.waterIntake?.liters ?? "--"} L
-                </p>
-
-                <p className="text-sm text-gray-400 mt-2">
-                  Approximately{" "}
-                  <span className="font-bold text-gray-700">
-                    {metrics?.waterIntake?.glasses ?? "--"}
-                  </span>{" "}
-                  glasses per day.
-                </p>
-              </div>
-            </div>
-
-            <div className="card bg-surface/85 border-brand-light/40">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-3 bg-brand-light/30 rounded-btn">
-                    <Moon className="w-5 h-5 text-brand-dark" />
-                  </div>
-
-                  <div>
-                    <h3 className="font-bold text-gray-800">Sleep Quality</h3>
-
-                    <p className="text-xs text-gray-400">Today's sleep</p>
-                  </div>
-                </div>
-
-                <span className="text-xs font-bold px-3 py-1 rounded-full bg-stone-100 text-stone-500 border border-stone-200">
-                  Not Tracked
-                </span>
-              </div>
-
-              <div className="mt-6">
-                <p className="text-3xl font-extrabold text-gray-800">--</p>
-
-                <p className="text-sm text-gray-400 mt-2">
-                  Sleep data will be added with sleep tracking.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
 
         {/* TODAY'S NUTRITION */}
         <section>
-          <div className="mb-8">
-            <h2 className="text-2xl font-extrabold text-gray-800 uppercase">
-              Today's Nutrition
-            </h2>
+          <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h2 className="text-2xl font-extrabold text-gray-800 uppercase">
+                Today's Nutrition
+              </h2>
 
-            <p className="text-gray-500 text-sm mt-1">
-              Your personalized meals will appear here.
-            </p>
+              <p className="text-gray-500 text-sm mt-1">
+                {todayDiet?.isExpired
+                  ? "Your 3-day diet plan has expired. Please regenerate your plan."
+                  : todayDiet?.meals
+                  ? `Day ${todayDiet.currentDay} Meals • Target: ${Math.round(todayDiet.targetDailyCalories || 0)} kcal`
+                  : "Your personalized meals will appear here."}
+              </p>
+            </div>
+
+            <Link
+              to="/user/dietplan"
+              className="inline-flex items-center gap-1.5 rounded-btn bg-brand-light/30 text-brand-dark hover:bg-brand-light/50 border border-brand-light/40 px-4 py-2 text-xs font-bold transition-all"
+            >
+              {todayDiet?.isExpired
+                ? "Regenerate Plan"
+                : todayDiet?.meals
+                ? "Full 3-Day Plan"
+                : "Create Diet Plan"}
+            </Link>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {dietData.map((item) => (
-              <div
-                key={item.id}
-                className="group bg-surface/90 rounded-card border border-brand-light/30 shadow-card overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover"
-              >
-                <div className="relative h-48 overflow-hidden">
-                  <img
-                    src={item.image}
-                    alt={item.name}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-
-                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/30">
-                    <Lock className="h-10 w-10 text-white mb-2" />
-
-                    <p className="text-white text-xs font-semibold">
-                      Diet plan coming soon
-                    </p>
-                  </div>
-
-                  <div className="absolute top-4 left-4">
-                    <span className="bg-surface/90 px-3 py-1.5 rounded-btn text-[10px] font-extrabold uppercase text-gray-800">
-                      {item.time}
-                    </span>
-                  </div>
-
-                  <div className="absolute bottom-4 left-4">
-                    <h3 className="font-bold text-white text-xl">
-                      {item.name}
-                    </h3>
-                  </div>
-                </div>
-
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <span className="block text-[10px] uppercase font-bold text-gray-400">
-                        Calories
-                      </span>
-
-                      <span className="font-bold text-gray-800">
-                        {item.calories}
-                      </span>
-                    </div>
-
-                    <div className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-brand-light/20 text-gray-500 border border-brand-light/30">
-                      {item.status}
-                    </div>
-                  </div>
-
-                  <button
-                    disabled
-                    className="w-full py-3 rounded-btn text-xs font-bold bg-stone-50/80 text-gray-400 border border-brand-light/30 cursor-not-allowed"
-                  >
-                    View Details
-                  </button>
-                </div>
+          {todayDiet?.isExpired ? (
+            <div className="card bg-amber-50/80 border-amber-200 p-6 md:p-8 text-center space-y-3">
+              <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center text-amber-700 mx-auto">
+                <AlertCircle className="w-6 h-6" />
               </div>
-            ))}
-          </div>
+              <h3 className="text-lg font-extrabold text-amber-900">
+                Your 3-Day Diet Plan Has Expired
+              </h3>
+              <p className="text-sm text-amber-700 max-w-md mx-auto">
+                You have completed Day 3 of your personalized meal plan. Generate a new plan to continue tracking your meals!
+              </p>
+              <div className="pt-2">
+                <Link
+                  to="/user/dietplan"
+                  className="inline-flex items-center gap-2 rounded-btn bg-amber-800 hover:bg-amber-900 text-white text-xs font-bold px-5 py-3 shadow-card transition-all"
+                >
+                  Regenerate Plan Now
+                </Link>
+              </div>
+            </div>
+          ) : todayDiet?.meals ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[
+                { key: "breakfast", time: "8:00 AM", img: dietData[0].image },
+                { key: "lunch", time: "1:30 PM", img: dietData[1].image },
+                { key: "snack", time: "4:30 PM", img: dietData[2].image },
+                { key: "dinner", time: "8:30 PM", img: dietData[3].image },
+              ].map(({ key, time, img }) => {
+                const slot = todayDiet.meals[key];
+                if (!slot) return null;
+                const slotTitle = slot.slot_name || key.toUpperCase();
+                const firstDish = slot.items?.[0];
+                const dishLabel = firstDish
+                  ? `${firstDish.dish_name} (${firstDish.portion_grams}g)`
+                  : "Recommended dish";
+                const extraDishes = (slot.items?.length || 0) - 1;
 
-          <div className="mt-6 text-center text-sm text-gray-500">
-            Your personalized diet plan will appear here once it has been
-            generated.
-          </div>
+                return (
+                  <div
+                    key={key}
+                    className="group bg-surface/90 rounded-card border border-brand-light/30 shadow-card overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover flex flex-col justify-between"
+                  >
+                    <div className="relative h-48 overflow-hidden">
+                      <img
+                        src={img}
+                        alt={slotTitle}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+
+                      <div className="absolute top-4 left-4">
+                        <span className="bg-surface/90 px-3 py-1.5 rounded-btn text-[10px] font-extrabold uppercase text-gray-800 shadow-xs">
+                          {time}
+                        </span>
+                      </div>
+
+                      <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between text-white">
+                        <h3 className="font-bold text-xl drop-shadow-sm">
+                          {slotTitle}
+                        </h3>
+                        <span className="text-xs font-bold bg-brand px-2 py-0.5 rounded-btn">
+                          {slot.total_calories} kcal
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="block text-[10px] uppercase font-bold text-gray-400">
+                            Calories
+                          </span>
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-brand-light/30 text-brand-dark border border-brand-light/40">
+                            Day {todayDiet.currentDay}
+                          </span>
+                        </div>
+
+                        <p className="text-base font-extrabold text-gray-800">
+                          {slot.total_calories} kcal
+                        </p>
+
+                        <p className="text-xs font-semibold text-gray-600 mt-2 truncate">
+                          {dishLabel}
+                          {extraDishes > 0 && ` +${extraDishes} more`}
+                        </p>
+                      </div>
+
+                      <Link
+                        to="/user/dietplan"
+                        className="block w-full py-2.5 rounded-btn text-xs font-bold text-center bg-stone-50 hover:bg-stone-100 text-gray-700 border border-brand-light/30 transition-colors"
+                      >
+                        View Details
+                      </Link>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {dietData.map((item) => (
+                  <div
+                    key={item.id}
+                    className="group bg-surface/90 rounded-card border border-brand-light/30 shadow-card overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover"
+                  >
+                    <div className="relative h-48 overflow-hidden">
+                      <img
+                        src={item.image}
+                        alt={item.name}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+
+                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/30">
+                        <Lock className="h-10 w-10 text-white mb-2" />
+
+                        <p className="text-white text-xs font-semibold">
+                          Diet plan not generated yet
+                        </p>
+                      </div>
+
+                      <div className="absolute top-4 left-4">
+                        <span className="bg-surface/90 px-3 py-1.5 rounded-btn text-[10px] font-extrabold uppercase text-gray-800">
+                          {item.time}
+                        </span>
+                      </div>
+
+                      <div className="absolute bottom-4 left-4">
+                        <h3 className="font-bold text-white text-xl">
+                          {item.name}
+                        </h3>
+                      </div>
+                    </div>
+
+                    <div className="p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <span className="block text-[10px] uppercase font-bold text-gray-400">
+                            Calories
+                          </span>
+
+                          <span className="font-bold text-gray-800">
+                            {item.calories}
+                          </span>
+                        </div>
+
+                        <div className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-brand-light/20 text-gray-500 border border-brand-light/30">
+                          {item.status}
+                        </div>
+                      </div>
+
+                      <Link
+                        to="/user/dietplan"
+                        className="block w-full py-3 rounded-btn text-xs font-bold text-center bg-gray-800 hover:bg-gray-700 text-white shadow-card transition-all"
+                      >
+                        Generate Plan
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-6 text-center text-sm text-gray-500">
+                Your personalized diet plan will appear here once it has been
+                generated.
+              </div>
+            </>
+          )}
         </section>
       </main>
 

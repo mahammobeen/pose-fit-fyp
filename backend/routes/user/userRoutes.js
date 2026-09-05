@@ -16,6 +16,7 @@ const {
 } = require("../../controllers/user/reviewController");
 
 const router = express.Router();
+const dietPlanController = require("../../controllers/user/dietPlanController");
 
 // User-side public professional discovery and availability lookup
 router.get("/professionals", getPublicProfessionals);
@@ -24,9 +25,14 @@ router.get("/public-professionals", getPublicProfessionals);
 router.get("/public-professionals/:id", getPublicProfessionalById);
 router.post("/chatbot", handleChatbot);
 
-// now you use it like:
+// User metrics routes
 router.post("/user-metrics/:userId", UserMetricsController.save);
 router.get("/user-metrics/:userId", UserMetricsController.get);
+
+// Diet Plan routes
+router.post("/diet-plan/:userId", dietPlanController.generatePlan);
+router.get("/diet-plan/:userId", dietPlanController.getCurrentPlan);
+router.get("/diet-plan/:userId/today", dietPlanController.getTodayPlan);
 
 // =====================================================
 // PUBLIC ROUTES
@@ -51,7 +57,5 @@ router.put("/update/:reviewId", authMiddleware, updateReview);
 
 // Delete own review
 router.delete("/delete/:reviewId", authMiddleware, deleteReview);
-
-// router.get("/diet_plan/:userId", UserMetricsController.generateDietPlan);
 
 module.exports = router;
