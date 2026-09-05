@@ -4,12 +4,26 @@ import StatusBadge from "../../components/admin/StatusBadge";
 import { httpClient } from "../../lib/http";
 import { Search, Clock } from "lucide-react";
 
-const STATUS_FILTERS = ["all", "completed", "pending"];
+const TABS = [
+  { id: "all", label: "All" },
+  { id: "pending", label: "Pending" },
+  { id: "completed", label: "Completed" },
+];
+
+function getBookingStatus(booking, tab) {
+  if (tab === "pending") return "pending";
+  if (tab === "completed") return "completed";
+  if (!booking?.appointmentDate) return "completed";
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  startOfToday.setHours(0, 0, 0, 0);
+  return new Date(booking.appointmentDate) >= startOfToday ? "pending" : "completed";
+}
 
 export default function ProfessionalBookings() {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [activeTab, setActiveTab] = useState("all");
   const [search, setSearch] = useState("");
   const [toast, setToast] = useState(null);
 
@@ -19,11 +33,11 @@ export default function ProfessionalBookings() {
     setTimeout(() => setToast(null), 3500);
   };
 
-  const fetchBookings = useCallback(async () => {
+  const fetchBookings = useCallback(async (tabToFetch = activeTab) => {
     try {
       setLoading(true);
 
-      const res = await httpClient.get("/professional/bookings");
+      const res = await httpClient.get(`/professional/bookings?tab=${tabToFetch}`);
 
       setBookings(res.data?.bookings || []);
     } catch (error) {
@@ -32,11 +46,11 @@ export default function ProfessionalBookings() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [activeTab]);
 
   useEffect(() => {
-    fetchBookings();
-  }, [fetchBookings]);
+    fetchBookings(activeTab);
+  }, [activeTab, fetchBookings]);
 
   // Delete booking from professional history
   const handleDelete = async (bookingId) => {
@@ -51,7 +65,7 @@ export default function ProfessionalBookings() {
 
       showToast("Booking record deleted successfully.");
 
-      await fetchBookings();
+      await fetchBookings(activeTab);
     } catch (error) {
       console.error("Delete booking error:", error);
 
@@ -63,8 +77,6 @@ export default function ProfessionalBookings() {
   };
 
   const filtered = bookings.filter((b) => {
-    const matchStatus = statusFilter === "all" || b.status === statusFilter;
-
     const q = search.toLowerCase();
 
     const matchSearch =
@@ -73,7 +85,7 @@ export default function ProfessionalBookings() {
       b.user?.lastName?.toLowerCase().includes(q) ||
       b.user?.email?.toLowerCase().includes(q);
 
-    return matchStatus && matchSearch;
+    return matchSearch;
   });
 
   return (
@@ -110,19 +122,19 @@ export default function ProfessionalBookings() {
 
         {/* Filters & Search */}
         <div className="mb-4 flex flex-col items-stretch justify-between gap-3 px-4 sm:flex-row sm:items-center sm:px-6 lg:px-8">
-          {/* Status Filters */}
+          {/* Status Tabs */}
           <div className="flex items-center gap-1 overflow-x-auto rounded-card border border-brand-light/50 bg-surface/80 p-1.5 shadow-card backdrop-blur-xl">
-            {STATUS_FILTERS.map((s) => (
+            {TABS.map((t) => (
               <button
-                key={s}
-                onClick={() => setStatusFilter(s)}
-                className={`whitespace-nowrap rounded-xl px-3.5 py-1.5 text-xs font-extrabold capitalize transition-all duration-200 ${
-                  statusFilter === s
+                key={t.id}
+                onClick={() => setActiveTab(t.id)}
+                className={`whitespace-nowrap rounded-xl px-4 py-1.5 text-xs font-extrabold capitalize transition-all duration-200 ${
+                  activeTab === t.id
                     ? "bg-gray-800 text-white shadow-card"
                     : "text-gray-500 hover:bg-brand-light/20 hover:text-gray-800"
                 }`}
               >
-                {s}
+                {t.label}
               </button>
             ))}
           </div>
@@ -236,18 +248,24 @@ export default function ProfessionalBookings() {
 
                         {/* Status */}
                         <td className="whitespace-nowrap px-6 py-4">
-                          <StatusBadge status={b.status} />
+                          <StatusBadge status={getBookingStatus(b, activeTab)} />
                         </td>
 
                         {/* Date */}
                         <td className="whitespace-nowrap px-6 py-4 text-xs font-medium text-gray-500">
-                          {new Date(
-                            b.paidAt || b.createdAt,
-                          ).toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                          })}
+                          {b.appointmentDate ? (
+                            new Date(b.appointmentDate).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            })
+                          ) : (
+                            new Date(b.paidAt || b.createdAt).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            })
+                          )}
                         </td>
 
                         {/* Action */}

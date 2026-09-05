@@ -137,9 +137,7 @@ const createPayment = async (req, res) => {
         $lt: endOfDay,
       },
       appointmentSlot: appointmentSlot.trim(),
-      status: {
-        $in: ["pending", "completed"],
-      },
+      status: "completed",
       professionalDeleted: false,
     });
 
@@ -229,31 +227,6 @@ const createPayment = async (req, res) => {
       (totalAmount * 0.8).toFixed(2),
     );
 
-    const payment = await PaymentModel.create({
-      user: userId,
-      professional: professionalId,
-      amount: totalAmount,
-
-      adminCommission,
-      professionalAmount,
-
-      appointmentDay: appointmentDay.trim(),
-      appointmentSlot: appointmentSlot.trim(),
-      appointmentDate: parsedAppointmentDate,
-
-      sessionDuration: parsedSessionDuration,
-
-      notes: notes?.trim() || "",
-
-      currency: "usd",
-
-      status: "pending",
-      payoutStatus: "pending",
-
-      adminDeleted: false,
-      professionalDeleted: false,
-    });
-
     const frontendUrl =
       process.env.FRONTEND_URL || "http://localhost:5173";
 
@@ -261,6 +234,19 @@ const createPayment = async (req, res) => {
       appointmentDay && appointmentSlot
         ? ` (${appointmentDay}, ${appointmentSlot})`
         : "";
+
+    const bookingMetadata = {
+      professionalId: professionalId.toString(),
+      userId: userId.toString(),
+      amount: totalAmount.toString(),
+      adminCommission: adminCommission.toString(),
+      professionalAmount: professionalAmount.toString(),
+      appointmentDay: appointmentDay ? appointmentDay.trim() : "",
+      appointmentSlot: appointmentSlot ? appointmentSlot.trim() : "",
+      appointmentDate: parsedAppointmentDate.toISOString(),
+      sessionDuration: parsedSessionDuration.toString(),
+      notes: notes?.trim() || "",
+    };
 
     let session;
 
@@ -296,50 +282,24 @@ const createPayment = async (req, res) => {
             destination: professional.stripeAccountId,
           },
 
-          metadata: {
-            paymentId: payment._id.toString(),
-            professionalId: professionalId.toString(),
-            userId: userId.toString(),
-            appointmentDay: appointmentDay || "",
-            appointmentSlot: appointmentSlot || "",
-            appointmentDate:
-              parsedAppointmentDate.toISOString(),
-            sessionDuration: parsedSessionDuration.toString(),
-          },
+          metadata: bookingMetadata,
         },
 
-        metadata: {
-          paymentId: payment._id.toString(),
-          professionalId: professionalId.toString(),
-          userId: userId.toString(),
-          appointmentDay: appointmentDay || "",
-          appointmentSlot: appointmentSlot || "",
-          appointmentDate:
-            parsedAppointmentDate.toISOString(),
-          sessionDuration: parsedSessionDuration.toString(),
-        },
+        metadata: bookingMetadata,
 
         success_url:
           `${frontendUrl}/user/professionals/${professionalId}` +
-          `?booking_success=true`,
+          `?booking_success=true&session_id={CHECKOUT_SESSION_ID}`,
 
         cancel_url:
           `${frontendUrl}/user/professionals/${professionalId}` +
           `?booking_cancelled=true`,
       });
-
-      payment.stripeSessionId = session.id;
-
-      await payment.save();
     } catch (stripeError) {
       console.error(
         "Stripe checkout session creation error:",
         stripeError,
       );
-
-      payment.status = "failed";
-
-      await payment.save();
 
       return res.status(500).json({
         success: false,
@@ -349,24 +309,20 @@ const createPayment = async (req, res) => {
       });
     }
 
-    return res.status(201).json({
+    return res.status(200).json({
       success: true,
 
       message:
-        "Payment session created successfully. The appointment slot has been reserved.",
-
-      paymentId: payment._id,
+        "Payment session created successfully.",
 
       checkoutUrl: session.url,
 
       appointment: {
-        day: payment.appointmentDay,
-        slot: payment.appointmentSlot,
-        date: payment.appointmentDate,
-        sessionDuration: payment.sessionDuration,
+        day: appointmentDay.trim(),
+        slot: appointmentSlot.trim(),
+        date: parsedAppointmentDate,
+        sessionDuration: parsedSessionDuration,
       },
-
-      status: payment.status,
     });
   } catch (error) {
     console.error("Create payment error:", error);
@@ -496,7 +452,7 @@ const getAdminPayments = async (req, res) => {
   }
 };
 
-// 5. Delete Payment Record dfor admin
+// 5. Delete Payment Record for admin
 const deleteAdminPayment = async (req, res) => {
   try {
     const { id } = req.params;
@@ -583,9 +539,7 @@ const getProfessionalBookedSlots = async (req, res) => {
 
     const bookings = await PaymentModel.find({
       professional: id,
-      status: {
-        $in: ["pending", "completed"],
-      },
+      status: "completed",
       professionalDeleted: false,
       appointmentDate: {
         $exists: true,
@@ -944,116 +898,124 @@ const stripeWebhook = async (req, res) => {
 
     if (event.type === "checkout.session.completed") {
       const session = event.data.object;
+      let payment = null;
 
-      const paymentId = session.metadata?.paymentId;
+      if (session.id) {
+        payment = await PaymentModel.findOne({ stripeSessionId: session.id })
+          .populate("user", "firstName lastName email profilePhoto")
+          .populate("professional", "firstName lastName email profilePhoto");
+      }
 
-      if (paymentId) {
-        const payment = await PaymentModel.findById(paymentId)
-          .populate("user", "firstName lastName email")
-          .populate(
-            "professional",
-            "firstName lastName email"
+      if (!payment && session.metadata?.paymentId) {
+        payment = await PaymentModel.findById(session.metadata.paymentId)
+          .populate("user", "firstName lastName email profilePhoto")
+          .populate("professional", "firstName lastName email profilePhoto");
+      }
+
+      if (!payment && session.metadata?.userId && session.metadata?.professionalId) {
+        const totalAmount = Number(session.metadata.amount) || (session.amount_total ? session.amount_total / 100 : 0);
+        const adminCommission = Number(session.metadata.adminCommission) || Number((totalAmount * 0.2).toFixed(2));
+        const professionalAmount = Number(session.metadata.professionalAmount) || Number((totalAmount * 0.8).toFixed(2));
+
+        payment = await PaymentModel.create({
+          user: session.metadata.userId,
+          professional: session.metadata.professionalId,
+          amount: totalAmount,
+          adminCommission,
+          professionalAmount,
+          appointmentDay: session.metadata.appointmentDay || "",
+          appointmentSlot: session.metadata.appointmentSlot || "",
+          appointmentDate: session.metadata.appointmentDate
+            ? new Date(session.metadata.appointmentDate)
+            : new Date(),
+          sessionDuration: Number(session.metadata.sessionDuration) || 1,
+          notes: session.metadata.notes || "",
+          currency: session.currency || "usd",
+          stripeSessionId: session.id,
+          stripePaymentIntentId: session.payment_intent || "",
+          status: "completed",
+          payoutStatus: "transferred",
+          paidAt: new Date(),
+          adminDeleted: false,
+          professionalDeleted: false,
+        });
+
+        await payment.populate("user", "firstName lastName email profilePhoto");
+        await payment.populate("professional", "firstName lastName email profilePhoto");
+      }
+
+      if (payment) {
+        if (payment.status !== "completed") {
+          payment.status = "completed";
+          payment.payoutStatus = "transferred";
+
+          if (session.payment_intent) {
+            payment.stripePaymentIntentId = session.payment_intent;
+          }
+
+          payment.paidAt = new Date();
+          await payment.save();
+
+          console.log(
+            `Payment ${payment._id} marked as completed successfully.`
           );
+        }
 
-        if (payment) {
-          if (payment.status !== "completed") {
-            payment.status = "completed";
-            payment.payoutStatus = "transferred";
+        // ========================================================
+        // CREATE GOOGLE MEET ONLY IF NOT ALREADY CREATED
+        // ========================================================
 
-            if (session.payment_intent) {
-              payment.stripePaymentIntentId =
-                session.payment_intent;
-            }
+        if (!payment.meetingLink) {
+          try {
+            const meeting = await createGoogleMeetEvent({
+              appointmentDate: payment.appointmentDate,
+              appointmentSlot: payment.appointmentSlot,
+              user: payment.user,
+              professional: payment.professional,
+              notes: payment.notes,
+            });
 
-            payment.paidAt = new Date();
-
+            payment.meetingLink = meeting.meetingLink;
+            payment.meetingEventId = meeting.eventId;
             await payment.save();
 
             console.log(
-              `Payment ${paymentId} marked as completed successfully.`
+              `Google Meet created for payment ${payment._id}: ${meeting.meetingLink}`
             );
-          }
-
-          // ========================================================
-          // CREATE GOOGLE MEET ONLY IF NOT ALREADY CREATED
-          // ========================================================
-
-          if (!payment.meetingLink) {
-            try {
-              const meeting = await createGoogleMeetEvent({
-                appointmentDate:
-                  payment.appointmentDate,
-
-                appointmentSlot:
-                  payment.appointmentSlot,
-
-                user: payment.user,
-
-                professional:
-                  payment.professional,
-
-                notes: payment.notes,
-              });
-
-              payment.meetingLink =
-                meeting.meetingLink;
-
-              payment.meetingEventId =
-                meeting.eventId;
-
-              await payment.save();
-
-              console.log(
-                `Google Meet created for payment ${paymentId}: ${meeting.meetingLink}`
-              );
-            } catch (meetingError) {
-              console.error(
-                `Google Meet creation error for payment ${paymentId}:`,
-                meetingError
-              );
-            }
-          } else {
-            console.log(
-              `Google Meet already exists for payment ${paymentId}.`
-            );
-          }
-
-          // ========================================================
-          // SEND BOOKING CONFIRMATION EMAIL
-          // NO GOOGLE MEET LINK
-          // ========================================================
-
-          try {
-            await sendBookingConfirmationEmails({
-              user: payment.user,
-
-              professional:
-                payment.professional,
-
-              appointmentDate:
-                payment.appointmentDate,
-
-              appointmentDay:
-                payment.appointmentDay,
-
-              appointmentSlot:
-                payment.appointmentSlot,
-            });
-
-            console.log(
-              `Booking confirmation emails sent for payment ${paymentId}.`
-            );
-          } catch (emailError) {
+          } catch (meetingError) {
             console.error(
-              `Booking confirmation email error for payment ${paymentId}:`,
-              emailError
+              `Google Meet creation error for payment ${payment._id}:`,
+              meetingError
             );
           }
-        } else {
+        }
+
+        // ========================================================
+        // SEND BOOKING CONFIRMATION EMAIL
+        // ========================================================
+
+        try {
+          await sendBookingConfirmationEmails({
+            user: payment.user,
+            professional: payment.professional,
+            appointmentDate: payment.appointmentDate,
+            appointmentDay: payment.appointmentDay,
+            appointmentSlot: payment.appointmentSlot,
+          });
+
+          console.log(
+            `Booking confirmation emails sent for payment ${payment._id}.`
+          );
+        } catch (emailError) {
           console.error(
-            `Payment ${paymentId} not found for checkout.session.completed.`
+            `Booking confirmation email error for payment ${payment._id}:`,
+            emailError
           );
         }
+      } else {
+        console.error(
+          `Unable to resolve or create payment for checkout.session.completed.`
+        );
       }
     }
 
@@ -1253,6 +1215,126 @@ const stripeWebhook = async (req, res) => {
 };
 
 
+// 12. Verify Stripe Session & Confirm Booking
+const verifySession = async (req, res) => {
+  try {
+    const { session_id } = req.query;
+
+    if (!session_id) {
+      return res.status(400).json({
+        success: false,
+        message: "session_id is required",
+      });
+    }
+
+    let payment = await PaymentModel.findOne({ stripeSessionId: session_id })
+      .populate("user", "firstName lastName email profilePhoto")
+      .populate("professional", "firstName lastName email profilePhoto");
+
+    if (payment && payment.status === "completed") {
+      return res.status(200).json({
+        success: true,
+        bookingConfirmed: true,
+        payment,
+      });
+    }
+
+    const stripe = getStripe();
+    const session = await stripe.checkout.sessions.retrieve(session_id);
+
+    if (session.payment_status === "paid") {
+      if (!payment && session.metadata?.userId && session.metadata?.professionalId) {
+        const totalAmount = Number(session.metadata.amount) || (session.amount_total ? session.amount_total / 100 : 0);
+        const adminCommission = Number(session.metadata.adminCommission) || Number((totalAmount * 0.2).toFixed(2));
+        const professionalAmount = Number(session.metadata.professionalAmount) || Number((totalAmount * 0.8).toFixed(2));
+
+        payment = await PaymentModel.create({
+          user: session.metadata.userId,
+          professional: session.metadata.professionalId,
+          amount: totalAmount,
+          adminCommission,
+          professionalAmount,
+          appointmentDay: session.metadata.appointmentDay || "",
+          appointmentSlot: session.metadata.appointmentSlot || "",
+          appointmentDate: session.metadata.appointmentDate
+            ? new Date(session.metadata.appointmentDate)
+            : new Date(),
+          sessionDuration: Number(session.metadata.sessionDuration) || 1,
+          notes: session.metadata.notes || "",
+          currency: session.currency || "usd",
+          stripeSessionId: session.id,
+          stripePaymentIntentId: session.payment_intent || "",
+          status: "completed",
+          payoutStatus: "transferred",
+          paidAt: new Date(),
+          adminDeleted: false,
+          professionalDeleted: false,
+        });
+
+        await payment.populate("user", "firstName lastName email profilePhoto");
+        await payment.populate("professional", "firstName lastName email profilePhoto");
+      }
+
+      if (payment && payment.status !== "completed") {
+        payment.status = "completed";
+        payment.payoutStatus = "transferred";
+        payment.stripePaymentIntentId = session.payment_intent || payment.stripePaymentIntentId;
+        payment.paidAt = new Date();
+        await payment.save();
+      }
+
+      if (payment && !payment.meetingLink) {
+        try {
+          const meeting = await createGoogleMeetEvent({
+            appointmentDate: payment.appointmentDate,
+            appointmentSlot: payment.appointmentSlot,
+            user: payment.user,
+            professional: payment.professional,
+            notes: payment.notes,
+          });
+          payment.meetingLink = meeting.meetingLink;
+          payment.meetingEventId = meeting.eventId;
+          await payment.save();
+        } catch (meetingErr) {
+          console.error("Google Meet creation error:", meetingErr);
+        }
+      }
+
+      if (payment) {
+        try {
+          await sendBookingConfirmationEmails({
+            user: payment.user,
+            professional: payment.professional,
+            appointmentDate: payment.appointmentDate,
+            appointmentDay: payment.appointmentDay,
+            appointmentSlot: payment.appointmentSlot,
+          });
+        } catch (emailErr) {
+          console.error("Confirmation email error:", emailErr);
+        }
+      }
+
+      return res.status(200).json({
+        success: true,
+        bookingConfirmed: true,
+        payment,
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      bookingConfirmed: false,
+      message: "Payment is not completed",
+    });
+  } catch (error) {
+    console.error("Verify session error:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to verify session",
+    });
+  }
+};
+
 module.exports = {
   createPayment,
   getPayment,
@@ -1265,5 +1347,6 @@ module.exports = {
   getConnectStatus,
   getConnectDashboardLink,
   stripeWebhook,
+  verifySession,
 };
 

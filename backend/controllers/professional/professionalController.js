@@ -53,27 +53,27 @@ const getProfessionalDashboard = async (req, res) => {
       });
     }
 
-    // Fetch payments associated with this professional
+    // Fetch payments associated with this professional (only completed payments are valid bookings)
     let payments = await PaymentModel.find({
       professional: professionalId,
+      status: "completed",
+      professionalDeleted: false,
     })
       .populate("user", "firstName lastName email profilePhoto")
-      .sort({ createdAt: -1 });
-
-    // Sync any pending payments with Stripe
-    await syncPendingPayments(payments);
-    payments = await PaymentModel.find({ professional: professionalId })
-      .populate("user", "firstName lastName email profilePhoto")
-      .sort({ createdAt: -1 });
+      .sort({ appointmentDate: -1, createdAt: -1 });
 
     const totalSessions = payments.length;
-
-    const completedPayments = payments.filter((p) => p.status === "completed");
-    const completedSessions = completedPayments.length;
+    const completedPayments = payments;
+    const completedSessions = payments.length;
 
     // Compute monthly earnings (current calendar month)
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const sevenDaysAgo = new Date(startOfToday);
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
     const monthlyPayments = completedPayments.filter((p) => {
       const paidDate = p.paidAt || p.createdAt;
@@ -90,12 +90,26 @@ const getProfessionalDashboard = async (req, res) => {
       0
     );
 
-    const pendingEarnings = payments
-      .filter((p) => p.status === "pending")
-      .reduce((sum, p) => sum + (p.professionalAmount || 0), 0);
+    const pendingEarnings = 0;
 
-    // Filter upcoming sessions/bookings
-    const upcomingBookings = completedPayments.slice(0, 5);
+    // Issue 1: Upcoming sessions should ONLY show bookings where session date >= today
+    const upcomingBookings = completedPayments.filter((p) => {
+      if (!p.appointmentDate) return false;
+      const appDate = new Date(p.appointmentDate);
+      return appDate >= startOfToday;
+    });
+
+    // Issue 4: Dashboard Recent Bookings:
+    // - Only show bookings from the last 7 days
+    // - Among those, only show completed bookings (past date: < today)
+    // - Older than 7 days automatically excluded
+    const recentBookings = completedPayments
+      .filter((p) => {
+        if (!p.appointmentDate) return false;
+        const appDate = new Date(p.appointmentDate);
+        return appDate < startOfToday && appDate >= sevenDaysAgo;
+      })
+      .sort((a, b) => new Date(b.appointmentDate) - new Date(a.appointmentDate));
 
     return res.status(200).json({
       success: true,
@@ -131,7 +145,7 @@ const getProfessionalDashboard = async (req, res) => {
           payoutsEnabled: !!professional.payoutsEnabled,
           maskedBank: professional.maskedBank || "",
         },
-        recentBookings: upcomingBookings,
+        recentBookings,
       },
     });
   } catch (error) {
@@ -252,31 +266,35 @@ const updateProfessionalProfile = async (req, res) => {
 const getProfessionalBookings = async (req, res) => {
   try {
     const professionalId = req.user.userId;
-    const { status } = req.query;
+    const { tab, status } = req.query;
+
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const activeTab = (tab || status || "all").toLowerCase();
 
     const query = {
       professional: professionalId,
       professionalDeleted: false,
+      status: "completed", // Only completed payments are valid bookings
     };
 
-    if (
-      status &&
-      ["completed", "pending", "refunded", "cancelled", "failed"].includes(
-        status.toLowerCase()
-      )
-    ) {
-      query.status = status.toLowerCase();
+    let sortOrder = { appointmentDate: -1, createdAt: -1 };
+
+    if (activeTab === "pending") {
+      // Pending = upcoming (future/today date) and payment is completed
+      query.appointmentDate = { $gte: startOfToday };
+      sortOrder = { appointmentDate: 1, createdAt: -1 };
+    } else if (activeTab === "completed") {
+      // Completed = session date has already passed
+      query.appointmentDate = { $lt: startOfToday };
+      sortOrder = { appointmentDate: -1, createdAt: -1 };
     }
-
-    let payments = await PaymentModel.find(query)
-      .populate("user", "firstName lastName email profilePhoto")
-      .sort({ createdAt: -1 });
-
-    await syncPendingPayments(payments);
 
     const bookings = await PaymentModel.find(query)
       .populate("user", "firstName lastName email profilePhoto")
-      .sort({ createdAt: -1 });
+      .sort(sortOrder);
 
     return res.status(200).json({
       success: true,

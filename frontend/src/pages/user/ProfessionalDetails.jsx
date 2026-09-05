@@ -424,14 +424,24 @@ export default function ProfessionalDetails() {
 
     const bookingSuccessParam = params.get("booking_success");
     const bookingCancelledParam = params.get("booking_cancelled");
+    const sessionId = params.get("session_id");
 
     if (bookingSuccessParam === "true") {
-      setBookingSuccess(true);
-      setBookingCancelled(false);
+      const confirmBooking = async () => {
+        if (sessionId) {
+          try {
+            await httpClient.get(`/payment/verify-session?session_id=${sessionId}`);
+          } catch (err) {
+            console.error("Session verification error:", err);
+          }
+        }
+        setBookingSuccess(true);
+        setBookingCancelled(false);
+        toast.success("Booking confirmed successfully!");
+        fetchBookedSlots();
+      };
 
-      toast.success("Booking confirmed successfully!");
-
-      fetchBookedSlots();
+      confirmBooking();
 
       navigate(location.pathname, {
         replace: true,

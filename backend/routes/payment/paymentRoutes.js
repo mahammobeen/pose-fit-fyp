@@ -14,6 +14,7 @@ const {
   createConnectOnboardingSession,
   getConnectStatus,
   getConnectDashboardLink,
+  verifySession,
 } = require("../../controllers/payment/paymentController");
 
 const router = express.Router();
@@ -26,6 +27,7 @@ router.post("/stripe-connect/dashboard-link", authMiddleware, getConnectDashboar
 
 // Core Payment Endpoints
 router.post("/create", authMiddleware, createPayment);
+router.get("/verify-session", authMiddleware, verifySession);
 router.get("/booked-slots/:id", authMiddleware, getProfessionalBookedSlots);
 router.get("/my-payments", authMiddleware, getUserPayments);
 router.get("/admin/payments", authMiddleware, adminMiddleware, getAdminPayments);

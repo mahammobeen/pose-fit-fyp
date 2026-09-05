@@ -429,13 +429,19 @@ export default function ProfessionalDashboard() {
 
                         {/* Date */}
                         <td className="whitespace-nowrap px-5 py-4 text-xs font-medium text-gray-500">
-                          {new Date(
-                            b.paidAt || b.createdAt,
-                          ).toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                          })}
+                          {b.appointmentDate ? (
+                            new Date(b.appointmentDate).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            })
+                          ) : (
+                            new Date(b.paidAt || b.createdAt).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            })
+                          )}
                         </td>
                       </tr>
                     ))}
