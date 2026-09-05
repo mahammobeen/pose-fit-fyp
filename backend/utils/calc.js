@@ -69,16 +69,54 @@ function calculateGoalCalories(tdee, goal) {
 /**
  * Daily Macros
  *
- * 40% carbs
- * 30% protein
- * 30% fat
+ * Distributed according to Goal:
+ * lose weight     -> 30% protein, 40% carbs, 30% fat
+ * maintain weight -> 25% protein, 45% carbs, 30% fat
+ * gain weight     -> 25% protein, 50% carbs, 25% fat
+ * default         -> 30% protein, 40% carbs, 30% fat
  */
-function calculateMacros(calories) {
+function calculateMacros(calories, goal = "") {
+  const normalizedGoal = String(goal || "").trim().toLowerCase();
+
+  let proteinRatio = 0.3;
+  let carbsRatio = 0.4;
+  let fatRatio = 0.3;
+
+  if (normalizedGoal === "lose weight") {
+    proteinRatio = 0.3;
+    carbsRatio = 0.4;
+    fatRatio = 0.3;
+  } else if (normalizedGoal === "gain weight") {
+    proteinRatio = 0.25;
+    carbsRatio = 0.5;
+    fatRatio = 0.25;
+  } else if (normalizedGoal === "maintain weight") {
+    proteinRatio = 0.25;
+    carbsRatio = 0.45;
+    fatRatio = 0.3;
+  }
+
   return {
-    carbs: +((calories * 0.4) / 4).toFixed(2),
-    protein: +((calories * 0.3) / 4).toFixed(2),
-    fat: +((calories * 0.3) / 9).toFixed(2),
+    carbs: +((calories * carbsRatio) / 4).toFixed(2),
+    protein: +((calories * proteinRatio) / 4).toFixed(2),
+    fat: +((calories * fatRatio) / 9).toFixed(2),
   };
+}
+
+/**
+ * BMI Category
+ * Underweight: < 18.5
+ * Normal: 18.5 - 24.9
+ * Overweight: 25 - 29.9
+ * Obese: >= 30
+ */
+function getBMICategory(bmi) {
+  const num = Number(bmi);
+  if (!Number.isFinite(num) || num <= 0) return "Unknown";
+  if (num < 18.5) return "Underweight";
+  if (num < 25) return "Normal";
+  if (num < 30) return "Overweight";
+  return "Obese";
 }
 
 /**
@@ -145,5 +183,6 @@ module.exports = {
   calculateTDEE,
   calculateGoalCalories,
   calculateMacros,
+  getBMICategory,
   calculateWaterIntake,
 };

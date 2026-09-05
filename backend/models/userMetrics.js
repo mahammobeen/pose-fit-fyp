@@ -118,13 +118,14 @@ const UserMetricsSchema = new mongoose.Schema(
     },
 
     // ------------------------------------------
-    // DIET PREFERENCES
+    // DIET PREFERENCES (OPTIONAL / LEGACY)
     // ------------------------------------------
 
     dietPref: {
       type: String,
-      required: true,
+      required: false,
       enum: ["veg", "non-veg"],
+      default: "non-veg",
     },
 
     diabetes: {
@@ -145,6 +146,15 @@ const UserMetricsSchema = new mongoose.Schema(
       type: Number,
     },
 
+    bmiValue: {
+      type: Number,
+    },
+
+    bmiCategory: {
+      type: String,
+      enum: ["Underweight", "Normal", "Overweight", "Obese", "Unknown"],
+    },
+
     bmr: {
       type: Number,
     },
@@ -154,6 +164,22 @@ const UserMetricsSchema = new mongoose.Schema(
     },
 
     goalCalories: {
+      type: Number,
+    },
+
+    targetCalories: {
+      type: Number,
+    },
+
+    protein: {
+      type: Number,
+    },
+
+    carbs: {
+      type: Number,
+    },
+
+    fats: {
       type: Number,
     },
 

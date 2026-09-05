@@ -1,0 +1,81 @@
+profile_id,fitness_goal,meal_type,target_calories,actual_calories,cal_err_pct,target_protein,actual_protein,pro_err_pct,target_carbs,actual_carbs,carb_err_pct,target_fats,actual_fats,fat_err_pct,weighted_loss,recommended_dishes
+1,weight_loss,Breakfast,300.0,300.6,0.2,22.5,13.4,40.44,30.0,33.4,11.33,10.0,12.6,26.0,0.1636,"Omelette with Toast (120g), Black Coffee (With Sugar) (150g)"
+1,weight_loss,Lunch,420.0,428.4,2.0,31.5,28.0,11.11,42.0,47.6,13.33,14.0,14.0,0.0,0.0624,Rice with Chicken Curry (280g)
+1,weight_loss,Dinner,360.0,369.2,2.56,27.0,26.0,3.7,36.0,42.9,19.17,12.0,10.4,13.33,0.0778,Fish Curry with Rice (260g)
+1,weight_loss,Snack,120.0,120.6,0.5,9.0,9.6,6.67,12.0,12.4,3.33,4.0,3.6,10.0,0.0403,"Low Fat Yogurt (240g), Green Tea (Plain) (150g)"
+2,weight_loss,Breakfast,337.5,330.4,2.1,25.3,14.9,41.11,33.8,42.5,25.74,11.2,11.2,0.0,0.1637,"Chapati with Fried Egg (140g), Black Coffee (With Sugar) (150g)"
+2,weight_loss,Lunch,472.5,459.0,2.86,35.4,30.0,15.25,47.2,51.0,8.05,15.7,15.0,4.46,0.0727,Rice with Chicken Curry (300g)
+2,weight_loss,Dinner,405.0,394.8,2.52,30.4,32.6,7.24,40.5,31.5,22.22,13.5,15.8,17.04,0.0985,Chicken Sajji with Rice (210g)
+2,weight_loss,Snack,135.0,285.2,111.26,10.1,20.2,100.0,13.5,12.2,9.63,4.5,17.2,282.22,1.1366,"Fresh Lime Soda (Sweetened) (100g), 2 Boiled Eggs with Black Tea (No Sugar) (150g)"
+3,weight_loss,Breakfast,375.0,364.6,2.77,28.1,28.6,1.78,37.5,47.7,27.2,12.5,6.6,47.2,0.1405,"Egg White Omelette with Toast (220g), Kahwa (Green Tea with Spices, No Sugar) (150g)"
+3,weight_loss,Lunch,525.0,526.5,0.29,39.4,33.0,16.24,52.5,48.0,8.57,17.5,22.5,28.57,0.1016,Rice with Beef Karahi (300g)
+3,weight_loss,Dinner,450.0,426.6,5.2,33.8,33.8,0.0,45.0,45.9,2.0,15.0,16.2,8.0,0.0372,Fish Fry with Rice and Salad (270g)
+3,weight_loss,Snack,150.0,142.8,4.8,11.2,13.2,17.86,15.0,9.9,34.0,5.0,5.4,8.0,0.1425,"Boiled Egg & Sprout Bowl (120g), Black Tea (No Sugar) (150g)"
+4,weight_loss,Breakfast,412.5,403.4,2.21,30.9,20.2,34.63,41.2,46.6,13.11,13.8,15.2,10.14,0.1374,"Chapati with Fried Egg (190g), Black Coffee (No Sugar) (150g)"
+4,weight_loss,Lunch,577.5,564.0,2.34,43.3,46.5,7.39,57.7,45.0,22.01,19.2,22.5,17.19,0.0971,Chicken Sajji with Rice (300g)
+4,weight_loss,Dinner,495.0,488.8,1.25,37.1,39.0,5.12,49.5,36.4,26.46,16.5,20.8,26.06,0.1096,Chicken Manchurian (260g)
+4,weight_loss,Snack,165.0,154.6,6.3,12.4,14.3,15.32,16.5,10.7,35.15,5.5,5.9,7.27,0.1452,"Boiled Egg & Sprout Bowl (130g), Black Tea (No Sugar) (150g)"
+5,weight_loss,Breakfast,450.0,454.3,0.96,33.8,30.1,10.95,45.0,57.2,27.11,15.0,11.7,22.0,0.1181,"Boiled Egg with Toast (No Butter) (260g), Black Coffee (No Sugar) (150g)"
+5,weight_loss,Lunch,630.0,564.0,10.48,47.2,46.5,1.48,63.0,45.0,28.57,21.0,22.5,7.14,0.1137,Chicken Sajji with Rice (300g)
+5,weight_loss,Dinner,540.0,474.0,12.22,40.5,37.5,7.41,54.0,51.0,5.56,18.0,18.0,0.0,0.0785,Fish Fry with Rice and Salad (300g)
+5,weight_loss,Snack,180.0,285.2,58.44,13.5,20.2,49.63,18.0,12.2,32.22,6.0,17.2,186.67,0.7023,"Fresh Lime Soda (Sweetened) (100g), 2 Boiled Eggs with Black Tea (No Sugar) (150g)"
+6,weight_loss,Breakfast,487.5,480.6,1.42,36.5,26.4,27.67,48.8,60.0,22.95,16.2,15.0,7.41,0.1328,"Bread with Boiled Egg (250g), Black Coffee (No Sugar) (150g)"
+6,weight_loss,Lunch,682.5,642.0,5.93,51.2,45.0,12.11,68.2,57.0,16.42,22.8,28.5,25.0,0.1248,Chicken Karahi with Roti (Half Portion) (300g)
+6,weight_loss,Dinner,585.0,585.0,0.0,43.9,30.0,31.66,58.5,55.5,5.13,19.5,27.0,38.46,0.147,Chicken Biryani with Boiled Egg (300g)
+6,weight_loss,Snack,195.0,285.2,46.26,14.6,20.2,38.36,19.5,12.2,37.44,6.5,17.2,164.62,0.6022,"Fresh Lime Soda (Sweetened) (100g), 2 Boiled Eggs with Black Tea (No Sugar) (150g)"
+7,weight_loss,Breakfast,525.0,509.2,3.01,39.4,29.2,25.89,52.5,57.4,9.33,17.5,18.2,4.0,0.1013,"Phulka (Oil-Free Roti) (120g), 2 Boiled Eggs with Black Tea (No Sugar) (150g)"
+7,weight_loss,Lunch,735.0,735.0,0.0,55.1,42.0,23.77,73.5,66.0,10.2,24.5,33.0,34.69,0.132,Chicken Tikka Boti Roll (300g)
+7,weight_loss,Dinner,630.0,637.2,1.14,47.2,35.1,25.64,63.0,75.6,20.0,21.0,21.6,2.86,0.1131,Roti with Chicken Karahi (270g)
+7,weight_loss,Snack,210.0,205.2,2.29,15.8,14.4,8.86,21.0,20.7,1.43,7.0,7.2,2.86,0.0377,"Boiled Egg with Roasted Chana (120g), Kahwa (Green Tea with Spices, No Sugar) (150g)"
+8,maintenance,Breakfast,450.0,454.9,1.09,28.1,27.2,3.2,56.2,55.2,1.78,12.5,14.0,12.0,0.0343,"Boiled Egg with Toast (No Butter) (210g), Doodh Patti (Milk Tea) (150g)"
+8,maintenance,Lunch,630.0,624.0,0.95,39.4,30.0,23.86,78.8,72.0,8.63,17.5,24.0,37.14,0.1362,Chicken Qorma with Naan (240g)
+8,maintenance,Dinner,540.0,545.0,0.93,33.8,28.4,15.98,67.5,63.0,6.67,15.0,20.0,33.33,0.1067,Naan with Chicken Karahi (210g)
+8,maintenance,Snack,180.0,181.5,0.83,11.2,9.1,18.75,22.5,27.5,22.22,5.0,3.9,22.0,0.1286,"Chana Chaat (130g), Kahwa (Green Tea with Spices, No Sugar) (150g)"
+9,maintenance,Breakfast,500.0,497.9,0.42,31.2,29.1,6.73,62.5,62.6,0.16,13.9,14.6,5.04,0.0268,"Boiled Egg with Toast (No Butter) (230g), Milk Tea (With Sugar) (150g)"
+9,maintenance,Lunch,700.0,700.7,0.1,43.8,36.4,16.89,87.5,81.0,7.43,19.5,25.6,31.28,0.1046,Naan with Chicken Karahi (270g)
+9,maintenance,Dinner,600.0,591.6,1.4,37.5,24.6,34.4,75.0,84.1,12.13,16.7,17.4,4.19,0.1223,Roti with Matar Paneer (290g)
+9,maintenance,Snack,200.0,196.7,1.65,12.5,12.1,3.2,25.0,24.6,1.6,5.6,5.5,1.79,0.0194,"Sprouted Moong Salad (Plain) (130g), Doodh Patti (Milk Tea) (150g)"
+10,maintenance,Breakfast,537.5,533.3,0.78,33.6,24.1,28.27,67.2,68.9,2.53,14.9,17.9,20.13,0.1088,"Chapati with Fried Egg (220g), Fresh Orange Juice (No Sugar Added) (150g)"
+10,maintenance,Lunch,752.5,708.0,5.91,47.0,39.0,17.02,94.1,84.0,10.73,20.9,24.0,14.83,0.1101,Roti with Chicken Karahi (300g)
+10,maintenance,Dinner,645.0,625.5,3.02,40.3,25.5,36.72,80.6,87.0,7.94,17.9,19.5,8.94,0.1331,Roti with Palak Paneer (300g)
+10,maintenance,Snack,215.0,211.7,1.53,13.4,12.9,3.73,26.9,27.6,2.6,6.0,5.5,8.33,0.0334,"Sprouted Moong Salad (130g), Milk Coffee (With Sugar) (150g)"
+11,maintenance,Breakfast,575.0,576.6,0.28,36.0,28.9,19.72,71.9,72.0,0.14,16.0,19.2,20.0,0.0808,"Bread with Boiled Egg (250g), Milk Tea (With Sugar) (150g)"
+11,maintenance,Lunch,805.0,708.0,12.05,50.3,39.0,22.47,100.6,84.0,16.5,22.4,24.0,7.14,0.1485,Roti with Chicken Karahi (300g)
+11,maintenance,Dinner,690.0,625.5,9.35,43.1,25.5,40.84,86.2,87.0,0.93,19.2,19.5,1.56,0.1439,Roti with Palak Paneer (300g)
+11,maintenance,Snack,230.0,229.9,0.04,14.4,14.9,3.47,28.8,29.4,2.08,6.4,5.9,7.81,0.0252,"Sprouted Moong Salad (170g), Doodh Patti (Milk Tea) (150g)"
+12,maintenance,Breakfast,612.5,607.1,0.88,38.3,32.2,15.93,76.5,82.2,7.45,17.0,16.7,1.76,0.0608,"Roti with Boiled Egg (270g), Milk Coffee (With Sugar) (150g)"
+12,maintenance,Lunch,857.5,778.5,9.21,53.6,40.5,24.44,107.2,90.0,16.04,23.8,28.5,19.75,0.1593,Naan with Chicken Karahi (300g)
+12,maintenance,Dinner,735.0,708.0,3.67,45.9,39.0,15.03,91.9,84.0,8.6,20.4,24.0,17.65,0.0957,Roti with Chicken Karahi (300g)
+12,maintenance,Snack,245.0,248.1,1.27,15.3,14.4,5.88,30.6,37.5,22.55,6.8,4.5,33.82,0.1157,"Boiled Chickpea Salad (Chana Salad, Plain) (180g), Kahwa (Green Tea with Spices, No Sugar) (150g)"
+13,maintenance,Breakfast,650.0,627.0,3.54,40.6,38.3,5.67,81.2,78.0,3.94,18.1,18.0,0.55,0.0369,"Boiled Egg with Toast (No Butter) (300g), Milk Coffee (With Sugar) (150g)"
+13,maintenance,Lunch,910.0,780.0,14.29,56.9,37.5,34.09,113.7,90.0,20.84,25.3,30.0,18.58,0.2121,Chicken Qorma with Naan (300g)
+13,maintenance,Dinner,780.0,708.0,9.23,48.8,39.0,20.08,97.5,84.0,13.85,21.7,24.0,10.6,0.1308,Roti with Chicken Karahi (300g)
+13,maintenance,Snack,260.0,254.7,2.04,16.2,16.0,1.23,32.5,34.8,7.08,7.2,5.7,20.83,0.0577,"Sprouted Moong Salad (Plain) (190g), Milk Tea (With Sugar) (150g)"
+14,weight_gain,Breakfast,550.0,548.4,0.29,34.4,33.8,1.74,68.8,73.2,6.4,15.3,13.4,12.42,0.0367,"Egg White Omelette with Toast (220g), Chocolate Milkshake (Sweetened) (150g)"
+14,weight_gain,Lunch,770.0,778.5,1.1,48.1,40.5,15.8,96.2,90.0,6.44,21.4,28.5,33.18,0.1069,Naan with Chicken Karahi (300g)
+14,weight_gain,Dinner,660.0,625.5,5.23,41.2,25.5,38.11,82.5,87.0,5.45,18.3,19.5,6.56,0.1368,Roti with Palak Paneer (300g)
+14,weight_gain,Snack,220.0,216.8,1.45,13.8,12.6,8.7,27.5,26.3,4.36,6.1,7.0,14.75,0.0573,"Boiled Egg with Roasted Chana (80g), Doodh Soda (Milk & Soda Drink) (150g)"
+15,weight_gain,Breakfast,600.0,600.1,0.02,37.5,28.3,24.53,75.0,84.2,12.27,16.7,16.7,0.0,0.0862,"Roti with Boiled Egg (220g), Chocolate Milkshake (Sweetened) (150g)"
+15,weight_gain,Lunch,840.0,778.5,7.32,52.5,40.5,22.86,105.0,90.0,14.29,23.3,28.5,22.32,0.1481,Naan with Chicken Karahi (300g)
+15,weight_gain,Dinner,720.0,708.0,1.67,45.0,39.0,13.33,90.0,84.0,6.67,20.0,24.0,20.0,0.0832,Roti with Chicken Karahi (300g)
+15,weight_gain,Snack,240.0,235.1,2.04,15.0,13.2,12.0,30.0,30.6,2.0,6.7,6.7,0.0,0.0428,"Roasted Chana with Salad (120g), Doodh Patti (Milk Tea) (150g)"
+16,weight_gain,Breakfast,650.0,648.0,0.31,40.6,34.5,15.02,81.2,87.0,7.14,18.1,18.0,0.55,0.0535,"Roti with Boiled Egg (300g), Doodh Patti (Milk Tea) (150g)"
+16,weight_gain,Lunch,910.0,780.0,14.29,56.9,37.5,34.09,113.7,90.0,20.84,25.3,30.0,18.58,0.2121,Chicken Qorma with Naan (300g)
+16,weight_gain,Dinner,780.0,708.0,9.23,48.8,39.0,20.08,97.5,84.0,13.85,21.7,24.0,10.6,0.1308,Roti with Chicken Karahi (300g)
+16,weight_gain,Snack,260.0,259.0,0.38,16.2,12.1,25.31,32.5,37.3,14.77,7.2,7.1,1.39,0.0974,"Chana Chaat with Yogurt (140g), Doodh Soda (Milk & Soda Drink) (150g)"
+17,weight_gain,Breakfast,687.5,690.0,0.36,43.0,32.2,25.12,86.0,86.3,0.35,19.1,24.0,25.65,0.1034,"Roti with Fried Egg (250g), Whole Milk with Banana Shake (150g)"
+17,weight_gain,Lunch,962.5,964.5,0.21,60.2,58.7,2.49,120.3,103.2,14.21,26.7,36.6,37.08,0.0907,"Roti with Chicken Karahi (250g), Chicken Karahi with Roti (Half Portion) (175g)"
+17,weight_gain,Dinner,825.0,780.0,5.45,51.6,37.5,27.33,103.1,90.0,12.71,22.9,30.0,31.0,0.1618,Chicken Qorma with Naan (300g)
+17,weight_gain,Snack,275.0,278.0,1.09,17.2,15.1,12.21,34.4,38.6,12.21,7.6,7.0,7.89,0.0719,"Boiled Chana with Cucumber Salad (190g), Milk Tea (With Sugar) (150g)"
+18,weight_gain,Breakfast,725.0,678.8,6.37,45.3,44.2,2.43,90.6,90.0,0.66,20.1,15.8,21.39,0.0653,"Egg White Omelette with Toast (300g), Chocolate Milkshake (Sweetened) (150g)"
+18,weight_gain,Lunch,1015.0,993.2,2.15,63.4,47.2,25.55,126.9,128.5,1.26,28.2,32.2,14.18,0.0963,"Roti with Chicken Karahi (200g), Roti with Palak Paneer (250g)"
+18,weight_gain,Dinner,870.0,811.5,6.72,54.4,42.0,22.79,108.8,90.0,17.28,24.2,31.5,30.17,0.1636,Naan with Beef Karahi (300g)
+18,weight_gain,Snack,290.0,284.9,1.76,18.1,13.9,23.2,36.2,40.0,10.5,8.1,7.7,4.94,0.0926,"Boiled Chickpea Salad (Chana Salad, Plain) (140g), Milk Tea (With Sugar) (150g)"
+19,weight_gain,Breakfast,750.0,664.5,11.4,46.9,34.5,26.44,93.8,81.0,13.65,20.8,22.5,8.17,0.1509,"Bread with Boiled Egg (300g), Doodh Patti (Milk Tea) (150g)"
+19,weight_gain,Lunch,1050.0,993.2,5.41,65.6,47.2,28.05,131.2,128.5,2.06,29.2,32.2,10.27,0.1117,"Roti with Chicken Karahi (200g), Roti with Palak Paneer (250g)"
+19,weight_gain,Dinner,900.0,811.5,9.83,56.2,42.0,25.27,112.5,90.0,20.0,25.0,31.5,26.0,0.1817,Naan with Beef Karahi (300g)
+19,weight_gain,Snack,300.0,306.4,2.13,18.8,17.7,5.85,37.5,35.6,5.07,8.3,10.4,25.3,0.0699,"Boiled Egg with Roasted Chana (110g), Banana Milkshake (Milk & Banana, No Sugar Added) (150g)"
+20,weight_gain,Breakfast,775.0,777.0,0.26,48.5,47.2,2.68,96.9,106.8,10.22,21.5,19.0,11.63,0.0456,"Chapati with Ghee (210g), Whey Protein Shake (Milk-Based) (150g)"
+20,weight_gain,Lunch,1085.0,1054.0,2.86,67.8,53.5,21.09,135.6,122.0,10.03,30.1,39.0,29.57,0.1285,"Roti with Chicken Karahi (250g), Paye with Naan (200g)"
+20,weight_gain,Dinner,930.0,837.2,9.98,58.1,46.2,20.48,116.2,106.5,8.35,25.8,28.2,9.3,0.1218,"Fish Fry with Rice and Salad (200g), Roti with Palak Paneer (250g)"
+20,weight_gain,Snack,310.0,316.4,2.06,19.4,19.8,2.06,38.8,35.9,7.47,8.6,10.6,23.26,0.0631,"Boiled Egg with Roasted Chana (140g), Doodh Soda (Milk & Soda Drink) (150g)"

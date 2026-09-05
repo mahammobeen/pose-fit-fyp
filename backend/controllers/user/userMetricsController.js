@@ -56,28 +56,68 @@ const UserMetricsController = {
       }
 
       // -------------------------------------------------
-      // VALIDATE REQUIRED INPUTS
+      // VALIDATE REQUIRED INPUTS & EXACT SPECIFICATION RANGES
       // -------------------------------------------------
 
-      if (
-        weight === undefined ||
-        height === undefined ||
-        age === undefined ||
-        !gender ||
-        !goal ||
-        !activityLevel
-      ) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "Weight, height, age, gender, goal and activity level are required",
-        });
+      const validGenders = ["male", "female"];
+      const validActivityLevels = [
+        "sedentary",
+        "light",
+        "moderate",
+        "active",
+        "very active",
+      ];
+      const validGoals = ["lose weight", "maintain weight", "gain weight"];
+
+      const errors = {};
+
+      if (age === undefined || age === null || age === "") {
+        errors.age = "Age is required";
+      } else {
+        const numAge = Number(age);
+        if (!Number.isInteger(numAge) || numAge < 16 || numAge > 50) {
+          errors.age = "Age must be an integer between 16 and 50 years inclusive";
+        }
       }
 
-      if (Number(weight) <= 0 || Number(height) <= 0 || Number(age) <= 0) {
+      if (height === undefined || height === null || height === "") {
+        errors.height = "Height is required";
+      } else {
+        const numHeight = Number(height);
+        if (isNaN(numHeight) || numHeight < 100 || numHeight > 250) {
+          errors.height = "Height must be between 100 and 250 cm inclusive";
+        }
+      }
+
+      if (weight === undefined || weight === null || weight === "") {
+        errors.weight = "Weight is required";
+      } else {
+        const numWeight = Number(weight);
+        if (isNaN(numWeight) || numWeight < 25 || numWeight > 200) {
+          errors.weight = "Weight must be between 25 and 200 kg inclusive";
+        }
+      }
+
+      const normalizedGender = String(gender || "").trim().toLowerCase();
+      if (!gender || !validGenders.includes(normalizedGender)) {
+        errors.gender = "Gender must be either 'male' or 'female'";
+      }
+
+      const normalizedActivity = String(activityLevel || "").trim().toLowerCase();
+      if (!activityLevel || !validActivityLevels.includes(normalizedActivity)) {
+        errors.activityLevel = `Activity level must be one of: ${validActivityLevels.join(", ")}`;
+      }
+
+      const normalizedGoal = String(goal || "").trim().toLowerCase();
+      if (!goal || !validGoals.includes(normalizedGoal)) {
+        errors.goal = `Goal must be one of: ${validGoals.join(", ")}`;
+      }
+
+      if (Object.keys(errors).length > 0) {
         return res.status(400).json({
           success: false,
-          message: "Weight, height and age must be greater than 0",
+          message: "Validation failed for health metrics input",
+          errors,
         });
       }
 
@@ -91,26 +131,28 @@ const UserMetricsController = {
 
       // BMI
       const bmi = calculateBMI(numericWeight, numericHeight);
+      const { getBMICategory } = require("../../utils/calc");
+      const bmiCategory = getBMICategory(bmi);
 
-      // BMR
+      // BMR (Mifflin-St Jeor)
       const bmr = calculateBMR(
         numericWeight,
         numericHeight,
         numericAge,
-        gender,
+        normalizedGender,
       );
 
       // TDEE
-      const tdee = calculateTDEE(bmr, activityLevel);
+      const tdee = calculateTDEE(bmr, normalizedActivity);
 
       // Goal Calories
-      const goalCalories = calculateGoalCalories(tdee, goal);
+      const goalCalories = calculateGoalCalories(tdee, normalizedGoal);
 
-      // Macros
-      const macros = calculateMacros(goalCalories);
+      // Macros distributed by Goal
+      const macros = calculateMacros(goalCalories, normalizedGoal);
 
       // Water Intake
-      const waterIntake = calculateWaterIntake(numericWeight, activityLevel);
+      const waterIntake = calculateWaterIntake(numericWeight, normalizedActivity);
 
       // -------------------------------------------------
       // LOG CALCULATIONS
@@ -120,7 +162,7 @@ const UserMetricsController = {
       console.log("CALCULATED VALUES");
       console.log("=================================");
 
-      console.log("BMI:", bmi);
+      console.log("BMI:", bmi, `(${bmiCategory})`);
       console.log("BMR:", bmr);
       console.log("TDEE:", tdee);
       console.log("GOAL CALORIES:", goalCalories);
@@ -130,7 +172,7 @@ const UserMetricsController = {
       console.log("=================================");
 
       // -------------------------------------------------
-      // SAVE / UPDATE
+      // SAVE / UPDATE (Strictly 1 Record per User)
       // -------------------------------------------------
 
       const savedMetrics = await UserMetrics.findOneAndUpdate(
@@ -146,9 +188,9 @@ const UserMetricsController = {
             height: numericHeight,
             age: numericAge,
 
-            gender,
-            goal,
-            activityLevel,
+            gender: normalizedGender,
+            goal: normalizedGoal,
+            activityLevel: normalizedActivity,
 
             dietPref: dietPref || "non-veg",
 
@@ -158,9 +200,15 @@ const UserMetricsController = {
 
             // BACKEND CALCULATED VALUES
             bmi,
+            bmiValue: bmi,
+            bmiCategory,
             bmr,
             tdee,
             goalCalories,
+            targetCalories: goalCalories,
+            protein: macros.protein,
+            carbs: macros.carbs,
+            fats: macros.fat,
             macros,
 
             // WATER
