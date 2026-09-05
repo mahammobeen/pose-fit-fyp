@@ -196,7 +196,7 @@ function isBookingStillActive(booking) {
 
   const status = String(booking.status || "").toLowerCase();
 
-  if (!["pending", "completed"].includes(status)) {
+  if (status !== "completed") {
     return false;
   }
 

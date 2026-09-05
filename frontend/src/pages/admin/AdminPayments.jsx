@@ -10,7 +10,7 @@ import {
   Search,
 } from "lucide-react";
 
-const STATUS_FILTERS = ["all", "completed", "pending", "failed"];
+const STATUS_FILTERS = ["completed", "failed"];
 
 export default function AdminPayments() {
   const [payments, setPayments] = useState([]);
@@ -20,7 +20,7 @@ export default function AdminPayments() {
     useState(0);
 
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("completed");
   const [search, setSearch] = useState("");
   const [toast, setToast] = useState(null);
 
@@ -78,8 +78,7 @@ export default function AdminPayments() {
   };
 
   const filtered = payments.filter((p) => {
-    const matchStatus =
-      statusFilter === "all" || p.status === statusFilter;
+    const matchStatus = p.status === statusFilter;
 
     const q = search.toLowerCase();
 
@@ -327,14 +326,14 @@ export default function AdminPayments() {
                             className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold border ${
                               payment.status === "completed"
                                 ? "bg-brand-light/35 text-brand-dark border-brand-light"
-                                : "bg-gray-100 text-gray-600 border-gray-200"
+                                : "bg-rose-50 text-rose-700 border-rose-200"
                             }`}
                           >
                             <span className="w-1.5 h-1.5 rounded-full bg-current" />
 
                             {payment.status === "completed"
                               ? "Transferred to Connect"
-                              : "Pending"}
+                              : "Failed / Unpaid"}
                           </span>
                         </td>
 

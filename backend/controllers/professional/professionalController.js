@@ -9,31 +9,71 @@ const getStripe = () => {
   return secretKey ? new Stripe(secretKey) : null;
 };
 
-// Helper: auto-syncs any pending checkout sessions directly with Stripe
-const syncPendingPayments = async (payments) => {
-  const pending = payments.filter((p) => p.status === "pending" && p.stripeSessionId);
-  if (!pending.length) return;
 
-  const stripe = getStripe();
-  if (!stripe) return;
+// Helper: Checks if a session appointment date and slot end time has passed
+const isSessionPassed = (booking, now = new Date()) => {
+  if (!booking?.appointmentDate) return true;
+  const appDate = new Date(booking.appointmentDate);
+  if (Number.isNaN(appDate.getTime())) return true;
 
-  for (const p of pending) {
-    try {
-      const session = await stripe.checkout.sessions.retrieve(p.stripeSessionId);
-      if (session.payment_status === "paid") {
-        p.status = "completed";
-        p.payoutStatus = "transferred";
-        p.stripePaymentIntentId = session.payment_intent;
-        p.paidAt = new Date();
-        await p.save();
-      } else if (session.status === "expired") {
-        p.status = "cancelled";
-        await p.save();
-      }
-    } catch {
-      // ignore
+  const appDay = new Date(appDate.getFullYear(), appDate.getMonth(), appDate.getDate());
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  if (appDay < startOfToday) return true;
+  if (appDay > startOfToday) return false;
+
+  // Same day: check appointmentSlot end time
+  if (!booking.appointmentSlot) return false;
+
+  const slotStr = String(booking.appointmentSlot).trim();
+  const parts = slotStr.split(/\s*-\s*/);
+  const startPart = parts[0]?.trim() || "";
+  const endPart = parts[1]?.trim() || "";
+
+  const parseTime = (str, fallbackMeridiem = null) => {
+    const match = str.match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?$/i);
+    if (!match) return null;
+    let h = parseInt(match[1], 10);
+    const m = match[2] ? parseInt(match[2], 10) : 0;
+    const meridiem = match[3]?.toUpperCase() || fallbackMeridiem;
+
+    if (meridiem === "PM" && h < 12) h += 12;
+    if (meridiem === "AM" && h === 12) h = 0;
+
+    return { h, m, meridiem };
+  };
+
+  const startTime = parseTime(startPart);
+  if (!startTime) return false;
+
+  let endHour = startTime.h;
+  let endMinute = startTime.m;
+
+  if (endPart) {
+    const parsedEnd = parseTime(endPart, startTime.meridiem);
+    if (parsedEnd) {
+      endHour = parsedEnd.h;
+      endMinute = parsedEnd.m;
+    } else {
+      const dur = Number(booking.sessionDuration) || 1;
+      endHour += dur;
     }
+  } else {
+    const dur = Number(booking.sessionDuration) || 1;
+    endHour += dur;
   }
+
+  const sessionEndTime = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+    endHour,
+    endMinute,
+    0,
+    0
+  );
+
+  return sessionEndTime <= now;
 };
 
 // 1. Professional Dashboard Metric Aggregation
@@ -53,20 +93,6 @@ const getProfessionalDashboard = async (req, res) => {
       });
     }
 
-    // Fetch payments associated with this professional (only completed payments are valid bookings)
-    let payments = await PaymentModel.find({
-      professional: professionalId,
-      status: "completed",
-      professionalDeleted: false,
-    })
-      .populate("user", "firstName lastName email profilePhoto")
-      .sort({ appointmentDate: -1, createdAt: -1 });
-
-    const totalSessions = payments.length;
-    const completedPayments = payments;
-    const completedSessions = payments.length;
-
-    // Compute monthly earnings (current calendar month)
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -74,6 +100,46 @@ const getProfessionalDashboard = async (req, res) => {
 
     const sevenDaysAgo = new Date(startOfToday);
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    // Automatically update status to "completed" in the database for any payment record
+    // where appointmentDate is in the past and status is still "pending"
+    await PaymentModel.updateMany(
+      {
+        professional: professionalId,
+        appointmentDate: { $lt: startOfToday },
+        status: "pending",
+      },
+      {
+        $set: { status: "completed" },
+      }
+    );
+
+    // Fetch all bookings for this professional (including completed and pending)
+    let payments = await PaymentModel.find({
+      professional: professionalId,
+      status: { $in: ["completed", "pending"] },
+      professionalDeleted: false,
+    })
+      .populate("user", "firstName lastName email profilePhoto")
+      .sort({ appointmentDate: -1, createdAt: -1 });
+
+    // Auto-update any booking that has already passed its slot time to status = "completed"
+    for (const p of payments) {
+      if (isSessionPassed(p, now) && p.status === "pending") {
+        p.status = "completed";
+        await p.save();
+      }
+    }
+
+    const totalSessions = payments.length;
+
+    // Upcoming sessions: ONLY bookings whose session date & slot end time has NOT passed
+    const upcomingBookings = payments.filter((p) => !isSessionPassed(p, now));
+    const upcomingSessionsCount = upcomingBookings.length;
+
+    // Completed sessions: bookings that have already passed
+    const completedPayments = payments.filter((p) => isSessionPassed(p, now) || p.status === "completed");
+    const completedSessions = completedPayments.length;
 
     const monthlyPayments = completedPayments.filter((p) => {
       const paidDate = p.paidAt || p.createdAt;
@@ -90,24 +156,12 @@ const getProfessionalDashboard = async (req, res) => {
       0
     );
 
-    const pendingEarnings = 0;
-
-    // Issue 1: Upcoming sessions should ONLY show bookings where session date >= today
-    const upcomingBookings = completedPayments.filter((p) => {
-      if (!p.appointmentDate) return false;
-      const appDate = new Date(p.appointmentDate);
-      return appDate >= startOfToday;
-    });
-
-    // Issue 4: Dashboard Recent Bookings:
-    // - Only show bookings from the last 7 days
-    // - Among those, only show completed bookings (past date: < today)
-    // - Older than 7 days automatically excluded
-    const recentBookings = completedPayments
+    // Recent Bookings: sessions completed in the last 7 days
+    const recentBookings = payments
       .filter((p) => {
         if (!p.appointmentDate) return false;
         const appDate = new Date(p.appointmentDate);
-        return appDate < startOfToday && appDate >= sevenDaysAgo;
+        return isSessionPassed(p, now) && appDate >= sevenDaysAgo;
       })
       .sort((a, b) => new Date(b.appointmentDate) - new Date(a.appointmentDate));
 
@@ -133,7 +187,6 @@ const getProfessionalDashboard = async (req, res) => {
           upcomingSessionsCount: upcomingBookings.length,
           monthlyEarnings: Number(monthlyEarnings.toFixed(2)),
           totalEarnings: Number(totalEarnings.toFixed(2)),
-          pendingEarnings: Number(pendingEarnings.toFixed(2)),
           averageRating: professional.rating?.average || 5.0,
           ratingCount: professional.rating?.count || 0,
         },
@@ -272,29 +325,51 @@ const getProfessionalBookings = async (req, res) => {
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     startOfToday.setHours(0, 0, 0, 0);
 
+    // Automatically update status to "completed" in the database for any payment record
+    // where appointmentDate is in the past and status is still "pending"
+    await PaymentModel.updateMany(
+      {
+        professional: professionalId,
+        appointmentDate: { $lt: startOfToday },
+        status: "pending",
+      },
+      {
+        $set: { status: "completed" },
+      }
+    );
+
     const activeTab = (tab || status || "all").toLowerCase();
 
     const query = {
       professional: professionalId,
       professionalDeleted: false,
-      status: "completed", // Only completed payments are valid bookings
+      status: { $in: ["completed", "pending"] },
     };
 
     let sortOrder = { appointmentDate: -1, createdAt: -1 };
 
     if (activeTab === "pending") {
-      // Pending = upcoming (future/today date) and payment is completed
+      // Pending = upcoming (future/today date)
       query.appointmentDate = { $gte: startOfToday };
       sortOrder = { appointmentDate: 1, createdAt: -1 };
     } else if (activeTab === "completed") {
       // Completed = session date has already passed
-      query.appointmentDate = { $lt: startOfToday };
+      const endOfToday = new Date(startOfToday);
+      endOfToday.setHours(23, 59, 59, 999);
+      query.appointmentDate = { $lte: endOfToday };
       sortOrder = { appointmentDate: -1, createdAt: -1 };
     }
 
     const bookings = await PaymentModel.find(query)
       .populate("user", "firstName lastName email profilePhoto")
       .sort(sortOrder);
+
+    for (const b of bookings) {
+      if (isSessionPassed(b, now) && b.status === "pending") {
+        b.status = "completed";
+        await b.save();
+      }
+    }
 
     return res.status(200).json({
       success: true,
@@ -564,27 +639,16 @@ const getProfessionalEarnings = async (req, res) => {
       });
     }
 
-    let payments = await PaymentModel.find({
+    const payments = await PaymentModel.find({
       professional: professionalId,
-    })
-      .populate("user", "firstName lastName email")
-      .sort({ createdAt: -1 });
-
-    // Synchronize pending payments with Stripe
-    await syncPendingPayments(payments);
-
-    // Fetch updated payments after synchronization
-    payments = await PaymentModel.find({
-      professional: professionalId,
+      professionalDeleted: false,
     })
       .populate("user", "firstName lastName email")
       .sort({ createdAt: -1 });
 
     /*
      * ONLY COMPLETED PAYMENTS ARE ACTIVE EARNINGS.
-     *
-     * Pending, cancelled and failed payments
-     * are not included in earnings.
+     * Failed payments are not included in earnings.
      */
     const completedPayments = payments.filter(
       (p) => p.status === "completed"
@@ -626,18 +690,6 @@ const getProfessionalEarnings = async (req, res) => {
     );
 
     /*
-     * PENDING CLEARANCE
-     *
-     * Only pending payments are included.
-     */
-    const pendingEarnings = payments
-      .filter((p) => p.status === "pending")
-      .reduce(
-        (sum, p) => sum + Number(p.professionalAmount || 0),
-        0
-      );
-
-    /*
      * RELEASED EARNINGS
      *
      * Only completed payments that have actually been
@@ -663,10 +715,6 @@ const getProfessionalEarnings = async (req, res) => {
 
         currentMonthEarnings: Number(
           currentMonthEarnings.toFixed(2)
-        ),
-
-        pendingEarnings: Number(
-          pendingEarnings.toFixed(2)
         ),
 
         releasedEarnings: Number(

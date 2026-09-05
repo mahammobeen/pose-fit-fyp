@@ -7,7 +7,6 @@ import {
   Building2,
   TrendingUp,
   CheckCircle,
-  Clock,
 } from "lucide-react";
 
 export default function ProfessionalEarnings() {
@@ -61,6 +60,30 @@ export default function ProfessionalEarnings() {
     }
   };
 
+  const handleDelete = async (paymentId) => {
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this earning record? This will only remove it from your earnings history.",
+    );
+
+    if (!confirmed) return;
+
+    try {
+      await httpClient.delete(`/payment/professional/payments/${paymentId}`);
+
+      showToast("Earning record deleted successfully.");
+
+      fetchEarnings();
+    } catch (error) {
+      console.error("Delete earning record error:", error);
+
+      showToast(
+        error?.response?.data?.message ||
+          "Failed to delete earning record.",
+        "error",
+      );
+    }
+  };
+
   const metrics = earningsData?.earnings;
   const stripe = earningsData?.stripeStatus;
   const history = earningsData?.paymentHistory || [];
@@ -89,14 +112,6 @@ export default function ProfessionalEarnings() {
       iconBg: "bg-brand-light/40",
       iconColor: "text-brand-dark",
       valueColor: "text-brand-dark",
-    },
-    {
-      label: "Pending Clearance",
-      value: `$${metrics?.pendingEarnings?.toFixed(2) || "0.00"}`,
-      Icon: Clock,
-      iconBg: "bg-amber-50",
-      iconColor: "text-amber-700",
-      valueColor: "text-amber-800",
     },
   ];
 
@@ -148,55 +163,60 @@ export default function ProfessionalEarnings() {
                     className={`rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${
                       stripe?.payoutsEnabled
                         ? "border-brand-light bg-brand-light/30 text-brand-dark"
-                        : "border-amber-200 bg-amber-50 text-amber-800"
+                        : stripe?.accountStatus === "active"
+                          ? "border-brand-light bg-brand-light/30 text-brand-dark"
+                          : "border-amber-200 bg-amber-50 text-amber-800"
                     }`}
                   >
-                    {stripe?.payoutsEnabled
+                    {stripe?.payoutsEnabled ||
+                    stripe?.accountStatus === "active"
                       ? "Connected & Active"
-                      : "Pending Setup"}
+                      : "Action Required"}
                   </span>
                 </p>
 
                 <p className="mt-0.5 text-xs font-medium text-gray-500">
-                  {stripe?.payoutsEnabled
-                    ? `Automatic 80% session share transfers active ${
-                        stripe?.maskedBank ? `(${stripe.maskedBank})` : ""
+                  {stripe?.connected
+                    ? `Account ID: ${stripe.stripeAccountId}${
+                        stripe?.maskedBank ? ` • Bank: ${stripe.maskedBank}` : ""
                       }`
-                    : "Connect bank account to receive automatic transfers."}
+                    : "Connect your bank account via Stripe Express to receive direct payouts."}
                 </p>
               </div>
             </div>
 
-            {stripe?.payoutsEnabled && (
+            {stripe?.connected && (
               <button
                 onClick={handleOpenStripeDashboard}
                 disabled={actionLoading}
-                className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-2 text-xs font-bold text-sky-800 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-sky-100 disabled:cursor-not-allowed disabled:opacity-60"
+                className="rounded-btn border border-gray-200 bg-white/70 px-4 py-2 text-xs font-bold text-gray-700 shadow-card transition-all hover:bg-brand-light/20 hover:text-brand-dark disabled:opacity-50"
               >
-                {actionLoading ? "Opening..." : "Launch Stripe Dashboard"}
+                {actionLoading
+                  ? "Opening..."
+                  : "Open Stripe Express Dashboard ↗"}
               </button>
             )}
           </div>
         </div>
 
-        {/* Summary Metric Cards */}
-        <div className="mb-6 grid grid-cols-1 gap-4 px-4 sm:grid-cols-2 sm:px-6 lg:grid-cols-4 lg:px-8">
+        {/* Financial Stat Cards */}
+        <div className="mb-6 grid grid-cols-1 gap-4 px-4 sm:grid-cols-2 sm:px-6 lg:grid-cols-3 lg:px-8">
           {cards.map((c) => (
             <div
               key={c.label}
-              className="rounded-card border border-brand-light/50 bg-surface/80 p-5 shadow-card transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover"
+              className="rounded-card border border-brand-light/50 bg-surface/80 p-5 shadow-card transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover backdrop-blur-xl"
             >
               <div
-                className={`mb-2 flex h-9 w-9 items-center justify-center rounded-2xl ${c.iconBg} ${c.iconColor}`}
+                className={`mb-3 flex h-11 w-11 items-center justify-center rounded-2xl ${c.iconBg} ${c.iconColor}`}
               >
-                <c.Icon className="h-5 w-5" />
+                <c.Icon className="h-6 w-6" />
               </div>
 
-              <p className={`text-2xl font-extrabold ${c.valueColor}`}>
+              <p className={`text-2xl font-black ${c.valueColor}`}>
                 {loading ? "-" : c.value}
               </p>
 
-              <p className="mt-1 text-xs font-bold uppercase tracking-wider text-gray-500">
+              <p className="mt-1 text-xs font-bold uppercase tracking-wider text-gray-400">
                 {c.label}
               </p>
             </div>
@@ -231,6 +251,7 @@ export default function ProfessionalEarnings() {
                         "Status",
                         "Connect Payout",
                         "Date",
+                        "Action",
                       ].map((h) => (
                         <th
                           key={h}
@@ -315,6 +336,16 @@ export default function ProfessionalEarnings() {
                             day: "numeric",
                             year: "numeric",
                           })}
+                        </td>
+
+                        {/* Action */}
+                        <td className="whitespace-nowrap px-5 py-4">
+                          <button
+                            onClick={() => handleDelete(p._id)}
+                            className="whitespace-nowrap rounded-btn border border-rose-200 bg-rose-50 px-3.5 py-1.5 text-xs font-bold text-rose-700 transition-colors hover:bg-rose-100"
+                          >
+                            Delete
+                          </button>
                         </td>
                       </tr>
                     ))}

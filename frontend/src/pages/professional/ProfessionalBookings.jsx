@@ -10,14 +10,89 @@ const TABS = [
   { id: "completed", label: "Completed" },
 ];
 
-function getBookingStatus(booking, tab) {
-  if (tab === "pending") return "pending";
-  if (tab === "completed") return "completed";
-  if (!booking?.appointmentDate) return "completed";
+function isSessionPassed(booking) {
+  if (!booking?.appointmentDate) return true;
+  const appDate = new Date(booking.appointmentDate);
+  if (Number.isNaN(appDate.getTime())) return true;
+
   const now = new Date();
+
+  // Compare calendar days
+  const appDay = new Date(appDate.getFullYear(), appDate.getMonth(), appDate.getDate());
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  startOfToday.setHours(0, 0, 0, 0);
-  return new Date(booking.appointmentDate) >= startOfToday ? "pending" : "completed";
+
+  if (appDay < startOfToday) {
+    return true;
+  }
+
+  if (appDay > startOfToday) {
+    return false;
+  }
+
+  // Same day: check slot end time
+  if (!booking.appointmentSlot) {
+    return false;
+  }
+
+  const slotStr = String(booking.appointmentSlot).trim();
+  const parts = slotStr.split(/\s*-\s*/);
+  const startPart = parts[0]?.trim() || "";
+  const endPart = parts[1]?.trim() || "";
+
+  const parseTime = (str, fallbackMeridiem = null) => {
+    const match = str.match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?$/i);
+    if (!match) return null;
+    let h = parseInt(match[1], 10);
+    const m = match[2] ? parseInt(match[2], 10) : 0;
+    const meridiem = match[3]?.toUpperCase() || fallbackMeridiem;
+
+    if (meridiem === "PM" && h < 12) h += 12;
+    if (meridiem === "AM" && h === 12) h = 0;
+
+    return { h, m, meridiem };
+  };
+
+  const startTime = parseTime(startPart);
+  if (!startTime) return false;
+
+  let endHour = startTime.h;
+  let endMinute = startTime.m;
+
+  if (endPart) {
+    const parsedEnd = parseTime(endPart, startTime.meridiem);
+    if (parsedEnd) {
+      endHour = parsedEnd.h;
+      endMinute = parsedEnd.m;
+    } else {
+      const dur = Number(booking.sessionDuration) || 1;
+      endHour += dur;
+    }
+  } else {
+    const dur = Number(booking.sessionDuration) || 1;
+    endHour += dur;
+  }
+
+  const sessionEndTime = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+    endHour,
+    endMinute,
+    0,
+    0
+  );
+
+  return sessionEndTime <= now;
+}
+
+function getBookingStatus(booking) {
+  // If session date and time has passed, show "Completed" regardless of database status
+  if (isSessionPassed(booking)) {
+    return "completed";
+  }
+
+  // Otherwise, show "Pending"
+  return "pending";
 }
 
 export default function ProfessionalBookings() {
@@ -85,7 +160,17 @@ export default function ProfessionalBookings() {
       b.user?.lastName?.toLowerCase().includes(q) ||
       b.user?.email?.toLowerCase().includes(q);
 
-    return matchSearch;
+    if (!matchSearch) return false;
+
+    if (activeTab === "pending") {
+      return !isSessionPassed(b);
+    }
+
+    if (activeTab === "completed") {
+      return isSessionPassed(b);
+    }
+
+    return true;
   });
 
   return (
@@ -248,7 +333,7 @@ export default function ProfessionalBookings() {
 
                         {/* Status */}
                         <td className="whitespace-nowrap px-6 py-4">
-                          <StatusBadge status={getBookingStatus(b, activeTab)} />
+                          <StatusBadge status={getBookingStatus(b)} />
                         </td>
 
                         {/* Date */}

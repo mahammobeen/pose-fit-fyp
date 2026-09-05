@@ -393,9 +393,18 @@ const getUserPayments = async (req, res) => {
 // 4. Get all payments and metrics for Admin Panel
 const getAdminPayments = async (req, res) => {
   try {
-    const payments = await PaymentModel.find({
+    const { status } = req.query;
+
+    const query = {
       adminDeleted: false,
-    })
+      status: { $in: ["completed", "failed"] },
+    };
+
+    if (status && ["completed", "failed"].includes(status.toLowerCase())) {
+      query.status = status.toLowerCase();
+    }
+
+    const payments = await PaymentModel.find(query)
       .populate("user", "firstName lastName email")
       .populate(
         "professional",
@@ -426,9 +435,6 @@ const getAdminPayments = async (req, res) => {
     const failedCount = payments.filter(
       (p) => p.status === "failed"
     ).length;
-    const pendingCount = payments.filter(
-      (p) => p.status === "pending"
-    ).length;
 
     return res.status(200).json({
       success: true,
@@ -437,7 +443,6 @@ const getAdminPayments = async (req, res) => {
       totalProfessionalEarnings,
       completedCount,
       failedCount,
-      pendingCount,
       totalTransactions: payments.length,
       payments,
     });
@@ -1086,33 +1091,7 @@ const stripeWebhook = async (req, res) => {
     }
 
     // ============================================================
-    // 4. CHECKOUT SESSION EXPIRED
-    // ============================================================
-
-    if (event.type === "checkout.session.expired") {
-      const session = event.data.object;
-
-      const paymentId =
-        session.metadata?.paymentId;
-
-      if (paymentId) {
-        const payment =
-          await PaymentModel.findById(paymentId);
-
-        if (payment && payment.status === "pending") {
-          payment.status = "failed";
-
-          await payment.save();
-
-          console.log(
-            `Payment ${paymentId} marked as failed because checkout session expired.`
-          );
-        }
-      }
-    }
-
-    // ============================================================
-    // 5. STRIPE CONNECT ACCOUNT UPDATED
+    // 4. STRIPE CONNECT ACCOUNT UPDATED
     // ============================================================
 
     if (
