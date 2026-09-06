@@ -22,10 +22,7 @@ export default function PublicProfessionals() {
   const [professionals, setProfessionals] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // =====================================================
   // GET PUBLIC PROFESSIONALS
-  // =====================================================
-
   const fetchPublicProfessionals = useCallback(async () => {
     try {
       setLoading(true);
@@ -49,18 +46,12 @@ export default function PublicProfessionals() {
     }
   }, []);
 
-  // =====================================================
   // FETCH ON LOAD
-  // =====================================================
-
   useEffect(() => {
     fetchPublicProfessionals();
   }, [fetchPublicProfessionals]);
 
-  // =====================================================
   // PROFILE IMAGE
-  // =====================================================
-
   const getProfileImage = (profilePhoto) => {
     if (!profilePhoto) {
       return null;
@@ -87,10 +78,7 @@ export default function PublicProfessionals() {
     return `${backendURL}/${profilePhoto}`;
   };
 
-  // =====================================================
   // IMAGE ERROR
-  // =====================================================
-
   const handleImageError = (event) => {
     event.currentTarget.style.display = "none";
 
@@ -103,10 +91,7 @@ export default function PublicProfessionals() {
     }
   };
 
-  // =====================================================
   // VIEW PROFILE
-  // =====================================================
-
   const handleViewProfile = (id) => {
     if (!id) {
       toast.error("Professional ID not found");
@@ -116,10 +101,7 @@ export default function PublicProfessionals() {
     navigate(`/user/professionals/${id}`);
   };
 
-  // =====================================================
   // LOADING
-  // =====================================================
-
   if (loading) {
     return (
       <UserLayout>
@@ -136,17 +118,12 @@ export default function PublicProfessionals() {
     );
   }
 
-  // =====================================================
   // UI
-  // =====================================================
-
   return (
     <UserLayout>
       <div className="min-h-full bg-transparent font-sans">
-        {/* =====================================================
-            HEADER
-        ===================================================== */}
-
+      
+           // HEADER
         <section className="border-b border-brand-light/50 bg-surface/75 backdrop-blur-xl">
           <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
             <div className="max-w-3xl">
@@ -171,10 +148,8 @@ export default function PublicProfessionals() {
           </div>
         </section>
 
-        {/* =====================================================
-            PROFESSIONALS
-        ===================================================== */}
-
+       
+           // PROFESSIONALS
         <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
           {/* Results Header */}
 
@@ -191,11 +166,8 @@ export default function PublicProfessionals() {
             </div>
           </div>
 
-          {/* =================================================
-              EMPTY STATE
-          ================================================= */}
-
-          {professionals.length === 0 ? (
+             // EMPTY STATE
+            {professionals.length === 0 ? (
             <div className="rounded-card border border-brand-light/50 bg-surface/80 p-16 text-center shadow-card backdrop-blur-xl">
               <UserRound className="mx-auto mb-4 h-14 w-14 text-gray-300" />
 
@@ -208,10 +180,8 @@ export default function PublicProfessionals() {
               </p>
             </div>
           ) : (
-            /* =================================================
-               PROFESSIONAL CARDS
-            ================================================= */
-
+           
+               // PROFESSIONAL CARDS
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
               {professionals.map((professional) => {
                 const imageUrl = getProfileImage(professional.profilePhoto);
@@ -225,10 +195,8 @@ export default function PublicProfessionals() {
                     key={professional._id}
                     className="overflow-hidden rounded-card border border-brand-light/50 bg-surface/80 shadow-card backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover"
                   >
-                    {/* =================================================
-                        CARD CONTENT
-                    ================================================= */}
-
+                    
+                    //  CARD CONTENT
                     <div className="p-6">
                       {/* Profile Header */}
 
@@ -280,10 +248,7 @@ export default function PublicProfessionals() {
                         </div>
                       </div>
 
-                      {/* =================================================
-                          RATING
-                      ================================================= */}
-
+                         // RATING
                       <div className="mt-5 flex items-center gap-2">
                         <div className="flex items-center gap-1">
                           <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
@@ -300,11 +265,8 @@ export default function PublicProfessionals() {
                         </span>
                       </div>
 
-                      {/* =================================================
-                          INFO
-                      ================================================= */}
-
-                      <div className="mt-5 grid grid-cols-2 gap-3">
+                        //  INFO
+                 <div className="mt-5 grid grid-cols-2 gap-3">
                         {/* Experience */}
 
                         <div className="rounded-btn border border-brand-light/40 bg-brand-light/10 p-3">
@@ -340,11 +302,8 @@ export default function PublicProfessionals() {
                         </div>
                       </div>
 
-                      {/* =================================================
-                          AVAILABILITY
-                      ================================================= */}
-
-                      <div className="mt-5 flex items-center gap-2 text-sm text-gray-500">
+                         // AVAILABILITY
+                       <div className="mt-5 flex items-center gap-2 text-sm text-gray-500">
                         <Calendar className="h-4 w-4 text-brand" />
 
                         <span>
@@ -355,11 +314,8 @@ export default function PublicProfessionals() {
                       </div>
                     </div>
 
-                    {/* =================================================
-                        VIEW PROFILE BUTTON
-                    ================================================= */}
-
-                    <div className="border-t border-brand-light/40 p-4">
+                       // VIEW PROFILE BUTTON
+                   <div className="border-t border-brand-light/40 p-4">
                       <button
                         onClick={() => handleViewProfile(professional._id)}
                         className="flex w-full items-center justify-center gap-2 rounded-btn bg-gray-800 px-4 py-3 text-sm font-bold text-white shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:bg-gray-700 hover:shadow-card-hover"

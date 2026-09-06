@@ -1,30 +1,19 @@
 const UserModel = require("../../models/userModel");
 
-// =====================================================
-// ADD REVIEW
-// User multiple reviews de sakta hai
-// =====================================================
-
 const addReview = async (req, res) => {
   try {
     const userId = req.user?._id || req.user?.id;
     const { rating, comment } = req.body;
 
-    // -----------------------------
     // Check logged-in user
-    // -----------------------------
-
-    if (!userId) {
+      if (!userId) {
       return res.status(401).json({
         success: false,
         message: "User authentication required",
       });
     }
 
-    // -----------------------------
     // Validate rating
-    // -----------------------------
-
     if (rating === undefined || rating === null || rating === "") {
       return res.status(400).json({
         success: false,
@@ -45,10 +34,7 @@ const addReview = async (req, res) => {
       });
     }
 
-    // -----------------------------
     // Validate comment
-    // -----------------------------
-
     if (!comment || !comment.trim()) {
       return res.status(400).json({
         success: false,
@@ -63,10 +49,7 @@ const addReview = async (req, res) => {
       });
     }
 
-    // -----------------------------
     // Find user
-    // -----------------------------
-
     const user = await UserModel.findById(userId);
 
     if (!user) {
@@ -76,22 +59,16 @@ const addReview = async (req, res) => {
       });
     }
 
-    // -----------------------------
     // Create review
-    // -----------------------------
-
-    const newReview = {
+     const newReview = {
       rating: numericRating,
       comment: comment.trim(),
       createdAt: new Date(),
       updatedAt: new Date(),
     };
 
-    // -----------------------------
     // Add review to user's reviews
-    // -----------------------------
-
-    if (!user.reviews) {
+  if (!user.reviews) {
       user.reviews = [];
     }
 
@@ -114,11 +91,8 @@ const addReview = async (req, res) => {
   }
 };
 
-// =====================================================
 // GET ALL WEBSITE REVIEWS
 // Public reviews
-// =====================================================
-
 const getAllReviews = async (req, res) => {
   try {
     const users = await UserModel.find({
@@ -170,10 +144,7 @@ const getAllReviews = async (req, res) => {
   }
 };
 
-// =====================================================
 // GET LOGGED-IN USER'S REVIEWS
-// =====================================================
-
 const getMyReviews = async (req, res) => {
   try {
     const userId = req.user?._id || req.user?.id;
@@ -211,11 +182,8 @@ const getMyReviews = async (req, res) => {
   }
 };
 
-// =====================================================
 // UPDATE REVIEW
 // User apna existing review update kar sakta hai
-// =====================================================
-
 const updateReview = async (req, res) => {
   try {
     const userId = req.user?._id || req.user?.id;
@@ -247,10 +215,7 @@ const updateReview = async (req, res) => {
       });
     }
 
-    // -----------------------------
     // Validate rating
-    // -----------------------------
-
     if (rating !== undefined) {
       const numericRating = Number(rating);
 
@@ -268,11 +233,8 @@ const updateReview = async (req, res) => {
       review.rating = numericRating;
     }
 
-    // -----------------------------
     // Validate comment
-    // -----------------------------
-
-    if (comment !== undefined) {
+     if (comment !== undefined) {
       if (!comment.trim()) {
         return res.status(400).json({
           success: false,
@@ -309,10 +271,7 @@ const updateReview = async (req, res) => {
   }
 };
 
-// =====================================================
 // DELETE REVIEW
-// =====================================================
-
 const deleteReview = async (req, res) => {
   try {
     const userId = req.user?._id || req.user?.id;

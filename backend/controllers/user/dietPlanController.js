@@ -78,9 +78,7 @@ function arePlansDuplicate(ids1, ids2) {
 }
 
 const dietPlanController = {
-  // =====================================================
   // GENERATE / REGENERATE DIET PLAN
-  // =====================================================
   generatePlan: async (req, res) => {
     try {
       const { userId } = req.params;
@@ -127,13 +125,13 @@ const dietPlanController = {
         ? extractFoodIds(existingPlan.planDays)
         : [];
 
-      console.log("=================================");
+      console.log("------");
       console.log(`GENERATING DIET PLAN FOR USER: ${userId}`);
       console.log(`Existing plan found: ${Boolean(existingPlan)}`);
       if (previousFoodIds.length) {
         console.log(`Previous food IDs count: ${previousFoodIds.length}`);
       }
-      console.log("=================================");
+      console.log("-------");
 
       // 3. Request plan from FastAPI
       let newPlanData = await fastapiDietService.generateDietPlan({
@@ -232,10 +230,10 @@ const dietPlanController = {
         }
       );
 
-      console.log("=================================");
+      console.log("---------");
       console.log("DIET PLAN SAVED SUCCESSFULLY IN MONGODB");
       console.log("Generated At:", now);
-      console.log("=================================");
+      console.log("---------");
 
       const dayExpiry = calculateDayExpiry(now);
 
@@ -261,9 +259,7 @@ const dietPlanController = {
     }
   },
 
-  // =====================================================
   // GET CURRENT 3-DAY PLAN (WITH EXPIRY STATUS)
-  // =====================================================
   getCurrentPlan: async (req, res) => {
     try {
       const { userId } = req.params;
@@ -305,9 +301,7 @@ const dietPlanController = {
     }
   },
 
-  // =====================================================
   // GET TODAY'S MEALS SPECIFICALLY FOR DASHBOARD CARD
-  // =====================================================
   getTodayPlan: async (req, res) => {
     try {
       const { userId } = req.params;
