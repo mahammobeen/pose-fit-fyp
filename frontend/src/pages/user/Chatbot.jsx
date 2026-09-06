@@ -4,10 +4,21 @@ import { Send, Bot, User, Trash2, Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import UserLayout from "../../components/user/UserLayout";
 
+// ----- Helper: Get or create session ID stored in localStorage -----
+const getSessionId = () => {
+  let id = localStorage.getItem('posefit_session_id');
+  if (!id) {
+    id = 'user-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6);
+    localStorage.setItem('posefit_session_id', id);
+  }
+  return id;
+};
+
 function Chatbot() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [sessionId, setSessionId] = useState(getSessionId); // Initialize with persistent ID
 
   const messagesEndRef = useRef(null);
 
@@ -53,6 +64,7 @@ function Chatbot() {
     try {
       const { data } = await httpClient.post("/user/chatbot", {
         message: cleanText,
+        sessionId: sessionId,  // <-- Include sessionId
       });
 
       const botReply = data?.reply || "Sorry, I could not generate a response.";
@@ -102,12 +114,18 @@ function Chatbot() {
   };
 
   // =====================================================
-  // CLEAR CHAT
+  // CLEAR CHAT (also resets session on backend)
   // =====================================================
 
   const clearChat = () => {
     if (messages.length === 0) return;
 
+    // Generate a new session ID so the backend starts fresh
+    const newId = 'user-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6);
+    localStorage.setItem('posefit_session_id', newId);
+    setSessionId(newId);
+
+    // Clear messages locally
     setMessages([]);
     setInput("");
 
