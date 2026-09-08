@@ -36,8 +36,9 @@ const getAllUsers = async (req, res) => {
 // 2. Get list of all users
 const userDetails = async (req, res) => {
   try {
-    const users = await UserModel.find({ role: "USER" })
-      .select("-password -verificationCode");
+    const users = await UserModel.find({ role: "USER" }).select(
+      "-password -verificationCode",
+    );
 
     return res.status(200).json({
       success: true,
@@ -99,12 +100,10 @@ const updateUser = async (req, res) => {
 
     if (firstName) updatedData.firstName = firstName;
     if (lastName) updatedData.lastName = lastName;
-    
-    const updatedUser = await UserModel.findByIdAndUpdate(
-      userId,
-      updatedData,
-      { new: true }
-    ).select("-password -verificationCode");
+
+    const updatedUser = await UserModel.findByIdAndUpdate(userId, updatedData, {
+      new: true,
+    }).select("-password -verificationCode");
 
     return res.status(200).json({
       success: true,
@@ -152,9 +151,7 @@ const getStats = async (req, res) => {
     });
 
     const conversionRate =
-      totalUsers > 0
-        ? Math.round((verifiedUsers / totalUsers) * 100)
-        : 0;
+      totalUsers > 0 ? Math.round((verifiedUsers / totalUsers) * 100) : 0;
 
     return res.status(200).json({
       success: true,
@@ -229,7 +226,8 @@ const addProfessional = async (req, res) => {
       });
     }
 
-    const tempPassword = password || `PoseFit@${Math.floor(1000 + Math.random() * 9000)}`;
+    const tempPassword =
+      password || `PoseFit@${Math.floor(1000 + Math.random() * 9000)}`;
     const hashedPassword = await bcrypt.hash(tempPassword, 10);
 
     const newProfessional = new UserModel({
@@ -275,8 +273,8 @@ PoseFit Team`,
 
     return res.status(201).json({
       success: true,
-      message: "Professional invited & account created successfully. Credentials emailed to professional.",
-      tempPassword,
+      message:
+        "Professional invited & account created successfully. Credentials emailed to professional.",
       professional: {
         _id: newProfessional._id,
         firstName: newProfessional.firstName,
@@ -414,7 +412,7 @@ const getPendingProfessionals = async (req, res) => {
       },
     })
       .select(
-        "firstName lastName email role professionalType specialization bio profilePhoto sessionFee credentialDocs bankDetails availability professionalStatus rejectionReason appliedAt verificationNotes"
+        "firstName lastName email role professionalType specialization bio profilePhoto sessionFee credentialDocs bankDetails availability professionalStatus rejectionReason appliedAt verificationNotes",
       )
       .sort({ updatedAt: -1 });
 
@@ -463,7 +461,10 @@ const updateProfessionalStatus = async (req, res) => {
       professional.rejectionReason = undefined;
     } else {
       professional.professionalStatus = "rejected";
-      professional.rejectionReason = rejectionReason || verificationNotes || "Application requirements not met.";
+      professional.rejectionReason =
+        rejectionReason ||
+        verificationNotes ||
+        "Application requirements not met.";
     }
 
     if (verificationNotes) {
@@ -557,7 +558,7 @@ const changeAdminPassword = async (req, res) => {
 
     const isPasswordCorrect = await bcrypt.compare(
       currentPassword,
-      admin.password
+      admin.password,
     );
 
     if (!isPasswordCorrect) {
@@ -567,10 +568,7 @@ const changeAdminPassword = async (req, res) => {
       });
     }
 
-    const isSamePassword = await bcrypt.compare(
-      newPassword,
-      admin.password
-    );
+    const isSamePassword = await bcrypt.compare(newPassword, admin.password);
 
     if (isSamePassword) {
       return res.status(400).json({
