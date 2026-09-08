@@ -50,6 +50,11 @@ const BLOCKED_VOICE_MESSAGES = new Set([
   "Ready to start",
 ]);
 
+const POSE_API_URL = (import.meta.env.VITE_POSE_API_URL || "").replace(
+  /\/$/,
+  "",
+);
+
 export default function WorkoutSession() {
   const { exerciseId } = useParams();
   const navigate = useNavigate();
@@ -59,11 +64,21 @@ export default function WorkoutSession() {
     image: "",
   };
 
+  const sessionIdRef = useRef(
+    "session_" + Math.random().toString(36).substring(2, 11) + "_" + Date.now()
+  );
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const streamRef = useRef(null);
+  const isActiveRef = useRef(false);
+  const frameTimerRef = useRef(null);
+
   const [hasPermission, setHasPermission] = useState(() => {
     return localStorage.getItem("posefit_cam_permission") === "granted";
   });
 
   const [isActive, setIsActive] = useState(false);
+  const [processedImage, setProcessedImage] = useState(null);
   const [reps, setReps] = useState(0);
   const [angle, setAngle] = useState(0.0);
   const [feedback, setFeedback] = useState("Ready to start");
@@ -73,20 +88,14 @@ export default function WorkoutSession() {
   const [isMuted, setIsMuted] = useState(false);
   const [personDetected, setPersonDetected] = useState(false);
 
-  const eventSourceRef = useRef(null);
   const lastSpokenRef = useRef({ text: "", time: 0 });
 
-  // Initial status & listeners
+  // Initial status check
   useEffect(() => {
     axios
-      .get("http://localhost:5002/status")
-      .then((res) => {
+      .get(`${POSE_API_URL}/status?session_id=${sessionIdRef.current}`)
+      .then(() => {
         setServerOnline(true);
-
-        if (res.data.is_active) {
-          setIsActive(true);
-          startListening();
-        }
       })
       .catch(() => setServerOnline(false));
 
@@ -125,42 +134,71 @@ export default function WorkoutSession() {
     };
   }, [feedback, warning, isMuted]);
 
-  // Streaming Connection
-  const startListening = () => {
-    if (eventSourceRef.current) {
-      eventSourceRef.current.close();
+  // Frame processing loop from browser webcam to Python pose service
+  const sendNextFrame = async () => {
+    if (!isActiveRef.current) return;
+
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+
+    if (video && canvas && video.readyState >= 2) {
+      try {
+        const width = video.videoWidth || 640;
+        const height = video.videoHeight || 480;
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(video, 0, 0, width, height);
+
+        const base64Image = canvas.toDataURL("image/jpeg", 0.6);
+
+        const res = await axios.post(`${POSE_API_URL}/process_frame`, {
+          session_id: sessionIdRef.current,
+          exercise: exerciseId,
+          image: base64Image,
+        });
+
+        if (isActiveRef.current && res.data) {
+          setReps(res.data.reps ?? 0);
+          setAngle(res.data.angle ?? 0.0);
+          setFeedback(res.data.feedback || "Ready");
+          setWarning(res.data.warning || "");
+          setDirection(res.data.direction || "none");
+          setPersonDetected(res.data.person_detected ?? false);
+          if (res.data.image) {
+            setProcessedImage(res.data.image);
+          }
+          setServerOnline(true);
+        }
+      } catch (err) {
+        console.error("Frame processing error:", err);
+      }
     }
 
-    const es = new EventSource("http://localhost:5002/metrics");
-
-    eventSourceRef.current = es;
-
-    es.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-
-        setReps(data.reps || 0);
-        setAngle(data.angle || 0.0);
-        setFeedback(data.feedback || "Ready");
-        setWarning(data.warning || "");
-        setDirection(data.direction || "none");
-        setPersonDetected(data.person_detected || false);
-      } catch (err) {
-        console.error("Metric parse error", err);
-      }
-    };
-
-    es.onerror = () => es.close();
+    if (isActiveRef.current) {
+      frameTimerRef.current = setTimeout(sendNextFrame, 30);
+    }
   };
 
   const cleanupSession = async () => {
-    if (eventSourceRef.current) {
-      eventSourceRef.current.close();
-      eventSourceRef.current = null;
+    isActiveRef.current = false;
+    if (frameTimerRef.current) {
+      clearTimeout(frameTimerRef.current);
+      frameTimerRef.current = null;
+    }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
     }
 
     try {
-      await axios.post("http://localhost:5002/stop");
+      await axios.post(`${POSE_API_URL}/stop`, {
+        session_id: sessionIdRef.current,
+      });
     } catch (_) {}
   };
 
@@ -168,7 +206,7 @@ export default function WorkoutSession() {
   const requestCamera = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
+        video: { width: 640, height: 480 },
       });
 
       stream.getTracks().forEach((t) => t.stop());
@@ -190,54 +228,85 @@ export default function WorkoutSession() {
       return;
     }
 
-    setIsActive(true);
-    setPersonDetected(false);
-
-    startListening();
-
     try {
-      await axios.post("http://localhost:5002/start", {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: 640, height: 480 },
+      });
+
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+      }
+
+      await axios.post(`${POSE_API_URL}/start`, {
+        session_id: sessionIdRef.current,
         exercise: exerciseId,
       });
 
+      isActiveRef.current = true;
+      setIsActive(true);
+      setPersonDetected(false);
+      setServerOnline(true);
+
       toast.success(`${currentEx.name} tracking started.`);
 
-      setServerOnline(true);
-    } catch {
+      sendNextFrame();
+    } catch (err) {
+      console.error("Start tracking error:", err);
+      isActiveRef.current = false;
       setIsActive(false);
-      setServerOnline(false);
-
-      toast.error("Python pose service is offline (port 5002).");
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
+      }
+      if (err?.response) {
+        setServerOnline(false);
+        toast.error("Python pose service is offline.");
+      } else {
+        toast.error("Could not access camera in browser.");
+      }
     }
   };
 
   const handleStop = async () => {
+    isActiveRef.current = false;
+    if (frameTimerRef.current) {
+      clearTimeout(frameTimerRef.current);
+      frameTimerRef.current = null;
+    }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    setProcessedImage(null);
     window.speechSynthesis.cancel();
 
     try {
-      await axios.post("http://localhost:5002/stop");
+      await axios.post(`${POSE_API_URL}/stop`, {
+        session_id: sessionIdRef.current,
+      });
+    } catch (_) {}
 
-      setIsActive(false);
+    setIsActive(false);
+    setFeedback("Session stopped");
+    setWarning("");
+    setDirection("none");
 
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close();
-      }
-
-      setFeedback("Session stopped");
-      setWarning("");
-      setDirection("none");
-
-      toast.info("Session stopped.");
-    } catch {
-      toast.error("Failed to stop session.");
-    }
+    toast.info("Session stopped.");
   };
 
   const handleReset = async () => {
     try {
-      await axios.post("http://localhost:5002/reset");
+      await axios.post(`${POSE_API_URL}/reset`, {
+        session_id: sessionIdRef.current,
+      });
 
       setReps(0);
+      setAngle(0.0);
 
       toast.success("Counter reset.");
     } catch {
@@ -379,18 +448,27 @@ export default function WorkoutSession() {
           <div className="mx-auto grid max-w-6xl grid-cols-1 items-stretch gap-6 lg:grid-cols-12">
             {/* Large Camera Feed */}
             <div className="relative flex min-h-[460px] flex-col justify-center overflow-hidden rounded-card border border-brand-light/50 bg-surface/70 shadow-card backdrop-blur-xl lg:col-span-8 md:min-h-[520px]">
+              {/* Browser camera elements */}
+              <video
+                ref={videoRef}
+                playsInline
+                muted
+                autoPlay
+                className={`aspect-video h-full w-full object-cover ${
+                  isActive && !processedImage ? "block" : "hidden"
+                }`}
+              />
+              <canvas ref={canvasRef} className="hidden" />
+
               {isActive ? (
                 <>
-                  <img
-                    src="http://localhost:5002/video_feed"
-                    alt="Camera Stream"
-                    className="aspect-video h-full w-full object-cover"
-                    onError={() => {
-                      setServerOnline(false);
-                      setIsActive(false);
-                      toast.error("Camera connection lost.");
-                    }}
-                  />
+                  {processedImage && (
+                    <img
+                      src={processedImage}
+                      alt="Camera Stream"
+                      className="aspect-video h-full w-full object-cover"
+                    />
+                  )}
                 </>
               ) : (
                 <div className="flex flex-col items-center justify-center space-y-5 p-12 text-center">
