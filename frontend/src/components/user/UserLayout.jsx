@@ -13,6 +13,7 @@ import {
   X,
   PanelLeft,
   PanelRight,
+  Menu,
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -50,9 +51,15 @@ const NAV_ITEMS = [
 
 export default function UserLayout({ children }) {
   const navigate = useNavigate();
+
+  // =========================================================
+  // MOBILE SIDEBAR STATE
+  // =========================================================
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Desktop sidebar state
+  // =========================================================
+  // DESKTOP SIDEBAR STATE
+  // =========================================================
   const [sidebarOpen, setSidebarOpen] = useState(() => {
     const savedState = localStorage.getItem("user-sidebar-open");
 
@@ -61,6 +68,9 @@ export default function UserLayout({ children }) {
     return savedState === "true";
   });
 
+  // =========================================================
+  // TOGGLE DESKTOP SIDEBAR
+  // =========================================================
   const toggleSidebar = () => {
     setSidebarOpen((previousState) => {
       const newState = !previousState;
@@ -71,7 +81,9 @@ export default function UserLayout({ children }) {
     });
   };
 
-  // Get user from local storage
+  // =========================================================
+  // GET USER FROM LOCAL STORAGE
+  // =========================================================
   const getStoredUser = () => {
     try {
       const storedUser = localStorage.getItem("pose-fit-user");
@@ -88,7 +100,9 @@ export default function UserLayout({ children }) {
 
   const user = getStoredUser();
 
-  // Logout
+  // =========================================================
+  // LOGOUT
+  // =========================================================
   const handleLogout = () => {
     localStorage.removeItem("pose-fit");
     localStorage.removeItem("pose-fit-user");
@@ -102,8 +116,9 @@ export default function UserLayout({ children }) {
 
   return (
     <div className="relative flex h-screen overflow-hidden bg-surface font-sans">
-      {/* Background theme */}
-
+      {/* =====================================================
+          BACKGROUND THEME
+      ====================================================== */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -left-32 -top-32 h-80 w-80 rounded-full bg-brand-light/35 blur-3xl" />
 
@@ -114,27 +129,89 @@ export default function UserLayout({ children }) {
         <div className="absolute left-[45%] top-[20%] h-72 w-72 rounded-full bg-white/40 blur-3xl" />
       </div>
 
-      {/* Mobile backdrop */}
+      {/* =====================================================
+          MOBILE HAMBURGER BUTTON
+      ====================================================== */}
+      <button
+        type="button"
+        onClick={() => setMobileMenuOpen(true)}
+        aria-label="Open menu"
+        aria-expanded={mobileMenuOpen}
+        className="
+          fixed
+          left-4
+          top-4
+          z-[60]
+          flex
+          h-11
+          w-11
+          items-center
+          justify-center
+          rounded-btn
+          border
+          border-brand-light/60
+          bg-surface/95
+          text-brand-dark
+          shadow-card
+          backdrop-blur-xl
+          transition-all
+          duration-200
+          hover:bg-brand-light/30
+          active:scale-95
+          md:hidden
+        "
+      >
+        <Menu className="h-5 w-5" />
+      </button>
 
+      {/* =====================================================
+          MOBILE BACKDROP
+      ====================================================== */}
       {mobileMenuOpen && (
         <div
           onClick={() => setMobileMenuOpen(false)}
-          className="dashboard-mobile-backdrop"
+          className="
+            fixed
+            inset-0
+            z-[70]
+            bg-black/30
+            backdrop-blur-[2px]
+            md:hidden
+          "
+          aria-hidden="true"
         />
       )}
 
-      {/* Mobile drawer */}
-
+      {/* =====================================================
+          MOBILE DRAWER
+      ====================================================== */}
       <div
-        className={`dashboard-mobile-drawer border-r border-brand-light/50 bg-surface/95 backdrop-blur-xl ${
-          mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
+        className={`
+          fixed
+          inset-y-0
+          left-0
+          z-[80]
+          flex
+          w-[min(82vw,320px)]
+          flex-col
+          border-r
+          border-brand-light/50
+          bg-surface/95
+          shadow-2xl
+          backdrop-blur-xl
+          transition-transform
+          duration-300
+          ease-in-out
+          md:hidden
+          ${mobileMenuOpen ? "translate-x-0" : "-translate-x-full"}
+        `}
       >
-        {/* Mobile drawer header */}
-
-        <div className="dashboard-mobile-header border-brand-light/50">
-          <div className="dashboard-brand-wrapper gap-3">
-            <div className="dashboard-logo border border-brand-light/60 bg-white/80 shadow-card">
+        {/* ===================================================
+            MOBILE DRAWER HEADER
+        ==================================================== */}
+        <div className="flex min-h-[96px] items-center justify-between border-b border-brand-light/50 px-5 py-5">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-btn border border-brand-light/60 bg-white/80 shadow-card">
               <img
                 src={posefit_logo}
                 alt="PoseFit"
@@ -142,67 +219,90 @@ export default function UserLayout({ children }) {
               />
             </div>
 
-            <div>
-              <p className="dashboard-brand-name">
+            <div className="min-w-0">
+              <p className="text-lg font-extrabold tracking-tight text-gray-800">
                 Pose
-                <span className="dashboard-brand-highlight">Fit</span>
+                <span className="text-brand-dark">Fit</span>
               </p>
 
-              <p className="dashboard-portal-name">Customer Portal</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                Customer Portal
+              </p>
             </div>
           </div>
 
+          {/* CLOSE BUTTON */}
           <button
             type="button"
             onClick={() => setMobileMenuOpen(false)}
-            className="dashboard-mobile-close"
             aria-label="Close menu"
+            className="
+              flex
+              h-9
+              w-9
+              shrink-0
+              items-center
+              justify-center
+              rounded-btn
+              border
+              border-brand-light/50
+              bg-white/70
+              text-gray-600
+              transition-all
+              hover:bg-brand-light/30
+              hover:text-brand-dark
+              active:scale-95
+            "
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        {/* Mobile navigation links */}
+        {/* ===================================================
+            MOBILE NAVIGATION
+        ==================================================== */}
+        <nav className="flex-1 overflow-y-auto px-4 py-5">
+          <p className="mb-3 px-2 text-[10px] font-extrabold uppercase tracking-widest text-gray-400">
+            User Menu
+          </p>
 
-        <nav className="dashboard-nav px-4">
-          <p className="dashboard-menu-title">User Menu</p>
+          <div className="space-y-1.5">
+            {NAV_ITEMS.map(({ path, Icon, label }) => (
+              <NavLink
+                key={path}
+                to={path}
+                end={path === "/user/dashboard"}
+                onClick={() => setMobileMenuOpen(false)}
+                className={({ isActive }) =>
+                  `flex w-full items-center gap-3 rounded-btn px-4 py-3 text-sm font-bold transition-all ${
+                    isActive
+                      ? "bg-brand-light/40 text-brand-dark shadow-xs"
+                      : "text-gray-600 hover:bg-brand-light/20 hover:text-brand-dark"
+                  }`
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    <Icon
+                      className={`h-5 w-5 shrink-0 ${
+                        isActive ? "text-brand-dark" : "text-gray-400"
+                      }`}
+                    />
 
-          {NAV_ITEMS.map(({ path, Icon, label }) => (
-            <NavLink
-              key={path}
-              to={path}
-              end={path === "/user/dashboard"}
-              onClick={() => setMobileMenuOpen(false)}
-              className={({ isActive }) =>
-                `dashboard-nav-link gap-3 px-4 py-3 ${
-                  isActive
-                    ? "dashboard-nav-link-active"
-                    : "dashboard-nav-link-inactive"
-                }`
-              }
-            >
-              {({ isActive }) => (
-                <>
-                  <Icon
-                    className={`dashboard-nav-icon h-5 w-5 ${
-                      isActive
-                        ? "dashboard-nav-icon-active"
-                        : "dashboard-nav-icon-inactive"
-                    }`}
-                  />
-
-                  <span>{label}</span>
-                </>
-              )}
-            </NavLink>
-          ))}
+                    <span className="truncate">{label}</span>
+                  </>
+                )}
+              </NavLink>
+            ))}
+          </div>
         </nav>
 
-        {/* Mobile drawer footer */}
-
-        <div className="dashboard-sidebar-footer border-brand-light/50 bg-white/30 p-4">
-          <div className="dashboard-user-wrapper mb-3 gap-3">
-            <div className="dashboard-logo h-10 w-10 border border-brand-light/60 bg-white/80 shadow-card">
+        {/* ===================================================
+            MOBILE DRAWER FOOTER
+        ==================================================== */}
+        <div className="border-t border-brand-light/50 bg-white/30 p-4">
+          <div className="mb-3 flex min-w-0 items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-btn border border-brand-light/60 bg-white/80 shadow-card">
               <img
                 src={posefit_logo}
                 alt="PoseFit"
@@ -211,20 +311,39 @@ export default function UserLayout({ children }) {
             </div>
 
             <div className="min-w-0 flex-1 overflow-hidden">
-              <p className="dashboard-user-name">
+              <p className="truncate text-sm font-extrabold text-gray-800">
                 {user
                   ? `${user.firstName || ""} ${user.lastName || ""}`.trim()
                   : "User"}
               </p>
 
-              <p className="dashboard-user-email">{user?.email || ""}</p>
+              <p className="truncate text-[11px] font-medium text-gray-400">
+                {user?.email || ""}
+              </p>
             </div>
           </div>
 
           <button
             type="button"
             onClick={handleLogout}
-            className="dashboard-logout w-full justify-center gap-2 px-4 py-2"
+            className="
+              flex
+              w-full
+              items-center
+              justify-center
+              gap-2
+              rounded-btn
+              bg-gray-800
+              px-4
+              py-2.5
+              text-xs
+              font-bold
+              text-white
+              shadow-xs
+              transition-all
+              hover:bg-gray-700
+              active:scale-[0.98]
+            "
           >
             <LogOut className="h-3.5 w-3.5 shrink-0" />
 
@@ -233,29 +352,46 @@ export default function UserLayout({ children }) {
         </div>
       </div>
 
-      {/* Desktop sidebar */}
-
+      {/* =====================================================
+          DESKTOP SIDEBAR
+          HIDDEN ON MOBILE
+      ====================================================== */}
       <aside
-        className={`dashboard-sidebar relative z-10 border-r border-brand-light/50 bg-surface/85 backdrop-blur-xl ${
-          sidebarOpen ? "w-64" : "w-20"
-        }`}
+        className={`
+          relative
+          z-10
+          hidden
+          shrink-0
+          border-r
+          border-brand-light/50
+          bg-surface/85
+          backdrop-blur-xl
+          transition-all
+          duration-300
+          md:flex
+          md:flex-col
+          ${sidebarOpen ? "md:w-64" : "md:w-20"}
+        `}
       >
-        {/* Header */}
-
+        {/* ===================================================
+            DESKTOP HEADER
+        ==================================================== */}
         <div
-          className={`dashboard-sidebar-header border-brand-light/40 ${
-            sidebarOpen ? "h-24 px-6 py-6" : "h-24 px-2 py-3"
-          }`}
+          className={`
+            dashboard-sidebar-header
+            border-brand-light/40
+            ${sidebarOpen ? "h-24 px-6 py-6" : "h-24 px-2 py-3"}
+          `}
         >
-          {/* Sidebar toggle */}
-
+          {/* SIDEBAR TOGGLE */}
           <button
             type="button"
             onClick={toggleSidebar}
             title={sidebarOpen ? "Close sidebar" : "Open sidebar"}
-            className={`dashboard-sidebar-toggle ${
-              sidebarOpen ? "right-3" : "right-1"
-            }`}
+            className={`
+              dashboard-sidebar-toggle
+              ${sidebarOpen ? "right-3" : "right-1"}
+            `}
           >
             {sidebarOpen ? (
               <PanelLeft className="h-[17px] w-[17px]" />
@@ -264,12 +400,12 @@ export default function UserLayout({ children }) {
             )}
           </button>
 
-          {/* Brand */}
-
+          {/* BRAND */}
           <div
-            className={`dashboard-brand-wrapper ${
-              sidebarOpen ? "mt-4 gap-3" : "mt-8 justify-center"
-            }`}
+            className={`
+              dashboard-brand-wrapper
+              ${sidebarOpen ? "mt-4 gap-3" : "mt-8 justify-center"}
+            `}
           >
             <div className="dashboard-logo border border-brand-light/60 bg-white/80 shadow-card">
               <img
@@ -292,12 +428,11 @@ export default function UserLayout({ children }) {
           </div>
         </div>
 
-        {/* Desktop navigation */}
-
+        {/* ===================================================
+            DESKTOP NAVIGATION
+        ==================================================== */}
         <nav className={`dashboard-nav ${sidebarOpen ? "px-3" : "px-2"}`}>
-          {sidebarOpen && (
-            <p className="dashboard-menu-title">User Menu</p>
-          )}
+          {sidebarOpen && <p className="dashboard-menu-title">User Menu</p>}
 
           {NAV_ITEMS.map(({ path, Icon, label }) => (
             <NavLink
@@ -307,9 +442,7 @@ export default function UserLayout({ children }) {
               title={!sidebarOpen ? label : ""}
               className={({ isActive }) =>
                 `dashboard-nav-link ${
-                  sidebarOpen
-                    ? "gap-3 px-3 py-3"
-                    : "justify-center px-2 py-3"
+                  sidebarOpen ? "gap-3 px-3 py-3" : "justify-center px-2 py-3"
                 } ${
                   isActive
                     ? "dashboard-nav-link-active"
@@ -338,19 +471,24 @@ export default function UserLayout({ children }) {
           ))}
         </nav>
 
-        {/* Desktop footer */}
-
+        {/* ===================================================
+            DESKTOP FOOTER
+        ==================================================== */}
         <div
-          className={`dashboard-sidebar-footer border-brand-light/50 bg-white/30 ${
-            sidebarOpen ? "p-3" : "p-2"
-          }`}
+          className={`
+            dashboard-sidebar-footer
+            border-brand-light/50
+            bg-white/30
+            ${sidebarOpen ? "p-3" : "p-2"}
+          `}
         >
           <div
-            className={`dashboard-user-wrapper transition-all duration-300 ${
-              sidebarOpen
-                ? "mb-3 gap-3 px-1"
-                : "mb-2 justify-center"
-            }`}
+            className={`
+              dashboard-user-wrapper
+              transition-all
+              duration-300
+              ${sidebarOpen ? "mb-3 gap-3 px-1" : "mb-2 justify-center"}
+            `}
           >
             <div className="dashboard-logo h-10 w-10 border border-brand-light/60 bg-white/80 shadow-card">
               <img
@@ -390,12 +528,14 @@ export default function UserLayout({ children }) {
         </div>
       </aside>
 
-      {/* Main area */}
+      {/* =====================================================
+          MAIN AREA
+      ====================================================== */}
+      <div className="dashboard-main-wrapper relative z-10 min-w-0 flex-1 overflow-y-auto">
+        {/* Mobile top spacing so hamburger doesn't overlap content */}
+        <div className="md:hidden h-14" />
 
-      <div className="dashboard-main-wrapper relative z-10">
-        <main className="dashboard-content bg-transparent">
-          {children}
-        </main>
+        <main className="dashboard-content bg-transparent">{children}</main>
       </div>
     </div>
   );

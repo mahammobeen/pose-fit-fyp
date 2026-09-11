@@ -16,13 +16,19 @@ import { httpClient } from "../../lib/http";
 
 import UserLayout from "../../components/user/UserLayout";
 
+function formatExperience(years) {
+  const n = Number(years);
+  if (years === undefined || years === null || years === "" || isNaN(n) || n < 0) return "Not specified";
+  return n === 1 ? "1 Year" : `${n} Years`;
+}
+
 export default function PublicProfessionals() {
   const navigate = useNavigate();
 
   const [professionals, setProfessionals] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // GET PUBLIC PROFESSIONALS
+ 
   const fetchPublicProfessionals = useCallback(async () => {
     try {
       setLoading(true);
@@ -46,18 +52,18 @@ export default function PublicProfessionals() {
     }
   }, []);
 
-  // FETCH ON LOAD
+ 
   useEffect(() => {
     fetchPublicProfessionals();
   }, [fetchPublicProfessionals]);
 
-  // PROFILE IMAGE
+ 
   const getProfileImage = (profilePhoto) => {
     if (!profilePhoto) {
       return null;
     }
 
-    // Full URL
+    
     if (
       profilePhoto.startsWith("http://") ||
       profilePhoto.startsWith("https://")
@@ -68,7 +74,7 @@ export default function PublicProfessionals() {
     const baseURL =
       import.meta.env.VITE_BASE_URL || "http://localhost:4000/api";
 
-    // Remove /api from backend URL
+  
     const backendURL = baseURL.replace(/\/api\/?$/, "");
 
     if (profilePhoto.startsWith("/")) {
@@ -78,7 +84,7 @@ export default function PublicProfessionals() {
     return `${backendURL}/${profilePhoto}`;
   };
 
-  // IMAGE ERROR
+  
   const handleImageError = (event) => {
     event.currentTarget.style.display = "none";
 
@@ -91,7 +97,7 @@ export default function PublicProfessionals() {
     }
   };
 
-  // VIEW PROFILE
+  
   const handleViewProfile = (id) => {
     if (!id) {
       toast.error("Professional ID not found");
@@ -101,7 +107,7 @@ export default function PublicProfessionals() {
     navigate(`/user/professionals/${id}`);
   };
 
-  // LOADING
+
   if (loading) {
     return (
       <UserLayout>
@@ -118,12 +124,11 @@ export default function PublicProfessionals() {
     );
   }
 
-  // UI
   return (
     <UserLayout>
       <div className="min-h-full bg-transparent font-sans">
       
-           // HEADER
+          
         <section className="border-b border-brand-light/50 bg-surface/75 backdrop-blur-xl">
           <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
             <div className="max-w-3xl">
@@ -149,7 +154,7 @@ export default function PublicProfessionals() {
         </section>
 
        
-           // PROFESSIONALS
+          
         <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
           {/* Results Header */}
 
@@ -166,7 +171,7 @@ export default function PublicProfessionals() {
             </div>
           </div>
 
-             // EMPTY STATE
+            
             {professionals.length === 0 ? (
             <div className="rounded-card border border-brand-light/50 bg-surface/80 p-16 text-center shadow-card backdrop-blur-xl">
               <UserRound className="mx-auto mb-4 h-14 w-14 text-gray-300" />
@@ -181,7 +186,7 @@ export default function PublicProfessionals() {
             </div>
           ) : (
            
-               // PROFESSIONAL CARDS
+            
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
               {professionals.map((professional) => {
                 const imageUrl = getProfileImage(professional.profilePhoto);
@@ -196,7 +201,7 @@ export default function PublicProfessionals() {
                     className="overflow-hidden rounded-card border border-brand-light/50 bg-surface/80 shadow-card backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover"
                   >
                     
-                    //  CARD CONTENT
+                  
                     <div className="p-6">
                       {/* Profile Header */}
 
@@ -228,7 +233,7 @@ export default function PublicProfessionals() {
                           )}
                         </div>
 
-                        {/* Name */}
+                      
 
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
@@ -248,7 +253,7 @@ export default function PublicProfessionals() {
                         </div>
                       </div>
 
-                         // RATING
+                         
                       <div className="mt-5 flex items-center gap-2">
                         <div className="flex items-center gap-1">
                           <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
@@ -265,7 +270,7 @@ export default function PublicProfessionals() {
                         </span>
                       </div>
 
-                        //  INFO
+                      
                  <div className="mt-5 grid grid-cols-2 gap-3">
                         {/* Experience */}
 
@@ -279,7 +284,7 @@ export default function PublicProfessionals() {
                           </div>
 
                           <p className="mt-1 font-bold text-gray-800">
-                            {professional.experience || "Professional"}
+                            {formatExperience(professional.experience)}
                           </p>
                         </div>
 
@@ -296,13 +301,13 @@ export default function PublicProfessionals() {
 
                           <p className="mt-1 font-bold text-gray-800">
                             {professional.sessionFee
-                              ? `$${professional.sessionFee}`
+                              ? `Rs. ${Number(professional.sessionFee).toLocaleString()}`
                               : "Free"}
                           </p>
                         </div>
                       </div>
 
-                         // AVAILABILITY
+                        
                        <div className="mt-5 flex items-center gap-2 text-sm text-gray-500">
                         <Calendar className="h-4 w-4 text-brand" />
 
@@ -314,7 +319,7 @@ export default function PublicProfessionals() {
                       </div>
                     </div>
 
-                       // VIEW PROFILE BUTTON
+                  
                    <div className="border-t border-brand-light/40 p-4">
                       <button
                         onClick={() => handleViewProfile(professional._id)}

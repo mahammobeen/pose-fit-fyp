@@ -36,6 +36,7 @@ export default function ProfessionalProfileSettings() {
     firstName: "",
     lastName: "",
     specialization: "",
+    experience: "",
     sessionFee: "",
     bio: "",
     profilePhoto: "",
@@ -65,6 +66,7 @@ export default function ProfessionalProfileSettings() {
           firstName: p.firstName || "",
           lastName: p.lastName || "",
           specialization: p.specialization || "",
+          experience: p.experience !== undefined && p.experience !== null ? p.experience : "",
           sessionFee: p.sessionFee !== undefined ? p.sessionFee : "",
           bio: p.bio || "",
           profilePhoto: p.profilePhoto || "",
@@ -609,13 +611,13 @@ export default function ProfessionalProfileSettings() {
 
                     <div>
                       <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-600">
-                        Session Fee ($)
+                        Session Fee (Rs.)
                       </label>
 
                       <input
                         type="number"
                         min="0"
-                        placeholder="e.g. 50"
+                        placeholder="e.g. 5000"
                         value={form.sessionFee}
                         onChange={(e) =>
                           setForm((p) => ({
@@ -641,6 +643,27 @@ export default function ProfessionalProfileSettings() {
                         setForm((p) => ({
                           ...p,
                           specialization: e.target.value,
+                        }))
+                      }
+                      className="w-full rounded-btn border border-gray-200 bg-white/70 px-4 py-3 text-sm font-medium text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand-light/60"
+                    />
+                  </div>
+
+                  <div className="mt-4">
+                    <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-600">
+                      Years of Experience
+                    </label>
+
+                    <input
+                      type="number"
+                      min="0"
+                      max="50"
+                      placeholder="e.g. 5"
+                      value={form.experience}
+                      onChange={(e) =>
+                        setForm((p) => ({
+                          ...p,
+                          experience: e.target.value,
                         }))
                       }
                       className="w-full rounded-btn border border-gray-200 bg-white/70 px-4 py-3 text-sm font-medium text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand-light/60"

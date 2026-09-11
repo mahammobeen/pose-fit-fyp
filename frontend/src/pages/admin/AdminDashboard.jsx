@@ -193,7 +193,7 @@ export default function AdminDashboard() {
     },
     {
       title: "Total Revenue",
-      value: `$${(paymentSummary.totalRevenue || 0).toFixed(2)}`,
+      value: `Rs. ${(paymentSummary.totalRevenue || 0).toLocaleString()}`,
       description: "From completed payments",
       Icon: DollarSign,
       bgGradient:
@@ -204,7 +204,7 @@ export default function AdminDashboard() {
     },
     {
       title: "Admin Commission",
-      value: `$${(paymentSummary.totalCommission || 0).toFixed(2)}`,
+      value: `Rs. ${(paymentSummary.totalCommission || 0).toLocaleString()}`,
       description: "20% platform fee earned",
       Icon: Building2,
       bgGradient:

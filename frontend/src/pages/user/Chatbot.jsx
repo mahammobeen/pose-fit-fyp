@@ -4,7 +4,6 @@ import { Send, Bot, User, Trash2, Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import UserLayout from "../../components/user/UserLayout";
 
-// Helper: Get or create session ID stored in localStorage 
 const getSessionId = () => {
   let id = localStorage.getItem('posefit_session_id');
   if (!id) {
@@ -22,7 +21,6 @@ function Chatbot() {
 
   const messagesEndRef = useRef(null);
 
-  // SCROLL TO BOTTOM
     const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({
       behavior: "smooth",
@@ -33,7 +31,7 @@ function Chatbot() {
     scrollToBottom();
   }, [messages, loading]);
 
-  // SEND MESSAGE 
+
   const sendMessage = async (textOverride = null) => {
     const text = textOverride ?? input;
 
@@ -41,7 +39,6 @@ function Chatbot() {
 
     const cleanText = text.trim();
 
-    // Add user message immediately
     const userMessage = {
       type: "user",
       text: cleanText,
@@ -58,7 +55,7 @@ function Chatbot() {
     try {
       const { data } = await httpClient.post("/user/chatbot", {
         message: cleanText,
-        sessionId: sessionId,  // <-- Include sessionId
+        sessionId: sessionId,  
       });
 
       const botReply = data?.reply || "Sorry, I could not generate a response.";
@@ -72,7 +69,6 @@ function Chatbot() {
     } catch (error) {
       console.error("Chatbot error:", error);
 
-      // Backend error message
       const errorMessage =
         error?.response?.data?.message ||
         error?.response?.data?.error ||
@@ -80,10 +76,8 @@ function Chatbot() {
           ? "Unable to connect to the server. Please try again."
           : "Something went wrong. Please try again.");
 
-      // Show error to user
       toast.error(errorMessage);
 
-      // Also show message inside chat
       setMessages((prev) => [
         ...prev,
         {
@@ -96,7 +90,6 @@ function Chatbot() {
     }
   };
 
-  // ENTER KEY
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -104,23 +97,20 @@ function Chatbot() {
     }
   };
 
-  // CLEAR CHAT (also resets session on backend)
   const clearChat = () => {
     if (messages.length === 0) return;
 
-    // Generate a new session ID so the backend starts fresh
+
     const newId = 'user-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6);
     localStorage.setItem('posefit_session_id', newId);
     setSessionId(newId);
 
-    // Clear messages locally
     setMessages([]);
     setInput("");
 
     toast.success("Chat cleared successfully");
   };
 
-  // SUGGESTIONS
   const suggestions = [
     "Best exercises for beginners?",
     "How to lose weight?",
@@ -128,12 +118,11 @@ function Chatbot() {
     "Posture improvement tips",
   ];
 
-  // UI
+
   return (
     <UserLayout>
       <div className="relative min-h-full bg-transparent p-4 sm:p-6 md:p-8 font-sans">
        
-           // HEADER
         <header className="max-w-4xl mx-auto mb-6 sm:mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
           <div>
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-gray-800 tracking-tight flex items-center gap-3">
@@ -159,13 +148,10 @@ function Chatbot() {
           )}
         </header>
 
-            // CHAT CONTAINER
               <div className="max-w-4xl mx-auto h-[calc(100vh-14rem)] min-h-[460px] flex flex-col bg-surface/85 rounded-3xl sm:rounded-[2rem] border border-brand-light/50 shadow-card-hover backdrop-blur-xl overflow-hidden">
-         
-             // CHAT HISTORY       
+   
           <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 space-y-6 sm:space-y-7 bg-brand-light/10">
-           
-              //  EMPTY STATE
+     
             {messages.length === 0 && (
               <div className="h-full flex flex-col items-center justify-center text-center">
                 <div className="relative mb-6">
@@ -203,7 +189,6 @@ function Chatbot() {
               </div>
             )}
 
-                // MESSAGES
               {messages.map((msg, index) => (
               <div
                 key={index}
@@ -236,8 +221,7 @@ function Chatbot() {
                 </div>
               </div>
             ))}
-
-             // LOADING         
+        
             {loading && (
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 shrink-0 rounded-btn bg-brand-light/30 text-brand-dark border border-brand-light/50 flex items-center justify-center shadow-card">
@@ -257,7 +241,6 @@ function Chatbot() {
             <div ref={messagesEndRef} />
           </div>
 
-             // INPUT
           <div className="p-5 md:p-6 bg-surface/90 border-t border-brand-light/40">
             <div className="relative">
               <input

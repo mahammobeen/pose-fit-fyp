@@ -412,7 +412,7 @@ const getPendingProfessionals = async (req, res) => {
       },
     })
       .select(
-        "firstName lastName email role professionalType specialization bio profilePhoto sessionFee credentialDocs bankDetails availability professionalStatus rejectionReason appliedAt verificationNotes",
+        "firstName lastName email role professionalType specialization experience bio profilePhoto sessionFee credentialDocs bankDetails availability professionalStatus rejectionReason appliedAt verificationNotes",
       )
       .sort({ updatedAt: -1 });
 

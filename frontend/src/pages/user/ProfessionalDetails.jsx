@@ -20,10 +20,97 @@ const DAYS_ORDER = [
   "Sunday",
 ];
 
+const DAY_NAMES = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
+
 function sortAvailability(availability = []) {
   return [...availability].sort(
     (a, b) => DAYS_ORDER.indexOf(a.day) - DAYS_ORDER.indexOf(b.day),
   );
+}
+
+function getSlotStartDateTime(dateInput, slot) {
+  if (!dateInput || !slot || typeof slot !== "string") return null;
+
+  const dateStr =
+    typeof dateInput === "string"
+      ? dateInput.slice(0, 10)
+      : formatDateForApi(dateInput);
+
+  const parts = dateStr.split("-").map(Number);
+  if (parts.length !== 3 || parts.some(Number.isNaN)) return null;
+  const [year, month, day] = parts;
+
+  const slotParts = slot.split("-").map((p) => p.trim());
+  const startPart = slotParts[0];
+  const endPart = slotParts[1] || "";
+
+  const match = startPart.match(/^(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);
+  if (!match) return null;
+
+  let hour = Number(match[1]);
+  const minute = match[2] ? Number(match[2]) : 0;
+  let meridiem = match[3]?.toLowerCase();
+
+  if (!meridiem && endPart) {
+    const endMatch = endPart.match(/(am|pm)/i);
+    if (endMatch) {
+      meridiem = endMatch[1].toLowerCase();
+    }
+  }
+
+  if (meridiem) {
+    if (meridiem === "pm" && hour < 12) {
+      hour += 12;
+    } else if (meridiem === "am" && hour === 12) {
+      hour = 0;
+    }
+  }
+
+  const result = new Date(year, month - 1, day, hour, minute, 0, 0);
+  return Number.isNaN(result.getTime()) ? null : result;
+}
+
+function isSlotTimePassed(dateInput, slot) {
+  const slotStart = getSlotStartDateTime(dateInput, slot);
+  if (!slotStart) return false;
+  return slotStart.getTime() <= Date.now();
+}
+
+function getUpcomingAvailableDates(availability, count = 14) {
+  if (!availability || availability.length === 0) return [];
+
+  const availableDaysMap = new Set(
+    availability.map((item) => item.day?.trim().toLowerCase())
+  );
+
+  const dates = [];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  for (let i = 0; i < 60 && dates.length < count; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+
+    const dayName = DAY_NAMES[d.getDay()];
+    if (availableDaysMap.has(dayName.toLowerCase())) {
+      dates.push({
+        dateString: formatDateForApi(d),
+        dayName,
+        dateObj: d,
+        isToday: i === 0,
+      });
+    }
+  }
+
+  return dates;
 }
 
 function getImageUrl(image) {
@@ -33,11 +120,16 @@ function getImageUrl(image) {
     return image;
   }
 
+  const baseURL =
+    import.meta.env.VITE_BASE_URL || "http://localhost:4000/api";
+
+  const backendURL = baseURL.replace(/\/api\/?$/, "");
+
   if (image.startsWith("/")) {
-    return `http://localhost:4000${image}`;
+    return `${backendURL}${image}`;
   }
 
-  return `http://localhost:4000/${image}`;
+  return `${backendURL}/${image}`;
 }
 
 function getNextDateForDay(day) {
@@ -85,6 +177,12 @@ function normalizeDate(date) {
   }
 
   return formatDateForApi(parsedDate);
+}
+
+function formatExperience(years) {
+  const n = Number(years);
+  if (years === undefined || years === null || years === "" || isNaN(n) || n < 0) return null;
+  return n === 1 ? "1 Year" : `${n} Years`;
 }
 
 function parseSlotTime(slot) {
@@ -174,21 +272,7 @@ function getSlotEndTime(slot) {
 }
 
 function getAppointmentDateTime(date, slot) {
-  if (!date || !slot) return null;
-
-  const startTime = parseSlotTime(slot);
-
-  if (!startTime) return null;
-
-  const appointmentDate = new Date(date);
-
-  if (Number.isNaN(appointmentDate.getTime())) {
-    return null;
-  }
-
-  appointmentDate.setHours(startTime.hour, startTime.minute, 0, 0);
-
-  return appointmentDate;
+  return getSlotStartDateTime(date, slot);
 }
 
 function isBookingStillActive(booking) {
@@ -227,12 +311,14 @@ export default function ProfessionalDetails() {
   const [bookedSlots, setBookedSlots] = useState([]);
 
   const [showBooking, setShowBooking] = useState(false);
+  const [selectedDate, setSelectedDate] = useState("");
   const [selectedDay, setSelectedDay] = useState("");
   const [selectedSlot, setSelectedSlot] = useState("");
   const [notes, setNotes] = useState("");
 
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [bookingCancelled, setBookingCancelled] = useState(false);
+  const [bookingPending, setBookingPending] = useState(false);
 
   const [proReviews, setProReviews] = useState([]);
   const [reviewsLoading, setReviewsLoading] = useState(true);
@@ -263,7 +349,7 @@ export default function ProfessionalDetails() {
   const fetchBookedSlots = async () => {
     try {
       const response = await httpClient.get(
-        `/user/professionals/${id}/booked-slots`,
+        `/payment/booked-slots/${id}`,
       );
 
       setBookedSlots(response.data?.bookedSlots || []);
@@ -427,32 +513,83 @@ export default function ProfessionalDetails() {
     const sessionId = params.get("session_id");
 
     if (bookingSuccessParam === "true") {
-      const confirmBooking = async () => {
-        if (sessionId) {
-          try {
-            await httpClient.get(`/payment/verify-session?session_id=${sessionId}`);
-          } catch (err) {
-            console.error("Session verification error:", err);
-          }
-        }
-        setBookingSuccess(true);
-        setBookingCancelled(false);
-        toast.success("Booking confirmed successfully!");
-        fetchBookedSlots();
-      };
+      if (!sessionId) {
+        toast.info("Payment session details not found.");
+        navigate(location.pathname, { replace: true });
+        return;
+      }
 
-      confirmBooking();
-
+      // Clear search query from URL without re-triggering this effect
       navigate(location.pathname, {
         replace: true,
       });
 
-      return;
+      let isCancelled = false;
+      let timerId = null;
+      let attempts = 0;
+      const MAX_ATTEMPTS = 10; // Poll every 2s for up to 20 seconds
+      const POLL_INTERVAL = 2000;
+
+      setBookingPending(true);
+      setBookingCancelled(false);
+      setBookingSuccess(false);
+
+      const pollSessionStatus = async () => {
+        try {
+          const res = await httpClient.get(
+            `/payment/verify-session?session_id=${sessionId}`
+          );
+
+          if (isCancelled) return;
+
+          const data = res.data;
+          const isConfirmed =
+            Boolean(data?.bookingConfirmed) ||
+            String(data?.status || "").toLowerCase() === "completed" ||
+            String(data?.payment?.status || "").toLowerCase() === "completed";
+
+          if (isConfirmed) {
+            setBookingSuccess(true);
+            setBookingPending(false);
+            toast.success("Booking confirmed successfully!");
+            fetchBookedSlots();
+            return;
+          }
+
+          attempts += 1;
+
+          if (attempts < MAX_ATTEMPTS) {
+            timerId = setTimeout(pollSessionStatus, POLL_INTERVAL);
+          } else {
+            // Timeout reached: webhook has not completed yet or failed
+            setBookingPending(false);
+            toast.info(
+              "Your payment is being processed. Your booking will appear once payment confirmation is received."
+            );
+            fetchBookedSlots();
+          }
+        } catch (err) {
+          if (isCancelled) return;
+          console.error("Session verification error:", err);
+          setBookingPending(false);
+          toast.info(
+            "Your payment is being processed. Your booking will appear once payment confirmation is received."
+          );
+        }
+      };
+
+      pollSessionStatus();
+
+      return () => {
+        // If query parameters change to a non-success state or component unmounts, cancel timer
+        if (timerId) clearTimeout(timerId);
+      };
     }
 
     if (bookingCancelledParam === "true") {
       setBookingCancelled(true);
       setBookingSuccess(false);
+      setBookingPending(false);
 
       toast.error("Payment was cancelled.");
 
@@ -462,7 +599,7 @@ export default function ProfessionalDetails() {
         replace: true,
       });
     }
-  }, [location.search, location.pathname, navigate]);
+  }, [location.search]);
 
   const availability = sortAvailability(pro?.availability || []);
 
@@ -500,7 +637,7 @@ export default function ProfessionalDetails() {
     });
   };
 
-  const getAvailableSlots = (day) => {
+  const getAvailableSlotsForDate = (day, dateStr) => {
     const dayData = availability.find(
       (item) =>
         item.day?.trim().toLowerCase() ===
@@ -509,17 +646,34 @@ export default function ProfessionalDetails() {
 
     if (!dayData) return [];
 
-    const appointmentDate = getNextDateForDay(day);
-
     return (dayData.slots || []).filter(
-      (slot) => !isSlotBooked(day, slot, appointmentDate),
+      (slot) =>
+        !isSlotBooked(day, slot, dateStr) &&
+        !isSlotTimePassed(dateStr, slot),
     );
   };
 
   const openBooking = async () => {
     await fetchBookedSlots();
 
-    setSelectedDay("");
+    const upcoming = getUpcomingAvailableDates(availability, 14);
+    const firstAvailable = upcoming.find((item) => {
+      const slots = getAvailableSlotsForDate(item.dayName, item.dateString);
+      return slots.length > 0;
+    });
+
+    if (firstAvailable) {
+      setSelectedDate(firstAvailable.dateString);
+      setSelectedDay(firstAvailable.dayName);
+    } else if (upcoming.length > 0) {
+      setSelectedDate(upcoming[0].dateString);
+      setSelectedDay(upcoming[0].dayName);
+    } else {
+      const todayStr = formatDateForApi(new Date());
+      setSelectedDate(todayStr);
+      setSelectedDay(DAY_NAMES[new Date().getDay()]);
+    }
+
     setSelectedSlot("");
     setNotes("");
     setBookingSuccess(false);
@@ -531,19 +685,67 @@ export default function ProfessionalDetails() {
     if (bookingLoading) return;
 
     setShowBooking(false);
+    setSelectedDate("");
     setSelectedDay("");
     setSelectedSlot("");
     setNotes("");
   };
 
+  const handleDateSelect = (dateStr) => {
+    if (!dateStr) {
+      setSelectedDate("");
+      setSelectedDay("");
+      setSelectedSlot("");
+      return;
+    }
+
+    const todayStr = formatDateForApi(new Date());
+    if (dateStr < todayStr) {
+      toast.error("Past dates cannot be selected.");
+      return;
+    }
+
+    const parts = dateStr.slice(0, 10).split("-").map(Number);
+    if (parts.length !== 3 || parts.some(Number.isNaN)) {
+      toast.error("Invalid date selected.");
+      return;
+    }
+
+    const [year, month, day] = parts;
+    const dateObj = new Date(year, month - 1, day);
+    const dayName = DAY_NAMES[dateObj.getDay()];
+
+    setSelectedDate(dateStr);
+    setSelectedDay(dayName);
+    setSelectedSlot("");
+  };
+
   const handleConfirmBooking = async () => {
+    if (!selectedDate) {
+      toast.error("Please select a booking date.");
+      return;
+    }
+
     if (!selectedDay) {
-      toast.error("Please select a day.");
+      toast.error("Please select a valid day.");
       return;
     }
 
     if (!selectedSlot) {
       toast.error("Please select a time slot.");
+      return;
+    }
+
+    const todayStr = formatDateForApi(new Date());
+    if (selectedDate < todayStr) {
+      toast.error("Cannot book an appointment for a past date.");
+      return;
+    }
+
+    if (isSlotTimePassed(selectedDate, selectedSlot)) {
+      toast.error(
+        "The selected session start time has already passed. Please select an upcoming slot.",
+      );
       return;
     }
 
@@ -557,23 +759,7 @@ export default function ProfessionalDetails() {
       return;
     }
 
-    const appointmentDate = getNextDateForDay(selectedDay);
-
-    const formattedAppointmentDate =
-      formatDateForApi(appointmentDate);
-
-    if (!appointmentDate || !formattedAppointmentDate) {
-      toast.error("Invalid appointment date.");
-      return;
-    }
-
-    if (
-      isSlotBooked(
-        selectedDay,
-        selectedSlot,
-        formattedAppointmentDate,
-      )
-    ) {
+    if (isSlotBooked(selectedDay, selectedSlot, selectedDate)) {
       toast.error(
         "This session has already been booked. Please select another slot.",
       );
@@ -588,13 +774,7 @@ export default function ProfessionalDetails() {
 
       await fetchBookedSlots();
 
-      if (
-        isSlotBooked(
-          selectedDay,
-          selectedSlot,
-          formattedAppointmentDate,
-        )
-      ) {
+      if (isSlotBooked(selectedDay, selectedSlot, selectedDate)) {
         toast.error(
           "This session was just booked by another user. Please select another slot.",
         );
@@ -608,7 +788,7 @@ export default function ProfessionalDetails() {
         amount: Number(pro.sessionFee),
         appointmentDay: selectedDay,
         appointmentSlot: selectedSlot,
-        appointmentDate: formattedAppointmentDate,
+        appointmentDate: selectedDate,
         sessionDuration: 1,
         notes: notes.trim(),
       });
@@ -671,11 +851,7 @@ export default function ProfessionalDetails() {
 
   const profilePhoto = getImageUrl(pro?.profilePhoto);
 
-  const selectedAppointmentDate = getNextDateForDay(selectedDay);
-
-  const selectedAppointmentDateString = formatDateForApi(
-    selectedAppointmentDate,
-  );
+  const upcomingAvailableDates = getUpcomingAvailableDates(availability, 14);
 
   if (loading) {
     return (
@@ -731,6 +907,24 @@ export default function ProfessionalDetails() {
             ← Back to Directory
           </button>
         </div>
+
+        {bookingPending && (
+          <div className="mx-auto mb-6 max-w-5xl px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center gap-3 rounded-card border border-blue-200 bg-blue-50/70 p-4">
+              <Clock className="h-5 w-5 shrink-0 text-blue-600 animate-spin" />
+
+              <div>
+                <p className="text-sm font-bold text-blue-900">
+                  Verifying Payment Confirmation...
+                </p>
+
+                <p className="mt-0.5 text-xs font-medium text-blue-700">
+                  Please wait while we confirm your payment with Stripe and set up your session.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {bookingSuccess && (
           <div className="mx-auto mb-6 max-w-5xl px-4 sm:px-6 lg:px-8">
@@ -823,8 +1017,14 @@ export default function ProfessionalDetails() {
                     </div>
 
                     <div className="rounded-btn border border-brand-light bg-brand-light/25 px-3.5 py-1.5 text-xs font-black text-brand-dark">
-                      ${Number(pro.sessionFee || 0).toFixed(2)} / session
+                      Rs. {Number(pro.sessionFee || 0).toLocaleString()} / session
                     </div>
+
+                    {formatExperience(pro.experience) && (
+                      <div className="rounded-btn border border-brand-light/50 bg-brand-light/10 px-3.5 py-1.5 text-xs font-extrabold text-gray-800">
+                        {formatExperience(pro.experience)} Experience
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1054,8 +1254,8 @@ export default function ProfessionalDetails() {
                     <span className="font-bold text-gray-700">
                       {pro.firstName} {pro.lastName}
                     </span>{" "}
-                    ($
-                    {Number(pro.sessionFee || 0).toFixed(2)} per session)
+                    (Rs.{" "}
+                    {Number(pro.sessionFee || 0).toLocaleString()} per session)
                   </p>
                 </div>
 
@@ -1070,42 +1270,83 @@ export default function ProfessionalDetails() {
 
               <div className="space-y-5 p-6">
                 <div>
-                  <label className="mb-2 block text-xs font-extrabold uppercase tracking-wider text-gray-500">
-                    Step 1: Choose a Day
-                  </label>
+                  <div className="mb-2 flex items-center justify-between">
+                    <label className="block text-xs font-extrabold uppercase tracking-wider text-gray-500">
+                      Step 1: Choose a Booking Date
+                    </label>
 
+                    {selectedDate && (
+                      <span className="rounded-full bg-brand-light/30 px-2.5 py-0.5 text-[11px] font-bold text-brand-dark">
+                        {new Date(selectedDate + "T00:00:00").toLocaleDateString(
+                          "en-US",
+                          {
+                            weekday: "short",
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          },
+                        )}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* HTML5 Date Input Picker */}
+                  <div className="mb-3">
+                    <div className="relative flex items-center">
+                      <Calendar className="pointer-events-none absolute left-3.5 h-4 w-4 text-gray-400" />
+                      <input
+                        type="date"
+                        min={formatDateForApi(new Date())}
+                        value={selectedDate}
+                        onChange={(e) => handleDateSelect(e.target.value)}
+                        className="w-full rounded-btn border border-brand-light/60 bg-white/90 py-2.5 pl-10 pr-3.5 text-xs font-bold text-gray-800 outline-none transition-all focus:border-brand focus:ring-2 focus:ring-brand-light/60"
+                      />
+                    </div>
+                    <p className="mt-1 text-[11px] text-gray-500">
+                      Pick any future date above, or choose an upcoming working day below:
+                    </p>
+                  </div>
+
+                  {/* Upcoming Available Dates */}
                   {availability.length === 0 ? (
                     <p className="text-xs font-medium text-gray-400">
-                      No availability slots configured by this professional
-                      yet.
+                      No availability slots configured by this professional yet.
                     </p>
                   ) : (
-                    <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-                      {availability.map((item) => {
-                        const availableSlots = getAvailableSlots(item.day);
+                    <div className="flex flex-wrap gap-2">
+                      {upcomingAvailableDates.map((item) => {
+                        const availableSlots = getAvailableSlotsForDate(
+                          item.dayName,
+                          item.dateString,
+                        );
+                        const isSelected = selectedDate === item.dateString;
+                        const isFullyBooked = availableSlots.length === 0;
 
                         return (
                           <button
-                            key={item.day}
+                            key={item.dateString}
                             type="button"
-                            disabled={availableSlots.length === 0}
-                            onClick={() => {
-                              setSelectedDay(item.day);
-                              setSelectedSlot("");
-                            }}
-                            className={`rounded-btn border px-2 py-2.5 text-xs font-bold transition-all ${
-                              selectedDay === item.day
+                            disabled={isFullyBooked}
+                            onClick={() => handleDateSelect(item.dateString)}
+                            className={`rounded-btn border px-2.5 py-2 text-xs font-bold transition-all ${
+                              isSelected
                                 ? "border-brand-dark bg-brand-dark text-white shadow-card"
-                                : availableSlots.length === 0
+                                : isFullyBooked
                                 ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
                                 : "border-brand-light/50 bg-brand-light/10 text-gray-700 hover:border-brand hover:bg-brand-light/25"
                             }`}
                           >
-                            {item.day.slice(0, 3)}
+                            <span>
+                              {item.isToday ? "Today" : item.dayName.slice(0, 3)},{" "}
+                              {item.dateObj.toLocaleDateString("en-US", {
+                                month: "short",
+                                day: "numeric",
+                              })}
+                            </span>
 
                             <span className="mt-0.5 block text-[10px] font-medium opacity-70">
-                              {availableSlots.length === 0
-                                ? "Fully booked"
+                              {isFullyBooked
+                                ? "No slots"
                                 : `${availableSlots.length} slots`}
                             </span>
                           </button>
@@ -1115,37 +1356,58 @@ export default function ProfessionalDetails() {
                   )}
                 </div>
 
-                {selectedDay && (
+                {selectedDate && (
                   <div>
                     <label className="mb-2 block text-xs font-extrabold uppercase tracking-wider text-gray-500">
-                      Step 2: Choose a Time Slot for {selectedDay}
+                      Step 2: Choose a Time Slot for {selectedDay},{" "}
+                      {new Date(selectedDate + "T00:00:00").toLocaleDateString(
+                        "en-US",
+                        {
+                          month: "short",
+                          day: "numeric",
+                        },
+                      )}
                     </label>
 
-                    {daySlots.length === 0 ? (
-                      <p className="text-xs font-medium text-gray-400">
-                        No time slots available for {selectedDay}.
-                      </p>
+                    {!selectedDayData || daySlots.length === 0 ? (
+                      <div className="rounded-card border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+                        <p className="font-bold">Not available on {selectedDay}s</p>
+                        <p className="mt-0.5 text-[11px] text-amber-700">
+                          This professional does not have slots configured for {selectedDay}.
+                          Available working days:{" "}
+                          <span className="font-semibold">
+                            {availability.map((a) => a.day).join(", ")}
+                          </span>.
+                        </p>
+                      </div>
                     ) : (
                       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                         {daySlots.map((slot) => {
                           const booked = isSlotBooked(
                             selectedDay,
                             slot,
-                            selectedAppointmentDateString,
+                            selectedDate,
                           );
+                          const isPassed = isSlotTimePassed(
+                            selectedDate,
+                            slot,
+                          );
+                          const isUnavailable = booked || isPassed;
 
                           return (
                             <button
                               key={slot}
                               type="button"
-                              disabled={booked}
+                              disabled={isUnavailable}
                               onClick={() => {
-                                if (!booked) {
+                                if (!isUnavailable) {
                                   setSelectedSlot(slot);
                                 }
                               }}
                               className={`flex items-center gap-2 rounded-btn border px-4 py-3 text-xs font-bold transition-all ${
-                                booked
+                                isPassed
+                                  ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
+                                  : booked
                                   ? "cursor-not-allowed border-rose-200 bg-rose-50 text-rose-400"
                                   : selectedSlot === slot
                                   ? "border-brand-dark bg-brand-dark text-white shadow-card"
@@ -1154,7 +1416,9 @@ export default function ProfessionalDetails() {
                             >
                               <Clock
                                 className={`h-4 w-4 shrink-0 ${
-                                  booked
+                                  isPassed
+                                    ? "text-gray-400"
+                                    : booked
                                     ? "text-rose-400"
                                     : selectedSlot === slot
                                     ? "text-white"
@@ -1164,13 +1428,19 @@ export default function ProfessionalDetails() {
 
                               <span>{slot}</span>
 
-                              {booked && (
+                              {isPassed && (
+                                <span className="ml-auto rounded bg-gray-200 px-1.5 py-0.5 text-[9px] font-bold uppercase text-gray-500">
+                                  Passed
+                                </span>
+                              )}
+
+                              {booked && !isPassed && (
                                 <span className="ml-auto text-[10px] font-black uppercase">
                                   Unavailable
                                 </span>
                               )}
 
-                              {selectedSlot === slot && !booked && (
+                              {selectedSlot === slot && !isUnavailable && (
                                 <CheckCircle className="ml-auto h-4 w-4 text-white" />
                               )}
                             </button>
@@ -1202,7 +1472,7 @@ export default function ProfessionalDetails() {
                   </div>
                 )}
 
-                {selectedDay && selectedSlot && (
+                {selectedDate && selectedDay && selectedSlot && (
                   <div className="flex flex-wrap items-start justify-between gap-4 rounded-card border border-brand-light bg-brand-light/20 p-4">
                     <div>
                       <p className="text-xs font-extrabold uppercase tracking-wide text-brand-dark">
@@ -1219,9 +1489,10 @@ export default function ProfessionalDetails() {
 
                       <p className="mt-1 text-xs font-medium text-gray-500">
                         Date:{" "}
-                        {selectedAppointmentDate?.toLocaleDateString(
+                        {new Date(selectedDate + "T00:00:00").toLocaleDateString(
                           "en-US",
                           {
+                            weekday: "short",
                             month: "short",
                             day: "numeric",
                             year: "numeric",
@@ -1231,7 +1502,7 @@ export default function ProfessionalDetails() {
                     </div>
 
                     <p className="text-xl font-black text-brand-dark">
-                      ${Number(pro.sessionFee || 0).toFixed(2)}
+                      Rs. {Number(pro.sessionFee || 0).toLocaleString()}
                     </p>
                   </div>
                 )}
@@ -1250,28 +1521,34 @@ export default function ProfessionalDetails() {
                     type="button"
                     onClick={handleConfirmBooking}
                     disabled={
+                      !selectedDate ||
                       !selectedDay ||
                       !selectedSlot ||
                       bookingLoading ||
                       !pro.sessionFee ||
+                      isSlotTimePassed(selectedDate, selectedSlot) ||
                       isSlotBooked(
                         selectedDay,
                         selectedSlot,
-                        selectedAppointmentDateString,
+                        selectedDate,
                       )
                     }
                     className="flex-1 rounded-btn bg-gray-800 py-3 text-sm font-bold text-white shadow-card transition-all hover:-translate-y-0.5 hover:bg-gray-700 hover:shadow-card-hover disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {bookingLoading
                       ? "Redirecting to Payment..."
+                      : !selectedDate
+                      ? "Select a Date"
                       : !selectedDay
                       ? "Select a Day"
                       : !selectedSlot
                       ? "Select a Time Slot"
+                      : isSlotTimePassed(selectedDate, selectedSlot)
+                      ? "Slot Has Passed"
                       : isSlotBooked(
                           selectedDay,
                           selectedSlot,
-                          selectedAppointmentDateString,
+                          selectedDate,
                         )
                       ? "Slot Unavailable"
                       : "Confirm & Pay →"}

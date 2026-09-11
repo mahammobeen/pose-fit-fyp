@@ -6,6 +6,12 @@ import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { httpClient } from "../../lib/http";
 
+function formatExperience(years) {
+  const n = Number(years);
+  if (years === undefined || years === null || years === "" || isNaN(n) || n < 0) return "Not specified";
+  return n === 1 ? "1 Year" : `${n} Years`;
+}
+
 export default function GuestProfessionals() {
   const [professionals, setProfessionals] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -290,7 +296,7 @@ export default function GuestProfessionals() {
                         </div>
 
                         <p className="mt-1 truncate text-sm font-bold text-gray-800">
-                          {professional.experience || "Professional"}
+                          {formatExperience(professional.experience)}
                         </p>
                       </div>
 
@@ -298,7 +304,7 @@ export default function GuestProfessionals() {
 
                       <div className="border-l border-brand-light/50 pl-4">
                         <div className="flex items-center gap-2 text-gray-400">
-                          <span className="text-sm font-black">$</span>
+                          <span className="text-xs font-bold text-gray-500">Rs.</span>
 
                           <span className="text-xs font-semibold uppercase tracking-wide">
                             Session
@@ -307,7 +313,7 @@ export default function GuestProfessionals() {
 
                         <p className="mt-1 text-sm font-bold text-gray-800">
                           {professional.sessionFee
-                            ? `$${professional.sessionFee}`
+                            ? `Rs. ${Number(professional.sessionFee).toLocaleString()}`
                             : "Contact"}
                         </p>
                       </div>

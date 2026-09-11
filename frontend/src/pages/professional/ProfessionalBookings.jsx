@@ -323,12 +323,12 @@ export default function ProfessionalBookings() {
 
                         {/* Session Fee */}
                         <td className="whitespace-nowrap px-6 py-4 font-bold text-gray-800">
-                          ${b.amount?.toFixed(2)}
+                          Rs. {Number(b.amount || 0).toLocaleString()}
                         </td>
 
                         {/* Professional Share */}
                         <td className="whitespace-nowrap px-6 py-4 font-extrabold text-brand-dark">
-                          ${b.professionalAmount?.toFixed(2)}
+                          Rs. {Number(b.professionalAmount || 0).toLocaleString()}
                         </td>
 
                         {/* Status */}

@@ -313,10 +313,9 @@ export default function ProfessionalDashboard() {
             </div>
 
             <p className="text-2xl font-extrabold text-brand-dark">
-              $
               {loading
                 ? "-"
-                : metrics?.monthlyEarnings?.toFixed(2) || "0.00"}
+                : `Rs. ${Number(metrics?.monthlyEarnings || 0).toLocaleString()}`}
             </p>
 
             <p className="mt-1 text-xs font-bold uppercase tracking-wider text-gray-500">
@@ -414,12 +413,12 @@ export default function ProfessionalDashboard() {
 
                         {/* Session Fee */}
                         <td className="whitespace-nowrap px-5 py-4 font-bold text-gray-800">
-                          ${b.amount?.toFixed(2)}
+                          Rs. {Number(b.amount || 0).toLocaleString()}
                         </td>
 
                         {/* Professional Share */}
                         <td className="whitespace-nowrap px-5 py-4 font-extrabold text-brand-dark">
-                          ${b.professionalAmount?.toFixed(2)}
+                          Rs. {Number(b.professionalAmount || 0).toLocaleString()}
                         </td>
 
                         {/* Status */}

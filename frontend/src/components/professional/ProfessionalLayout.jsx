@@ -47,8 +47,11 @@ const NAV_ITEMS = [
 export default function ProfessionalLayout({ children }) {
   const navigate = useNavigate();
   const user = getUser();
+
+  // Mobile sidebar
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  // Desktop sidebar
   const [sidebarOpen, setSidebarOpen] = useState(() => {
     const savedState = localStorage.getItem("professional-sidebar-open");
 
@@ -61,10 +64,7 @@ export default function ProfessionalLayout({ children }) {
     setSidebarOpen((previousState) => {
       const newState = !previousState;
 
-      localStorage.setItem(
-        "professional-sidebar-open",
-        String(newState)
-      );
+      localStorage.setItem("professional-sidebar-open", String(newState));
 
       return newState;
     });
@@ -72,13 +72,27 @@ export default function ProfessionalLayout({ children }) {
 
   const handleLogout = () => {
     deleteToken();
+
     localStorage.removeItem("pose-fit-user");
-    navigate("/user/login");
+
+    navigate("/user/login", {
+      replace: true,
+    });
+  };
+
+  const getProfessionalName = () => {
+    if (user?.name) return user.name;
+
+    const fullName = `${user?.firstName || ""} ${user?.lastName || ""}`.trim();
+
+    return fullName || "Professional";
   };
 
   return (
     <div className="relative flex h-screen overflow-hidden bg-surface font-sans">
-      {/* BACKGROUND THEME */}
+      {/* =========================================================
+          BACKGROUND THEME
+      ========================================================= */}
 
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -left-32 -top-32 h-80 w-80 rounded-full bg-brand-light/35 blur-3xl" />
@@ -90,26 +104,53 @@ export default function ProfessionalLayout({ children }) {
         <div className="absolute left-[45%] top-[20%] h-72 w-72 rounded-full bg-white/40 blur-3xl" />
       </div>
 
-      {/* MOBILE BACKDROP */}
+      {/* =========================================================
+          MOBILE BACKDROP
+      ========================================================= */}
 
       {mobileMenuOpen && (
         <div
           onClick={() => setMobileMenuOpen(false)}
-          className="dashboard-mobile-backdrop"
+          className="
+            fixed
+            inset-0
+            z-[70]
+            bg-black/30
+            backdrop-blur-[2px]
+            md:hidden
+          "
         />
       )}
 
-      {/* MOBILE DRAWER */}
+      {/* =========================================================
+          MOBILE SIDEBAR
+      ========================================================= */}
 
       <div
-        className={`dashboard-mobile-drawer border-r border-brand-light/50 bg-surface/95 backdrop-blur-xl ${
-          mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
+        className={`
+          fixed
+          inset-y-0
+          left-0
+          z-[80]
+          flex
+          w-[min(82vw,320px)]
+          flex-col
+          border-r
+          border-brand-light/50
+          bg-surface/95
+          shadow-2xl
+          backdrop-blur-xl
+          transition-transform
+          duration-300
+          ease-in-out
+          md:hidden
+          ${mobileMenuOpen ? "translate-x-0" : "-translate-x-full"}
+        `}
       >
         {/* Mobile Drawer Header */}
 
-        <div className="dashboard-mobile-header border-brand-light/50">
-          <div className="dashboard-brand-wrapper gap-3">
+        <div className="flex h-24 shrink-0 items-center justify-between border-b border-brand-light/50 px-5">
+          <div className="flex min-w-0 items-center gap-3">
             <div className="dashboard-logo border border-brand-light/60 bg-white/80 shadow-card">
               <img
                 src={posefit_logo}
@@ -118,22 +159,38 @@ export default function ProfessionalLayout({ children }) {
               />
             </div>
 
-            <div>
+            <div className="min-w-0">
               <p className="dashboard-brand-name">
                 Pose
                 <span className="dashboard-brand-highlight">Fit</span>
               </p>
 
-              <p className="dashboard-portal-name">
-                Professional Portal
-              </p>
+              <p className="dashboard-portal-name">Professional Portal</p>
             </div>
           </div>
+
+          {/* Close Button */}
 
           <button
             type="button"
             onClick={() => setMobileMenuOpen(false)}
-            className="dashboard-mobile-close"
+            className="
+              flex
+              h-10
+              w-10
+              shrink-0
+              items-center
+              justify-center
+              rounded-btn
+              border
+              border-brand-light/60
+              bg-white/70
+              text-gray-600
+              transition
+              hover:bg-brand-light/30
+              hover:text-brand-dark
+              active:scale-95
+            "
             aria-label="Close menu"
           >
             <X className="h-5 w-5" />
@@ -142,15 +199,14 @@ export default function ProfessionalLayout({ children }) {
 
         {/* Mobile Navigation */}
 
-        <nav className="dashboard-nav px-4">
-          <p className="dashboard-menu-title">
-            Professional Menu
-          </p>
+        <nav className="dashboard-nav flex-1 overflow-y-auto px-4 py-5">
+          <p className="dashboard-menu-title">Professional Menu</p>
 
           {NAV_ITEMS.map(({ path, Icon, label }) => (
             <NavLink
               key={path}
               to={path}
+              end={path === "/professional/dashboard"}
               onClick={() => setMobileMenuOpen(false)}
               className={({ isActive }) =>
                 `dashboard-nav-link gap-3 px-4 py-3 ${
@@ -179,7 +235,7 @@ export default function ProfessionalLayout({ children }) {
 
         {/* Mobile Footer */}
 
-        <div className="dashboard-sidebar-footer border-brand-light/50 bg-white/30 p-4">
+        <div className="dashboard-sidebar-footer shrink-0 border-brand-light/50 bg-white/30 p-4">
           <div className="dashboard-user-wrapper mb-3 gap-3">
             <div className="dashboard-logo h-10 w-10 border border-brand-light/60 bg-white/80 shadow-card">
               <img
@@ -190,18 +246,10 @@ export default function ProfessionalLayout({ children }) {
             </div>
 
             <div className="min-w-0 flex-1 overflow-hidden">
-              <p className="dashboard-user-name">
-                {user?.name ||
-                  (user?.firstName
-                    ? `${user.firstName} ${
-                        user.lastName || ""
-                      }`.trim()
-                    : "Professional")}
-              </p>
+              <p className="dashboard-user-name">{getProfessionalName()}</p>
 
               <p className="dashboard-user-email">
-                {user?.professionalType || "Trainer"} •{" "}
-                {user?.email || ""}
+                {user?.professionalType || "Trainer"} • {user?.email || ""}
               </p>
             </div>
           </div>
@@ -218,34 +266,44 @@ export default function ProfessionalLayout({ children }) {
         </div>
       </div>
 
-      {/* DESKTOP SIDEBAR */}
+      {/* =========================================================
+          DESKTOP SIDEBAR
+      ========================================================= */}
 
       <aside
-        className={`dashboard-sidebar relative z-10 border-r border-brand-light/50 bg-surface/85 backdrop-blur-xl ${
-          sidebarOpen ? "w-64" : "w-20"
-        }`}
+        className={`
+          relative
+          z-10
+          hidden
+          shrink-0
+          border-r
+          border-brand-light/50
+          bg-surface/85
+          backdrop-blur-xl
+          transition-all
+          duration-300
+          md:flex
+          md:flex-col
+          ${sidebarOpen ? "md:w-64" : "md:w-20"}
+        `}
       >
         {/* Sidebar Header */}
 
         <div
-          className={`dashboard-sidebar-header border-brand-light/40 ${
-            sidebarOpen
-              ? "h-24 px-6 py-6"
-              : "h-24 px-2 py-3"
-          }`}
+          className={`
+            dashboard-sidebar-header
+            border-brand-light/40
+            ${sidebarOpen ? "h-24 px-6 py-6" : "h-24 px-2 py-3"}
+          `}
         >
-          {/* Sidebar Toggle */}
+          {/* Desktop Toggle */}
 
           <button
             type="button"
             onClick={toggleSidebar}
-            title={
-              sidebarOpen
-                ? "Close sidebar"
-                : "Open sidebar"
-            }
+            title={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
             className={`dashboard-sidebar-toggle ${
-              sidebarOpen ? "right-3" : "right-1"
+              sidebarOpen ? "right-3" : "left-1/2 -translate-x-1/2"
             }`}
           >
             {sidebarOpen ? (
@@ -259,9 +317,7 @@ export default function ProfessionalLayout({ children }) {
 
           <div
             className={`dashboard-brand-wrapper ${
-              sidebarOpen
-                ? "mt-4 gap-3"
-                : "mt-8 justify-center"
+              sidebarOpen ? "mt-4 gap-3" : "mt-8 justify-center"
             }`}
           >
             <div className="dashboard-logo border border-brand-light/60 bg-white/80 shadow-card">
@@ -276,14 +332,10 @@ export default function ProfessionalLayout({ children }) {
               <div className="min-w-0 overflow-hidden whitespace-nowrap">
                 <p className="dashboard-brand-name">
                   Pose
-                  <span className="dashboard-brand-highlight">
-                    Fit
-                  </span>
+                  <span className="dashboard-brand-highlight">Fit</span>
                 </p>
 
-                <p className="dashboard-portal-name">
-                  Professional Portal
-                </p>
+                <p className="dashboard-portal-name">Professional Portal</p>
               </div>
             )}
           </div>
@@ -292,26 +344,23 @@ export default function ProfessionalLayout({ children }) {
         {/* Desktop Navigation */}
 
         <nav
-          className={`dashboard-nav ${
+          className={`dashboard-nav flex-1 overflow-y-auto ${
             sidebarOpen ? "px-3" : "px-2"
           }`}
         >
           {sidebarOpen && (
-            <p className="dashboard-menu-title">
-              Professional Menu
-            </p>
+            <p className="dashboard-menu-title">Professional Menu</p>
           )}
 
           {NAV_ITEMS.map(({ path, Icon, label }) => (
             <NavLink
               key={path}
               to={path}
+              end={path === "/professional/dashboard"}
               title={!sidebarOpen ? label : ""}
               className={({ isActive }) =>
                 `dashboard-nav-link ${
-                  sidebarOpen
-                    ? "gap-3 px-3 py-3"
-                    : "justify-center px-2 py-3"
+                  sidebarOpen ? "gap-3 px-3 py-3" : "justify-center px-2 py-3"
                 } ${
                   isActive
                     ? "dashboard-nav-link-active"
@@ -343,15 +392,13 @@ export default function ProfessionalLayout({ children }) {
         {/* Desktop Footer */}
 
         <div
-          className={`dashboard-sidebar-footer border-brand-light/50 bg-white/30 ${
+          className={`dashboard-sidebar-footer shrink-0 border-brand-light/50 bg-white/30 ${
             sidebarOpen ? "p-3" : "p-2"
           }`}
         >
           <div
             className={`dashboard-user-wrapper transition-all duration-300 ${
-              sidebarOpen
-                ? "mb-3 gap-3 px-1"
-                : "mb-2 justify-center"
+              sidebarOpen ? "mb-3 gap-3 px-1" : "mb-2 justify-center"
             }`}
           >
             <div className="dashboard-logo h-10 w-10 border border-brand-light/60 bg-white/80 shadow-card">
@@ -364,18 +411,10 @@ export default function ProfessionalLayout({ children }) {
 
             {sidebarOpen && (
               <div className="min-w-0 flex-1 overflow-hidden">
-                <p className="dashboard-user-name">
-                  {user?.name ||
-                    (user?.firstName
-                      ? `${user.firstName} ${
-                          user.lastName || ""
-                        }`.trim()
-                      : "Professional")}
-                </p>
+                <p className="dashboard-user-name">{getProfessionalName()}</p>
 
                 <p className="dashboard-user-email">
-                  {user?.professionalType || "Trainer"} •{" "}
-                  {user?.email || ""}
+                  {user?.professionalType || "Trainer"} • {user?.email || ""}
                 </p>
               </div>
             )}
@@ -398,18 +437,56 @@ export default function ProfessionalLayout({ children }) {
         </div>
       </aside>
 
-      {/* MAIN AREA */}
+      {/* =========================================================
+          MAIN AREA
+      ========================================================= */}
 
-      <div className="dashboard-main-wrapper relative z-10">
+      <div className="relative z-10 min-w-0 flex-1 overflow-y-auto">
         {/* Mobile Header */}
 
-        <header className="dashboard-header border-brand-light/50 bg-surface/80 backdrop-blur-xl lg:hidden">
+        <header
+          className="
+            sticky
+            top-0
+            z-[50]
+            flex
+            h-14
+            items-center
+            justify-between
+            border-b
+            border-brand-light/50
+            bg-surface/90
+            px-4
+            backdrop-blur-xl
+            md:hidden
+          "
+        >
           <div className="flex min-w-0 items-center gap-3">
+            {/* 3-Line Hamburger */}
+
             <button
               type="button"
               onClick={() => setMobileMenuOpen(true)}
-              className="dashboard-mobile-menu-button"
+              className="
+                flex
+                h-10
+                w-10
+                shrink-0
+                items-center
+                justify-center
+                rounded-btn
+                border
+                border-brand-light/60
+                bg-surface/95
+                text-brand-dark
+                shadow-card
+                transition-all
+                duration-200
+                hover:bg-brand-light/30
+                active:scale-95
+              "
               aria-label="Open navigation menu"
+              aria-expanded={mobileMenuOpen}
             >
               <Menu className="h-5 w-5" />
             </button>
@@ -419,24 +496,36 @@ export default function ProfessionalLayout({ children }) {
             </p>
           </div>
 
+          {/* Mobile Logout */}
+
           <button
             type="button"
             onClick={handleLogout}
-            className="dashboard-mobile-logout"
+            className="
+              flex
+              shrink-0
+              items-center
+              gap-2
+              rounded-btn
+              px-2
+              py-2
+              text-sm
+              font-semibold
+              text-gray-600
+              transition
+              hover:bg-brand-light/30
+              hover:text-brand-dark
+            "
           >
-            <LogOut className="h-3.5 w-3.5" />
+            <LogOut className="h-4 w-4" />
 
-            <span className="hidden sm:inline">
-              Logout
-            </span>
+            <span className="hidden sm:inline">Logout</span>
           </button>
         </header>
 
         {/* Page Content */}
 
-        <main className="dashboard-content bg-transparent">
-          {children}
-        </main>
+        <main className="dashboard-content bg-transparent">{children}</main>
       </div>
     </div>
   );

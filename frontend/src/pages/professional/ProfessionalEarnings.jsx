@@ -91,7 +91,7 @@ export default function ProfessionalEarnings() {
   const cards = [
     {
       label: "Total Earnings (80%)",
-      value: `$${metrics?.totalEarnings?.toFixed(2) || "0.00"}`,
+      value: `Rs. ${Number(metrics?.totalEarnings || 0).toLocaleString()}`,
       Icon: DollarSign,
       iconBg: "bg-brand-light/40",
       iconColor: "text-brand-dark",
@@ -99,7 +99,7 @@ export default function ProfessionalEarnings() {
     },
     {
       label: "Current Month",
-      value: `$${metrics?.currentMonthEarnings?.toFixed(2) || "0.00"}`,
+      value: `Rs. ${Number(metrics?.currentMonthEarnings || 0).toLocaleString()}`,
       Icon: TrendingUp,
       iconBg: "bg-accent-blue/50",
       iconColor: "text-sky-700",
@@ -107,7 +107,7 @@ export default function ProfessionalEarnings() {
     },
     {
       label: "Released to Connect",
-      value: `$${metrics?.releasedEarnings?.toFixed(2) || "0.00"}`,
+      value: `Rs. ${Number(metrics?.releasedEarnings || 0).toLocaleString()}`,
       Icon: CheckCircle,
       iconBg: "bg-brand-light/40",
       iconColor: "text-brand-dark",
@@ -284,17 +284,17 @@ export default function ProfessionalEarnings() {
 
                         {/* Session Fee */}
                         <td className="whitespace-nowrap px-5 py-4 font-bold text-gray-800">
-                          ${p.amount?.toFixed(2)}
+                          Rs. {Number(p.amount || 0).toLocaleString()}
                         </td>
 
                         {/* PoseFit Cut */}
                         <td className="whitespace-nowrap px-5 py-4 font-bold text-amber-800">
-                          ${p.adminCommission?.toFixed(2)}
+                          Rs. {Number(p.adminCommission || 0).toLocaleString()}
                         </td>
 
                         {/* Professional Share */}
                         <td className="whitespace-nowrap px-5 py-4 font-extrabold text-brand-dark">
-                          ${p.professionalAmount?.toFixed(2)}
+                          Rs. {Number(p.professionalAmount || 0).toLocaleString()}
                         </td>
 
                         {/* Status */}

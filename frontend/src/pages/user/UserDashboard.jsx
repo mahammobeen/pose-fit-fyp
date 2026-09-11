@@ -241,8 +241,6 @@ export default function UserDashboard() {
 
   useEffect(() => {
     const fetchMetrics = async () => {
-      // USER NOT FOUND
-
       if (!userId) {
         setLoading(false);
 
@@ -258,8 +256,6 @@ export default function UserDashboard() {
 
         const metricsData = response?.data?.data;
 
-        // NO METRICS
-
         if (!metricsData) {
           setMetrics(null);
 
@@ -267,8 +263,6 @@ export default function UserDashboard() {
 
           return;
         }
-
-        // SUCCESS
 
         setMetrics(metricsData);
       } catch (error) {
@@ -298,8 +292,10 @@ export default function UserDashboard() {
   useEffect(() => {
     const fetchTodayDiet = async () => {
       if (!userId) return;
+
       try {
         const res = await httpClient.get(`/user/diet-plan/${userId}/today`);
+
         if (res.data?.success) {
           setTodayDiet(res.data);
         }
@@ -307,6 +303,7 @@ export default function UserDashboard() {
         if (err?.response?.status !== 404) {
           console.error("Fetch today diet error:", err);
         }
+
         setTodayDiet(null);
       }
     };
@@ -318,6 +315,7 @@ export default function UserDashboard() {
     };
 
     window.addEventListener("diet-plan-updated", handleDietUpdated);
+
     return () => {
       window.removeEventListener("diet-plan-updated", handleDietUpdated);
     };
@@ -330,7 +328,7 @@ export default function UserDashboard() {
   if (loading) {
     return (
       <UserLayout>
-        <div className="min-h-full flex items-center justify-center">
+        <div className="min-h-full flex items-center justify-center bg-stone-50">
           <div className="text-center">
             <div className="w-10 h-10 border-4 border-brand border-t-transparent rounded-full animate-spin mx-auto mb-4" />
 
@@ -385,8 +383,11 @@ export default function UserDashboard() {
 
   return (
     <UserLayout>
-      <main className="relative p-4 sm:p-6 lg:p-8 space-y-8 sm:space-y-10 font-sans">
-        {/* HEADER */}
+      <main className="relative p-4 sm:p-6 lg:p-8 space-y-8 sm:space-y-10 font-sans bg-stone-50 min-h-full">
+        {/* =================================================
+            HEADER
+        ================================================= */}
+
         <section className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-gray-800">
@@ -407,7 +408,10 @@ export default function UserDashboard() {
           </div>
         </section>
 
-        {/* MAIN STATS */}
+        {/* =================================================
+            MAIN STATS
+        ================================================= */}
+
         <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {stats.map((stat) => {
             const Icon = stat.icon;
@@ -464,7 +468,10 @@ export default function UserDashboard() {
           })}
         </section>
 
-        {/* BODY METRICS */}
+        {/* =================================================
+            BODY METRICS
+        ================================================= */}
+
         <section>
           <div className="mb-6">
             <h2 className="text-2xl font-extrabold text-gray-800">
@@ -485,6 +492,7 @@ export default function UserDashboard() {
 
                 <div>
                   <h3 className="font-bold text-gray-800">BMI</h3>
+
                   <p className="text-xs text-gray-400">Body Mass Index</p>
                 </div>
               </div>
@@ -506,6 +514,7 @@ export default function UserDashboard() {
 
                 <div>
                   <h3 className="font-bold text-gray-800">BMR</h3>
+
                   <p className="text-xs text-gray-400">Basal Metabolic Rate</p>
                 </div>
               </div>
@@ -527,6 +536,7 @@ export default function UserDashboard() {
 
                 <div>
                   <h3 className="font-bold text-gray-800">TDEE</h3>
+
                   <p className="text-xs text-gray-400">
                     Daily Energy Requirement
                   </p>
@@ -544,7 +554,10 @@ export default function UserDashboard() {
           </div>
         </section>
 
-        {/* FITNESS PROFILE */}
+        {/* =================================================
+            FITNESS PROFILE
+        ================================================= */}
+
         <section className="card bg-surface/85 border-brand-light/40 p-6 md:p-8">
           <div className="flex items-center gap-3 mb-6">
             <div className="p-3 bg-brand-light/35 rounded-btn">
@@ -613,83 +626,10 @@ export default function UserDashboard() {
           </div>
         </section>
 
+        {/* =================================================
+            TODAY'S NUTRITION
+        ================================================= */}
 
-
-        {/* DAILY HYDRATION */}
-        <section>
-          <div className="mb-6">
-            <h2 className="text-2xl font-extrabold text-gray-800">
-              Daily Hydration
-            </h2>
-
-            <p className="text-gray-500 text-sm mt-1">
-              Your recommended daily water intake.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="card bg-surface/85 border-accent-blue/40">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-3 bg-accent-blue/40 rounded-btn">
-                  <Droplets className="w-5 h-5 text-blue-500" />
-                </div>
-
-                <div>
-                  <h3 className="font-bold text-gray-800">Water Target</h3>
-                  <p className="text-xs text-gray-400">Per day</p>
-                </div>
-              </div>
-
-              <p className="text-4xl font-extrabold text-gray-800">
-                {metrics?.waterIntake?.liters ?? "--"}
-              </p>
-
-              <p className="text-sm text-blue-600 font-bold mt-1">Liters</p>
-            </div>
-
-            <div className="card bg-surface/85 border-brand-light/40">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-3 bg-brand-light/30 rounded-btn">
-                  <Droplets className="w-5 h-5 text-brand-dark" />
-                </div>
-
-                <div>
-                  <h3 className="font-bold text-gray-800">Water Glasses</h3>
-                  <p className="text-xs text-gray-400">Per day</p>
-                </div>
-              </div>
-
-              <p className="text-4xl font-extrabold text-gray-800">
-                {metrics?.waterIntake?.glasses ?? "--"}
-              </p>
-
-              <p className="text-sm text-brand-dark font-bold mt-1">Glasses</p>
-            </div>
-
-            <div className="card bg-surface/85 border-accent-blue/40">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-3 bg-accent-blue/40 rounded-btn">
-                  <Droplets className="w-5 h-5 text-sky-500" />
-                </div>
-
-                <div>
-                  <h3 className="font-bold text-gray-800">Water Amount</h3>
-                  <p className="text-xs text-gray-400">Per day</p>
-                </div>
-              </div>
-
-              <p className="text-4xl font-extrabold text-gray-800">
-                {metrics?.waterIntake?.ml ?? "--"}
-              </p>
-
-              <p className="text-sm text-sky-600 font-bold mt-1">ml</p>
-            </div>
-          </div>
-        </section>
-
-
-
-        {/* TODAY'S NUTRITION */}
         <section>
           <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
             <div>
@@ -701,7 +641,9 @@ export default function UserDashboard() {
                 {todayDiet?.isExpired
                   ? "Your 3-day diet plan has expired. Please regenerate your plan."
                   : todayDiet?.meals
-                  ? `Day ${todayDiet.currentDay} Meals • Target: ${Math.round(todayDiet.targetDailyCalories || 0)} kcal`
+                  ? `Day ${todayDiet.currentDay} Meals • Target: ${Math.round(
+                      todayDiet.targetDailyCalories || 0,
+                    )} kcal`
                   : "Your personalized meals will appear here."}
               </p>
             </div>
@@ -718,17 +660,23 @@ export default function UserDashboard() {
             </Link>
           </div>
 
+          {/* EXPIRED */}
+
           {todayDiet?.isExpired ? (
             <div className="card bg-amber-50/80 border-amber-200 p-6 md:p-8 text-center space-y-3">
               <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center text-amber-700 mx-auto">
                 <AlertCircle className="w-6 h-6" />
               </div>
+
               <h3 className="text-lg font-extrabold text-amber-900">
                 Your 3-Day Diet Plan Has Expired
               </h3>
+
               <p className="text-sm text-amber-700 max-w-md mx-auto">
-                You have completed Day 3 of your personalized meal plan. Generate a new plan to continue tracking your meals!
+                You have completed Day 3 of your personalized meal plan.
+                Generate a new plan to continue tracking your meals!
               </p>
+
               <div className="pt-2">
                 <Link
                   to="/user/dietplan"
@@ -739,20 +687,43 @@ export default function UserDashboard() {
               </div>
             </div>
           ) : todayDiet?.meals ? (
+            /* GENERATED DIET */
+
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {[
-                { key: "breakfast", time: "8:00 AM", img: dietData[0].image },
-                { key: "lunch", time: "1:30 PM", img: dietData[1].image },
-                { key: "snack", time: "4:30 PM", img: dietData[2].image },
-                { key: "dinner", time: "8:30 PM", img: dietData[3].image },
+                {
+                  key: "breakfast",
+                  time: "8:00 AM",
+                  img: dietData[0].image,
+                },
+                {
+                  key: "lunch",
+                  time: "1:30 PM",
+                  img: dietData[1].image,
+                },
+                {
+                  key: "snack",
+                  time: "4:30 PM",
+                  img: dietData[2].image,
+                },
+                {
+                  key: "dinner",
+                  time: "8:30 PM",
+                  img: dietData[3].image,
+                },
               ].map(({ key, time, img }) => {
                 const slot = todayDiet.meals[key];
+
                 if (!slot) return null;
+
                 const slotTitle = slot.slot_name || key.toUpperCase();
+
                 const firstDish = slot.items?.[0];
+
                 const dishLabel = firstDish
                   ? `${firstDish.dish_name} (${firstDish.portion_grams}g)`
                   : "Recommended dish";
+
                 const extraDishes = (slot.items?.length || 0) - 1;
 
                 return (
@@ -767,7 +738,7 @@ export default function UserDashboard() {
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                       />
 
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                      <div className="absolute inset-0  from-black/60 via-transparent to-transparent" />
 
                       <div className="absolute top-4 left-4">
                         <span className="bg-surface/90 px-3 py-1.5 rounded-btn text-[10px] font-extrabold uppercase text-gray-800 shadow-xs">
@@ -779,6 +750,7 @@ export default function UserDashboard() {
                         <h3 className="font-bold text-xl drop-shadow-sm">
                           {slotTitle}
                         </h3>
+
                         <span className="text-xs font-bold bg-brand px-2 py-0.5 rounded-btn">
                           {slot.total_calories} kcal
                         </span>
@@ -791,6 +763,7 @@ export default function UserDashboard() {
                           <span className="block text-[10px] uppercase font-bold text-gray-400">
                             Calories
                           </span>
+
                           <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-brand-light/30 text-brand-dark border border-brand-light/40">
                             Day {todayDiet.currentDay}
                           </span>
@@ -818,6 +791,8 @@ export default function UserDashboard() {
               })}
             </div>
           ) : (
+            /* NO DIET PLAN */
+
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {dietData.map((item) => (
@@ -890,7 +865,10 @@ export default function UserDashboard() {
         </section>
       </main>
 
-      {/* AUTOMATIC PROFESSIONAL RATING DIALOG */}
+      {/* =================================================
+          AUTOMATIC PROFESSIONAL RATING DIALOG
+      ================================================= */}
+
       {activeRatingSession && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
           <div className="relative w-full max-w-md overflow-hidden rounded-card border border-brand-light/50 bg-surface/95 p-7 shadow-card-hover backdrop-blur-xl">

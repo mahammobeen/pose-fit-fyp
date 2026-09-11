@@ -34,7 +34,6 @@ const UserSchema = new Schema({
     default: "USER",
   },
 
-  // Email verification
   isVerified: {
     type: Boolean,
     default: false,
@@ -43,11 +42,6 @@ const UserSchema = new Schema({
   verificationCode: {
     type: String,
   },
-
-  // =========================================================
-  // PROFESSIONAL SPECIFIC FIELDS
-  // These fields should only be populated for PROFESSIONAL users.
-  // =========================================================
 
   professionalType: {
     type: String,
@@ -60,6 +54,11 @@ const UserSchema = new Schema({
   specialization: {
     type: String,
     trim: true,
+  },
+
+  experience: {
+    type: Number,
+    min: 0,
   },
 
   sessionFee: {
@@ -127,8 +126,6 @@ const UserSchema = new Schema({
     default: undefined,
   },
 
-  // Professional verification status flow
-  // invited -> pending_verification -> approved / rejected
   professionalStatus: {
     type: String,
     enum: [
@@ -173,39 +170,6 @@ const UserSchema = new Schema({
     },
   },
 
-  reviews: [
-    {
-      rating: {
-        type: Number,
-        required: true,
-        min: 1,
-        max: 5,
-      },
-
-      comment: {
-        type: String,
-        required: true,
-        trim: true,
-        maxlength: 500,
-      },
-
-      createdAt: {
-        type: Date,
-        default: Date.now,
-      },
-
-      updatedAt: {
-        type: Date,
-        default: Date.now,
-      },
-    },
-  ],
-
-  // =========================================================
-  // STRIPE CONNECT
-  // These fields are intended for PROFESSIONAL users.
-  // =========================================================
-
   stripeAccountId: {
     type: String,
     trim: true,
@@ -232,9 +196,9 @@ const UserSchema = new Schema({
 
 UserSchema.pre("save", function () {
   if (this.role !== "PROFESSIONAL") {
-    // Professional profile fields
     this.professionalType = undefined;
     this.specialization = undefined;
+    this.experience = undefined;
     this.sessionFee = undefined;
     this.profilePhoto = undefined;
     this.bio = undefined;
@@ -242,7 +206,6 @@ UserSchema.pre("save", function () {
     this.credentialDocs = undefined;
     this.availability = undefined;
 
-    // Professional verification fields
     this.professionalStatus = undefined;
     this.rejectionReason = undefined;
     this.verificationMeetingLink = undefined;
@@ -250,7 +213,6 @@ UserSchema.pre("save", function () {
     this.verificationNotes = undefined;
     this.appliedAt = undefined;
 
-    // Stripe Connect fields
     this.stripeAccountId = undefined;
     this.stripeAccountStatus = undefined;
     this.chargesEnabled = undefined;
