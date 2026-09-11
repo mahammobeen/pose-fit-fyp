@@ -75,7 +75,8 @@ export default function CompleteProfessionalProfile() {
   const [photoPreview, setPhotoPreview] = useState("");
   const [profilePhotoUrl, setProfilePhotoUrl] = useState("");
   const [specialization, setSpecialization] = useState("");
-  const [sessionFee, setSessionFee] = useState(50);
+  const [experience, setExperience] = useState("");
+  const [sessionFee, setSessionFee] = useState(5000);
   const [bio, setBio] = useState("");
   const [credentialDocs, setCredentialDocs] = useState([]);
   const [newDocTitle, setNewDocTitle] = useState("");
@@ -130,6 +131,10 @@ export default function CompleteProfessionalProfile() {
 
       if (p.specialization) {
         setSpecialization(p.specialization);
+      }
+
+      if (p.experience !== undefined && p.experience !== null) {
+        setExperience(p.experience);
       }
 
       if (p.sessionFee !== undefined && p.sessionFee !== null) {
@@ -475,7 +480,8 @@ export default function CompleteProfessionalProfile() {
         {
           profilePhoto: profilePhotoUrl,
           specialization: specialization.trim(),
-          sessionFee: Number(sessionFee) || 50,
+          experience: experience !== "" ? Number(experience) : undefined,
+          sessionFee: Number(sessionFee) || 5000,
           bio: bio.trim(),
           credentialDocs,
           availability: validAvailability,
@@ -810,7 +816,7 @@ export default function CompleteProfessionalProfile() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div>
               <label className="mb-1.5 block text-xs font-extrabold uppercase tracking-wider text-gray-700">
-                Session Fee ($) <span className="text-rose-500">*</span>
+                Session Fee (Rs.) <span className="text-rose-500">*</span>
               </label>
 
               <input
@@ -823,7 +829,23 @@ export default function CompleteProfessionalProfile() {
               />
             </div>
 
-            <div className="sm:col-span-2">
+            <div>
+              <label className="mb-1.5 block text-xs font-extrabold uppercase tracking-wider text-gray-700">
+                Years of Experience
+              </label>
+
+              <input
+                type="number"
+                min="0"
+                max="50"
+                placeholder="e.g. 5"
+                value={experience}
+                onChange={(e) => setExperience(e.target.value)}
+                className="w-full rounded-btn border border-gray-200 bg-white/70 px-4 py-3 text-sm font-medium text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand-light/60"
+              />
+            </div>
+
+            <div className="sm:col-span-1">
               <label className="mb-1.5 block text-xs font-extrabold uppercase tracking-wider text-gray-700">
                 Bio / Background Description{" "}
                 <span className="text-rose-500">*</span>

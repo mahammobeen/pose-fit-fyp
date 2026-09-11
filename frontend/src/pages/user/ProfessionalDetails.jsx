@@ -179,6 +179,12 @@ function normalizeDate(date) {
   return formatDateForApi(parsedDate);
 }
 
+function formatExperience(years) {
+  const n = Number(years);
+  if (years === undefined || years === null || years === "" || isNaN(n) || n < 0) return null;
+  return n === 1 ? "1 Year" : `${n} Years`;
+}
+
 function parseSlotTime(slot) {
   if (!slot || typeof slot !== "string") return null;
 
@@ -1011,8 +1017,14 @@ export default function ProfessionalDetails() {
                     </div>
 
                     <div className="rounded-btn border border-brand-light bg-brand-light/25 px-3.5 py-1.5 text-xs font-black text-brand-dark">
-                      ${Number(pro.sessionFee || 0).toFixed(2)} / session
+                      Rs. {Number(pro.sessionFee || 0).toLocaleString()} / session
                     </div>
+
+                    {formatExperience(pro.experience) && (
+                      <div className="rounded-btn border border-brand-light/50 bg-brand-light/10 px-3.5 py-1.5 text-xs font-extrabold text-gray-800">
+                        {formatExperience(pro.experience)} Experience
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1242,8 +1254,8 @@ export default function ProfessionalDetails() {
                     <span className="font-bold text-gray-700">
                       {pro.firstName} {pro.lastName}
                     </span>{" "}
-                    ($
-                    {Number(pro.sessionFee || 0).toFixed(2)} per session)
+                    (Rs.{" "}
+                    {Number(pro.sessionFee || 0).toLocaleString()} per session)
                   </p>
                 </div>
 
@@ -1490,7 +1502,7 @@ export default function ProfessionalDetails() {
                     </div>
 
                     <p className="text-xl font-black text-brand-dark">
-                      ${Number(pro.sessionFee || 0).toFixed(2)}
+                      Rs. {Number(pro.sessionFee || 0).toLocaleString()}
                     </p>
                   </div>
                 )}

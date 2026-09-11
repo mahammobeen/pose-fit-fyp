@@ -97,7 +97,7 @@ export default function AdminPayments() {
   const summaryCards = [
     {
       label: "Total Revenue",
-      value: `$${totalRevenue.toFixed(2)}`,
+      value: `Rs. ${totalRevenue.toLocaleString()}`,
       Icon: DollarSign,
       bg: "linear-gradient(135deg, rgba(183, 228, 199, 0.45) 0%, rgba(255, 253, 245, 0.96) 100%)",
       border: "#b7e4c7",
@@ -106,7 +106,7 @@ export default function AdminPayments() {
     },
     {
       label: "PoseFit Commission (20%)",
-      value: `$${totalCommission.toFixed(2)}`,
+      value: `Rs. ${totalCommission.toLocaleString()}`,
       Icon: Building2,
       bg: "linear-gradient(135deg, rgba(255, 216, 177, 0.42) 0%, rgba(255, 253, 245, 0.96) 100%)",
       border: "#ffd8b1",
@@ -115,7 +115,7 @@ export default function AdminPayments() {
     },
     {
       label: "Pro Earnings (80%)",
-      value: `$${totalProfessionalEarnings.toFixed(2)}`,
+      value: `Rs. ${totalProfessionalEarnings.toLocaleString()}`,
       Icon: TrendingUp,
       bg: "linear-gradient(135deg, rgba(208, 235, 255, 0.48) 0%, rgba(255, 253, 245, 0.96) 100%)",
       border: "#d0ebff",
@@ -303,18 +303,18 @@ export default function AdminPayments() {
                         </td>
 
                         <td className="px-5 py-4 font-black text-gray-800 whitespace-nowrap">
-                          ${payment.amount?.toFixed(2)}{" "}
+                          Rs. {Number(payment.amount || 0).toLocaleString()}{" "}
                           <span className="text-xs font-semibold text-gray-400 uppercase">
                             {payment.currency}
                           </span>
                         </td>
 
                         <td className="px-5 py-4 text-[#a95f22] font-extrabold whitespace-nowrap">
-                          ${payment.adminCommission?.toFixed(2)}
+                          Rs. {Number(payment.adminCommission || 0).toLocaleString()}
                         </td>
 
                         <td className="px-5 py-4 text-brand-dark font-extrabold whitespace-nowrap">
-                          ${payment.professionalAmount?.toFixed(2)}
+                          Rs. {Number(payment.professionalAmount || 0).toLocaleString()}
                         </td>
 
                         <td className="px-5 py-4 whitespace-nowrap">

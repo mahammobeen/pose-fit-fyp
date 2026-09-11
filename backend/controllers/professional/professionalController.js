@@ -267,6 +267,7 @@ const updateProfessionalProfile = async (req, res) => {
       profilePhoto,
       bio,
       specialization,
+      experience,
       sessionFee,
       credentialDocs,
       availability,
@@ -281,6 +282,7 @@ const updateProfessionalProfile = async (req, res) => {
     if (profilePhoto !== undefined) professional.profilePhoto = profilePhoto;
     if (bio !== undefined) professional.bio = bio;
     if (specialization !== undefined) professional.specialization = specialization;
+    if (experience !== undefined) professional.experience = Number(experience);
     if (sessionFee !== undefined) professional.sessionFee = Number(sessionFee);
     if (credentialDocs !== undefined) professional.credentialDocs = credentialDocs;
 

@@ -400,6 +400,7 @@ const completeProfessionalProfile = async (req, res) => {
       profilePhoto,
       bio,
       specialization,
+      experience,
       sessionFee,
       credentialDocs,
       bankDetails,
@@ -409,6 +410,7 @@ const completeProfessionalProfile = async (req, res) => {
     if (profilePhoto) professional.profilePhoto = profilePhoto;
     if (bio) professional.bio = bio;
     if (specialization) professional.specialization = specialization;
+    if (experience !== undefined) professional.experience = Number(experience);
     // professionalType is ADMIN-SET and cannot be modified by the professional
     if (sessionFee !== undefined) professional.sessionFee = Number(sessionFee);
     if (credentialDocs) professional.credentialDocs = credentialDocs;

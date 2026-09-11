@@ -350,7 +350,7 @@ const createPayment = async (req, res) => {
         line_items: [
           {
             price_data: {
-              currency: "usd",
+              currency: "pkr",
 
               product_data: {
                 name: `PoseFit Session with ${professional.firstName} ${professional.lastName}${slotInfo}`,
@@ -1074,7 +1074,7 @@ const stripeWebhook = async (req, res) => {
           sessionDuration:
             Number(session.metadata.sessionDuration) || 1,
           notes: session.metadata.notes || "",
-          currency: session.currency || "usd",
+          currency: session.currency || "pkr",
           stripeSessionId: session.id,
           stripePaymentIntentId:
             session.payment_intent || "",

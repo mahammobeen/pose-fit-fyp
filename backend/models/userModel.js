@@ -56,6 +56,11 @@ const UserSchema = new Schema({
     trim: true,
   },
 
+  experience: {
+    type: Number,
+    min: 0,
+  },
+
   sessionFee: {
     type: Number,
     min: 0,
@@ -193,6 +198,7 @@ UserSchema.pre("save", function () {
   if (this.role !== "PROFESSIONAL") {
     this.professionalType = undefined;
     this.specialization = undefined;
+    this.experience = undefined;
     this.sessionFee = undefined;
     this.profilePhoto = undefined;
     this.bio = undefined;

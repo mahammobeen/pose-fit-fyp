@@ -16,6 +16,12 @@ import { httpClient } from "../../lib/http";
 
 import UserLayout from "../../components/user/UserLayout";
 
+function formatExperience(years) {
+  const n = Number(years);
+  if (years === undefined || years === null || years === "" || isNaN(n) || n < 0) return "Not specified";
+  return n === 1 ? "1 Year" : `${n} Years`;
+}
+
 export default function PublicProfessionals() {
   const navigate = useNavigate();
 
@@ -278,7 +284,7 @@ export default function PublicProfessionals() {
                           </div>
 
                           <p className="mt-1 font-bold text-gray-800">
-                            {professional.experience || "Professional"}
+                            {formatExperience(professional.experience)}
                           </p>
                         </div>
 
@@ -295,7 +301,7 @@ export default function PublicProfessionals() {
 
                           <p className="mt-1 font-bold text-gray-800">
                             {professional.sessionFee
-                              ? `$${professional.sessionFee}`
+                              ? `Rs. ${Number(professional.sessionFee).toLocaleString()}`
                               : "Free"}
                           </p>
                         </div>

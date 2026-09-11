@@ -322,10 +322,10 @@ export default function AdminProfessionals() {
 
                         {/* Fee */}
                         <td className="px-5 py-4 text-gray-800 font-bold">
-                          $
+                          Rs.{" "}
                           {pro.sessionFee
-                            ? Number(pro.sessionFee).toFixed(2)
-                            : "0.00"}
+                            ? Number(pro.sessionFee).toLocaleString()
+                            : "0"}
                         </td>
 
                         {/* Status */}
@@ -473,13 +473,13 @@ export default function AdminProfessionals() {
 
               <div>
                 <label className="block text-xs font-bold text-gray-600 mb-1.5 uppercase tracking-wider">
-                  Session Fee ($)
+                  Session Fee (Rs.)
                 </label>
 
                 <input
                   type="number"
                   min="0"
-                  placeholder="e.g. 50"
+                  placeholder="e.g. 5000"
                   value={addForm.sessionFee}
                   onChange={(e) =>
                     setAddForm((p) => ({

@@ -208,10 +208,10 @@ export default function AdminProfessionalRequests() {
 
                       <div className="flex items-center gap-3 mt-2 flex-wrap text-xs font-semibold text-gray-600">
                         <span>
-                          Fee: $
+                          Fee: Rs.{" "}
                           {pro.sessionFee
-                            ? Number(pro.sessionFee).toFixed(2)
-                            : "0.00"}
+                            ? Number(pro.sessionFee).toLocaleString()
+                            : "0"}
                         </span>
 
                         <span>•</span>
@@ -338,10 +338,10 @@ export default function AdminProfessionalRequests() {
                   </p>
 
                   <p className="font-extrabold text-brand-dark text-base">
-                    $
+                    Rs.{" "}
                     {detailPro.sessionFee
-                      ? Number(detailPro.sessionFee).toFixed(2)
-                      : "0.00"}
+                      ? Number(detailPro.sessionFee).toLocaleString()
+                      : "0"}
                   </p>
                 </div>
               </div>
