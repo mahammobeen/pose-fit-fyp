@@ -34,11 +34,11 @@ profile_id,fitness_goal,meal_type,target_calories,actual_calories,cal_err_pct,ta
 9,maintenance,Breakfast,500.0,497.9,0.42,31.2,29.1,6.73,62.5,62.6,0.16,13.9,14.6,5.04,0.0268,"Boiled Egg with Toast (No Butter) (230g), Milk Tea (With Sugar) (150g)"
 9,maintenance,Lunch,700.0,700.7,0.1,43.8,36.4,16.89,87.5,81.0,7.43,19.5,25.6,31.28,0.1046,Naan with Chicken Karahi (270g)
 9,maintenance,Dinner,600.0,591.6,1.4,37.5,24.6,34.4,75.0,84.1,12.13,16.7,17.4,4.19,0.1223,Roti with Matar Paneer (290g)
-9,maintenance,Snack,200.0,196.7,1.65,12.5,12.1,3.2,25.0,24.6,1.6,5.6,5.5,1.79,0.0194,"Sprouted Moong Salad (Plain) (130g), Doodh Patti (Milk Tea) (150g)"
+9,maintenance,Snack,200.0,196.7,1.65,12.5,12.1,3.2,25.0,24.6,1.6,5.6,5.5,1.79,0.0194,"Sprouted Moong Salad (130g), Doodh Patti (Milk Tea) (150g)"
 10,maintenance,Breakfast,537.5,533.3,0.78,33.6,24.1,28.27,67.2,68.9,2.53,14.9,17.9,20.13,0.1088,"Chapati with Fried Egg (220g), Fresh Orange Juice (No Sugar Added) (150g)"
 10,maintenance,Lunch,752.5,708.0,5.91,47.0,39.0,17.02,94.1,84.0,10.73,20.9,24.0,14.83,0.1101,Roti with Chicken Karahi (300g)
 10,maintenance,Dinner,645.0,625.5,3.02,40.3,25.5,36.72,80.6,87.0,7.94,17.9,19.5,8.94,0.1331,Roti with Palak Paneer (300g)
-10,maintenance,Snack,215.0,211.7,1.53,13.4,12.9,3.73,26.9,27.6,2.6,6.0,5.5,8.33,0.0334,"Sprouted Moong Salad (130g), Milk Coffee (With Sugar) (150g)"
+10,maintenance,Snack,215.0,211.7,1.53,13.4,12.9,3.73,26.9,27.6,2.6,6.0,5.5,8.33,0.0334,"Sprouted Moong Salad (Plain) (130g), Milk Coffee (With Sugar) (150g)"
 11,maintenance,Breakfast,575.0,576.6,0.28,36.0,28.9,19.72,71.9,72.0,0.14,16.0,19.2,20.0,0.0808,"Bread with Boiled Egg (250g), Milk Tea (With Sugar) (150g)"
 11,maintenance,Lunch,805.0,708.0,12.05,50.3,39.0,22.47,100.6,84.0,16.5,22.4,24.0,7.14,0.1485,Roti with Chicken Karahi (300g)
 11,maintenance,Dinner,690.0,625.5,9.35,43.1,25.5,40.84,86.2,87.0,0.93,19.2,19.5,1.56,0.1439,Roti with Palak Paneer (300g)

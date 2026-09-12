@@ -63,6 +63,7 @@ const paymentSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    
 
     stripePaymentIntentId: {
       type: String,
@@ -80,6 +81,7 @@ const paymentSchema = new mongoose.Schema(
       type: String,
       sparse: true,
     },
+    
 
     meetingLink: {
       type: String,
@@ -130,6 +132,20 @@ const paymentSchema = new mongoose.Schema(
   {
     timestamps: true,
   },
+);
+paymentSchema.index(
+  {
+    professional: 1,
+    appointmentDate: 1,
+    appointmentSlot: 1,
+  },
+  {
+    unique: true,
+    partialFilterExpression: {
+      status: { $in: ["pending", "completed"] },
+      professionalDeleted: false,
+    },
+  }
 );
 
 const PaymentModel = mongoose.model("Payment", paymentSchema);
