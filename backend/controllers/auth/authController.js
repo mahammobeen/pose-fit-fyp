@@ -18,7 +18,6 @@ const signup = async (req, res) => {
   try {
     const { firstName, lastName, email, password, role } = req.body;
 
-    // BLOCK PUBLIC PROFESSIONAL SIGNUP
     if (role && role.toUpperCase() === "PROFESSIONAL") {
       return res.status(403).json({
         success: false,
@@ -63,7 +62,6 @@ const signup = async (req, res) => {
 
     await newUser.save();
 
-    // Send verification email
     await transporter.sendMail({
       from: `"PoseFit" <${process.env.EMAIL_USER}>`,
       to: email,
@@ -227,7 +225,7 @@ const forgotPassword = async (req, res) => {
     const transporter = nodemailer.createTransport({
       host: "smtp.gmail.com",
       port: 465,
-      secure: true, // true for 465, false for other ports
+      secure: true,
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASSWORD,
@@ -239,7 +237,6 @@ const forgotPassword = async (req, res) => {
       to: email,
       subject: "Reset Your PoseFit Password",
 
-      // Plain-text version of the email
       text: `Hi ${isExisted.firstName} ${isExisted.lastName},
 
 We received a request to reset your PoseFit password.
@@ -254,7 +251,6 @@ If you did not request a password reset, please ignore this email.
 Regards,
 PoseFit Team`,
 
-      // HTML version of the email
       html: `<!DOCTYPE html>
 <html>
 <head>
@@ -450,7 +446,6 @@ const resetPassword = async (req, res) => {
   }
 };
 
-// PROFESSIONAL PROFILE COMPLETION SUPPORT (FOR FUTURE PROFESSIONAL FRONTEND)
 const completeProfessionalProfile = async (req, res) => {
   try {
     const professionalId = req.user.userId;
@@ -482,13 +477,12 @@ const completeProfessionalProfile = async (req, res) => {
     if (bio) professional.bio = bio;
     if (specialization) professional.specialization = specialization;
     if (experience !== undefined) professional.experience = Number(experience);
-    // professionalType is ADMIN-SET and cannot be modified by the professional
+
     if (sessionFee !== undefined) professional.sessionFee = Number(sessionFee);
     if (credentialDocs) professional.credentialDocs = credentialDocs;
     if (bankDetails) professional.bankDetails = bankDetails;
     if (availability) professional.availability = availability;
 
-    // Transition status to pending_verification upon submission
     professional.professionalStatus = "pending_verification";
     professional.rejectionReason = undefined;
     professional.appliedAt = new Date();

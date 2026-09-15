@@ -16,10 +16,6 @@ export default function GuestProfessionals() {
   const [professionals, setProfessionals] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // =====================================================
-  // GET PUBLIC PROFESSIONALS
-  // =====================================================
-
   const fetchPublicProfessionals = useCallback(async () => {
     try {
       setLoading(true);
@@ -43,22 +39,13 @@ export default function GuestProfessionals() {
     }
   }, []);
 
-  // =====================================================
-  // FETCH ON LOAD
-  // =====================================================
-
   useEffect(() => {
     fetchPublicProfessionals();
   }, [fetchPublicProfessionals]);
 
-  // =====================================================
-  // PROFILE IMAGE
-  // =====================================================
-
   const getProfileImage = (profilePhoto) => {
     if (!profilePhoto) return null;
 
-    // Full URL
     if (
       profilePhoto.startsWith("http://") ||
       profilePhoto.startsWith("https://")
@@ -69,7 +56,6 @@ export default function GuestProfessionals() {
     const baseURL =
       import.meta.env.VITE_BASE_URL || "http://localhost:4000/api";
 
-    // Remove /api from backend URL
     const backendURL = baseURL.replace(/\/api\/?$/, "");
 
     if (profilePhoto.startsWith("/")) {
@@ -78,10 +64,6 @@ export default function GuestProfessionals() {
 
     return `${backendURL}/${profilePhoto}`;
   };
-
-  // =====================================================
-  // IMAGE ERROR
-  // =====================================================
 
   const handleImageError = (event) => {
     event.currentTarget.style.display = "none";
@@ -94,10 +76,6 @@ export default function GuestProfessionals() {
       fallback.classList.remove("hidden");
     }
   };
-
-  // =====================================================
-  // LOADING
-  // =====================================================
 
   if (loading) {
     return (
@@ -124,9 +102,6 @@ export default function GuestProfessionals() {
       className="bg-transparent px-4 py-16 font-sans sm:px-6 sm:py-20 lg:px-8"
     >
       <div className="mx-auto max-w-6xl">
-        {/* =========================
-            SECTION HEADER
-        ========================== */}
 
         <div className="mx-auto max-w-3xl text-center">
           <div className="mb-4 flex items-center justify-center gap-2">
@@ -148,10 +123,6 @@ export default function GuestProfessionals() {
           </p>
         </div>
 
-        {/* =========================
-            RESULT COUNT
-        ========================== */}
-
         <div className="mt-10 flex items-end justify-between border-b border-brand-light/40 pb-4">
           <div>
             <h3 className="text-xl font-black text-gray-800">
@@ -164,10 +135,6 @@ export default function GuestProfessionals() {
             </p>
           </div>
         </div>
-
-        {/* =========================
-            EMPTY STATE
-        ========================== */}
 
         {professionals.length === 0 ? (
           <div className="py-20 text-center">
@@ -182,9 +149,6 @@ export default function GuestProfessionals() {
             </p>
           </div>
         ) : (
-          /* =========================
-             PROFESSIONAL LIST
-          ========================== */
 
           <div className="divide-y divide-brand-light/40">
             {professionals.map((professional) => {
@@ -200,15 +164,10 @@ export default function GuestProfessionals() {
                   className="group py-7 transition-all duration-300 hover:bg-brand-light/5 sm:py-8"
                 >
                   <div className="flex flex-col gap-6 lg:flex-row lg:items-center">
-                    {/* =========================
-                        PROFILE
-                    ========================== */}
 
                     <div className="flex min-w-0 flex-1 items-center gap-5">
-                      {/* Profile Image */}
 
                       <div className="relative h-20 w-20 shrink-0 sm:h-24 sm:w-24">
-                        {/* Fallback */}
 
                         <div
                           className={`profile-image-fallback ${
@@ -217,8 +176,6 @@ export default function GuestProfessionals() {
                         >
                           {initials || "U"}
                         </div>
-
-                        {/* Image */}
 
                         {imageUrl && (
                           <img
@@ -231,8 +188,6 @@ export default function GuestProfessionals() {
                           />
                         )}
                       </div>
-
-                      {/* Professional Name & Details */}
 
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
@@ -259,8 +214,6 @@ export default function GuestProfessionals() {
                           </p>
                         )}
 
-                        {/* Rating */}
-
                         <div className="mt-3 flex flex-wrap items-center gap-3">
                           <div className="flex items-center gap-1.5">
                             <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
@@ -279,12 +232,7 @@ export default function GuestProfessionals() {
                       </div>
                     </div>
 
-                    {/* =========================
-                        PROFESSIONAL INFO
-                    ========================== */}
-
                     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:w-[420px] lg:grid-cols-3">
-                      {/* Experience */}
 
                       <div className="border-l border-brand-light/50 pl-4">
                         <div className="flex items-center gap-2 text-gray-400">
@@ -299,8 +247,6 @@ export default function GuestProfessionals() {
                           {formatExperience(professional.experience)}
                         </p>
                       </div>
-
-                      {/* Session Fee */}
 
                       <div className="border-l border-brand-light/50 pl-4">
                         <div className="flex items-center gap-2 text-gray-400">
@@ -317,8 +263,6 @@ export default function GuestProfessionals() {
                             : "Contact"}
                         </p>
                       </div>
-
-                      {/* Status */}
 
                       <div className="col-span-2 border-l border-brand-light/50 pl-4 sm:col-span-1">
                         <div className="flex items-center gap-2 text-gray-400">
@@ -337,10 +281,6 @@ export default function GuestProfessionals() {
                       </div>
                     </div>
                   </div>
-
-                  {/* =========================
-                      GUEST BOOKING MESSAGE
-                  ========================== */}
 
                   <div className="mt-5 flex flex-col gap-2 border-t border-gray-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
                     <p className="text-xs font-medium text-gray-400">
@@ -366,10 +306,6 @@ export default function GuestProfessionals() {
             })}
           </div>
         )}
-
-        {/* =========================
-            BOTTOM CTA
-        ========================== */}
 
         {professionals.length > 0 && (
           <div className="mt-10 border-t border-brand-light/40 pt-8 text-center">

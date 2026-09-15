@@ -118,7 +118,7 @@ export default function ProfessionalEarnings() {
   return (
     <ProfessionalLayout>
       <div className="min-h-screen bg-transparent pb-16 font-sans">
-        {/* Toast */}
+
         {toast && (
           <div
             className={`fixed right-5 top-5 z-50 rounded-2xl border px-5 py-3 text-sm font-bold text-white shadow-card-hover transition-all ${
@@ -132,7 +132,6 @@ export default function ProfessionalEarnings() {
           </div>
         )}
 
-        {/* Header */}
         <div className="px-4 pb-4 pt-6 sm:px-6 sm:pt-8 lg:px-8">
           <span className="inline-flex rounded-full border border-brand-light/70 bg-brand-light/40 px-3 py-1 text-xs font-extrabold uppercase tracking-widest text-brand-dark">
             Financial Dashboard
@@ -148,7 +147,6 @@ export default function ProfessionalEarnings() {
           </p>
         </div>
 
-        {/* Stripe Payout Status Card */}
         <div className="mb-6 px-4 sm:px-6 lg:px-8">
           <div className="flex flex-wrap items-center justify-between gap-4 rounded-card border border-brand-light/50 bg-surface/80 p-5 shadow-card backdrop-blur-xl">
             <div className="flex items-center gap-3.5">
@@ -199,7 +197,6 @@ export default function ProfessionalEarnings() {
           </div>
         </div>
 
-        {/* Financial Stat Cards */}
         <div className="mb-6 grid grid-cols-1 gap-4 px-4 sm:grid-cols-2 sm:px-6 lg:grid-cols-3 lg:px-8">
           {cards.map((c) => (
             <div
@@ -223,7 +220,6 @@ export default function ProfessionalEarnings() {
           ))}
         </div>
 
-        {/* Transaction History Table */}
         <div className="px-4 sm:px-6 lg:px-8">
           <h2 className="mb-3 text-lg font-extrabold tracking-tight text-gray-800">
             Session Earnings History
@@ -269,7 +265,7 @@ export default function ProfessionalEarnings() {
                         key={p._id}
                         className="transition-colors hover:bg-brand-light/10"
                       >
-                        {/* Client */}
+
                         <td className="px-5 py-4">
                           <p className="whitespace-nowrap font-bold text-gray-800">
                             {p.user
@@ -282,27 +278,22 @@ export default function ProfessionalEarnings() {
                           </p>
                         </td>
 
-                        {/* Session Fee */}
                         <td className="whitespace-nowrap px-5 py-4 font-bold text-gray-800">
                           Rs. {Number(p.amount || 0).toLocaleString()}
                         </td>
 
-                        {/* PoseFit Cut */}
                         <td className="whitespace-nowrap px-5 py-4 font-bold text-amber-800">
                           Rs. {Number(p.adminCommission || 0).toLocaleString()}
                         </td>
 
-                        {/* Professional Share */}
                         <td className="whitespace-nowrap px-5 py-4 font-extrabold text-brand-dark">
                           Rs. {Number(p.professionalAmount || 0).toLocaleString()}
                         </td>
 
-                        {/* Status */}
                         <td className="whitespace-nowrap px-5 py-4">
                           <StatusBadge status={p.status} />
                         </td>
 
-                        {/* Connect Payout */}
                         <td className="whitespace-nowrap px-5 py-4">
                           <span
                             className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-bold ${
@@ -327,7 +318,6 @@ export default function ProfessionalEarnings() {
                           </span>
                         </td>
 
-                        {/* Date */}
                         <td className="whitespace-nowrap px-5 py-4 text-xs font-medium text-gray-500">
                           {new Date(
                             p.paidAt || p.createdAt,
@@ -338,7 +328,6 @@ export default function ProfessionalEarnings() {
                           })}
                         </td>
 
-                        {/* Action */}
                         <td className="whitespace-nowrap px-5 py-4">
                           <button
                             onClick={() => handleDelete(p._id)}

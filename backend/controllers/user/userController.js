@@ -1,7 +1,6 @@
 const UserModel = require("../../models/userModel");
 const PaymentModel = require("../../models/paymentModel");
 
-// Get all approved professionals
 const getPublicProfessionals = async (req, res) => {
   try {
     const professionals = await UserModel.find({
@@ -26,7 +25,6 @@ const getPublicProfessionals = async (req, res) => {
   }
 };
 
-// Get professional details with booked slots
 const getPublicProfessionalById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -46,7 +44,6 @@ const getPublicProfessionalById = async (req, res) => {
       });
     }
 
-    // Get already booked slots
     const bookedPayments = await PaymentModel.find({
       professional: id,
       status: "completed",

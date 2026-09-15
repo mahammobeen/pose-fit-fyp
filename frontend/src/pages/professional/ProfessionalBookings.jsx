@@ -17,7 +17,6 @@ function isSessionPassed(booking) {
 
   const now = new Date();
 
-  // Compare calendar days
   const appDay = new Date(appDate.getFullYear(), appDate.getMonth(), appDate.getDate());
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
@@ -29,7 +28,6 @@ function isSessionPassed(booking) {
     return false;
   }
 
-  // Same day: check slot end time
   if (!booking.appointmentSlot) {
     return false;
   }
@@ -86,12 +84,11 @@ function isSessionPassed(booking) {
 }
 
 function getBookingStatus(booking) {
-  // If session date and time has passed, show "Completed" regardless of database status
+
   if (isSessionPassed(booking)) {
     return "completed";
   }
 
-  // Otherwise, show "Pending"
   return "pending";
 }
 
@@ -127,7 +124,6 @@ export default function ProfessionalBookings() {
     fetchBookings(activeTab);
   }, [activeTab, fetchBookings]);
 
-  // Delete booking from professional history
   const handleDelete = async (bookingId) => {
     const confirmed = window.confirm(
       "Are you sure you want to delete this booking record? This will only remove it from your booking history.",
@@ -176,7 +172,7 @@ export default function ProfessionalBookings() {
   return (
     <ProfessionalLayout>
       <div className="min-h-screen bg-transparent pb-16 font-sans">
-        {/* Toast */}
+
         {toast && (
           <div
             className={`fixed right-5 top-5 z-50 rounded-2xl border px-5 py-3 text-sm font-bold text-white shadow-card-hover transition-all ${
@@ -189,7 +185,6 @@ export default function ProfessionalBookings() {
           </div>
         )}
 
-        {/* Header */}
         <div className="px-4 pb-4 pt-6 sm:px-6 sm:pt-8 lg:px-8">
           <span className="inline-flex rounded-full border border-brand-light/70 bg-brand-light/40 px-3 py-1 text-xs font-extrabold uppercase tracking-widest text-brand-dark">
             Session History
@@ -205,9 +200,8 @@ export default function ProfessionalBookings() {
           </p>
         </div>
 
-        {/* Filters & Search */}
         <div className="mb-4 flex flex-col items-stretch justify-between gap-3 px-4 sm:flex-row sm:items-center sm:px-6 lg:px-8">
-          {/* Status Tabs */}
+
           <div className="flex items-center gap-1 overflow-x-auto rounded-card border border-brand-light/50 bg-surface/80 p-1.5 shadow-card backdrop-blur-xl">
             {TABS.map((t) => (
               <button
@@ -224,7 +218,6 @@ export default function ProfessionalBookings() {
             ))}
           </div>
 
-          {/* Search */}
           <div className="relative w-full sm:w-72">
             <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">
               <Search className="h-4 w-4" />
@@ -240,7 +233,6 @@ export default function ProfessionalBookings() {
           </div>
         </div>
 
-        {/* Bookings Table */}
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="overflow-hidden rounded-card border border-brand-light/50 bg-surface/80 shadow-card backdrop-blur-xl">
             {loading ? (
@@ -283,7 +275,7 @@ export default function ProfessionalBookings() {
                         key={b._id}
                         className="transition-colors hover:bg-brand-light/10"
                       >
-                        {/* Client */}
+
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
                             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-brand text-xs font-black text-white shadow-sm">
@@ -304,7 +296,6 @@ export default function ProfessionalBookings() {
                           </div>
                         </td>
 
-                        {/* Appointment Slot */}
                         <td className="px-6 py-4">
                           {b.appointmentDay && b.appointmentSlot ? (
                             <div className="flex items-center gap-1.5">
@@ -321,22 +312,18 @@ export default function ProfessionalBookings() {
                           )}
                         </td>
 
-                        {/* Session Fee */}
                         <td className="whitespace-nowrap px-6 py-4 font-bold text-gray-800">
                           Rs. {Number(b.amount || 0).toLocaleString()}
                         </td>
 
-                        {/* Professional Share */}
                         <td className="whitespace-nowrap px-6 py-4 font-extrabold text-brand-dark">
                           Rs. {Number(b.professionalAmount || 0).toLocaleString()}
                         </td>
 
-                        {/* Status */}
                         <td className="whitespace-nowrap px-6 py-4">
                           <StatusBadge status={getBookingStatus(b)} />
                         </td>
 
-                        {/* Date */}
                         <td className="whitespace-nowrap px-6 py-4 text-xs font-medium text-gray-500">
                           {b.appointmentDate ? (
                             new Date(b.appointmentDate).toLocaleDateString("en-US", {
@@ -353,7 +340,6 @@ export default function ProfessionalBookings() {
                           )}
                         </td>
 
-                        {/* Action */}
                         <td className="whitespace-nowrap px-6 py-4">
                           <button
                             onClick={() => handleDelete(b._id)}

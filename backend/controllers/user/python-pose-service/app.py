@@ -12,30 +12,24 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 
-# ─── MediaPipe Setup ─────────────────────────────────────────────────────────
 mp_pose = mp.solutions.pose
-VIS_THRESHOLD = 0.6   # landmark visibility threshold (MediaPipe docs)
-HOLD_FRAMES_NEEDED = 3  # frames arm/knee must stay in zone before state flips
+VIS_THRESHOLD = 0.6
+HOLD_FRAMES_NEEDED = 3
 
-
-# ─── Angle Helpers ───────────────────────────────────────────────────────────
 def calculate_angle(p1, p2):
-    """Angle of line p1->p2 relative to vertical axis (degrees)."""
+
     vx = p1[0] - p2[0]
     vy = p1[1] - p2[1]
     return math.degrees(math.atan2(vx, -vy))
 
-
 def calculate_joint_angle(a, b, c):
-    """Interior angle at joint b formed by points a-b-c (degrees, 0-180)."""
+
     a, b, c = np.array(a), np.array(b), np.array(c)
     radians = (np.arctan2(c[1] - b[1], c[0] - b[0])
                - np.arctan2(a[1] - b[1], a[0] - b[0]))
     angle = np.abs(np.degrees(radians))
     return 360.0 - angle if angle > 180.0 else angle
 
-
-# ─── Per-User Session Model ──────────────────────────────────────────────────
 class WorkoutSession:
     def __init__(self, exercise="side_bend"):
         self.lock = threading.Lock()
@@ -59,7 +53,6 @@ class WorkoutSession:
         self.last_updated = time.time()
         self.latest_jpeg = None
 
-        # Each user gets their own MediaPipe Pose pipeline for isolated tracking
         self.pose = mp_pose.Pose(
             static_image_mode=False,
             model_complexity=1,
@@ -138,7 +131,6 @@ class WorkoutSession:
             shoulder_mid = [(l_sh[0] + r_sh[0]) / 2, (l_sh[1] + r_sh[1]) / 2]
             hip_mid = [(l_hip[0] + r_hip[0]) / 2, (l_hip[1] + r_hip[1]) / 2]
 
-            # ── SIDE BEND ────────────────────────────────────────────────────
             if ex == "side_bend":
                 core_vis = [v_l_sh, v_r_sh, v_l_hip, v_r_hip]
                 local_detected = all(v >= VIS_THRESHOLD for v in core_vis)
@@ -184,7 +176,6 @@ class WorkoutSession:
                         local_feedback = ("Bend further to count rep"
                                           if new_bend else "Bend sideways slowly.")
 
-                    # Draw
                     for a, b in [(l_sh, r_sh), (l_hip, r_hip),
                                  (l_sh, l_hip), (r_sh, r_hip)]:
                         cv2.line(frame, tuple(map(int, a)), tuple(map(int, b)), (255, 120, 0), 3)
@@ -193,7 +184,6 @@ class WorkoutSession:
                         cv2.circle(frame, tuple(map(int, pt)), 6, (0, 0, 255), -1)
                         cv2.circle(frame, tuple(map(int, pt)), 8, (255, 255, 255), 1)
 
-            # ── SQUATS ───────────────────────────────────────────────────────
             elif ex == "squats":
                 l_hip_pt, v_l_hip2 = lm(mp_pose.PoseLandmark.LEFT_HIP.value)
                 l_knee_pt, v_l_knee = lm(mp_pose.PoseLandmark.LEFT_KNEE.value)
@@ -220,7 +210,6 @@ class WorkoutSession:
                                        else "up" if knee_angle > prev_angle + 1
                                        else "none")
 
-                    # Smoothed rep counting
                     if knee_angle < 100:
                         new_sq_hold += 1
                         if new_sq_hold >= HOLD_FRAMES_NEEDED:
@@ -232,7 +221,6 @@ class WorkoutSession:
                         new_reps += 1
                         new_sq = False
 
-                    # Feedback
                     if knee_angle > 155:
                         local_feedback = "Stand straight. Now go down slowly."
                     elif knee_angle > 100:
@@ -243,7 +231,6 @@ class WorkoutSession:
                     if knee_angle < 75:
                         local_warning = "Too deep! Protect your knees."
 
-                    # Draw
                     cv2.line(frame, tuple(map(int, l_hip_pt)), tuple(map(int, r_hip_pt)), (0, 255, 0), 3)
                     for a, b in [(l_hip_pt, l_knee_pt), (l_knee_pt, l_ank_pt),
                                  (r_hip_pt, r_knee_pt), (r_knee_pt, r_ank_pt)]:
@@ -252,7 +239,6 @@ class WorkoutSession:
                         cv2.circle(frame, tuple(map(int, pt)), 8, (0, 0, 255), -1)
                         cv2.circle(frame, tuple(map(int, pt)), 8, (255, 255, 255), 1)
 
-            # ── PLANK ────────────────────────────────────────────────────────
             elif ex == "plank":
                 l_sh_pt, v_l_sh2 = lm(mp_pose.PoseLandmark.LEFT_SHOULDER.value)
                 l_hip2_pt, v_l_hp2 = lm(mp_pose.PoseLandmark.LEFT_HIP.value)
@@ -295,7 +281,6 @@ class WorkoutSession:
                     if body_angle < 140:
                         local_warning = "Body not aligned! Adjust immediately."
 
-                    # Draw
                     cv2.line(frame, tuple(map(int, l_sh_pt)), tuple(map(int, r_sh_pt)), (0, 255, 255), 3)
                     cv2.line(frame, tuple(map(int, l_hip2_pt)), tuple(map(int, r_hip2_pt)), (0, 255, 255), 3)
                     for a, b in [(l_sh_pt, l_hip2_pt), (l_hip2_pt, l_ank2_pt),
@@ -305,7 +290,6 @@ class WorkoutSession:
                         cv2.circle(frame, tuple(map(int, pt)), 8, (0, 0, 255), -1)
                         cv2.circle(frame, tuple(map(int, pt)), 8, (255, 255, 255), 1)
 
-            # ── ARM RAISE ────────────────────────────────────────────────────
             elif ex == "arm_raise":
                 l_sh_ar, v_l_sh_ar = lm(mp_pose.PoseLandmark.LEFT_SHOULDER.value)
                 l_elb_ar, v_l_elb_ar = lm(mp_pose.PoseLandmark.LEFT_ELBOW.value)
@@ -333,7 +317,6 @@ class WorkoutSession:
                                        else "down" if avg_elev > prev_angle + 1
                                        else "none")
 
-                    # Smoothed rep counting
                     if avg_elev < 25:
                         new_ar_hold += 1
                         if new_ar_hold >= HOLD_FRAMES_NEEDED:
@@ -355,7 +338,6 @@ class WorkoutSession:
                     if abs(elev_left - elev_right) > 20:
                         local_warning = "Keep both arms even!"
 
-                    # Draw — left cyan, right orange
                     for a, b in [(l_sh_ar, l_elb_ar), (l_elb_ar, l_wrt_ar)]:
                         cv2.line(frame, tuple(map(int, a)), tuple(map(int, b)), (0, 255, 255), 3)
                     for a, b in [(r_sh_ar, r_elb_ar), (r_elb_ar, r_wrt_ar)]:
@@ -396,15 +378,12 @@ class WorkoutSession:
             "frame_bytes": jpeg_bytes
         }
 
-
-# ─── Multi-Session Registry ──────────────────────────────────────────────────
 sessions = {}
 sessions_lock = threading.Lock()
 
 def get_or_create_session(session_id, exercise=None):
     with sessions_lock:
         now = time.time()
-        # Clean up stale sessions inactive for > 15 minutes
         stale_ids = [sid for sid, s in list(sessions.items()) if now - s.last_updated > 900]
         for sid in stale_ids:
             try:
@@ -424,11 +403,9 @@ def get_or_create_session(session_id, exercise=None):
         session.last_updated = now
         return session
 
-
-# ─── Routes ──────────────────────────────────────────────────────────────────
 @app.route('/process_frame', methods=['POST'])
 def process_frame():
-    """Receives browser webcam frame and processes it for the specified user session."""
+
     req_data = request.get_json() or {}
     session_id = req_data.get('session_id', 'default')
     exercise = req_data.get('exercise')
@@ -466,7 +443,6 @@ def process_frame():
         "image": frame_b64
     })
 
-
 @app.route('/start', methods=['POST'])
 def start_session():
     req_data = request.get_json() or {}
@@ -483,7 +459,6 @@ def start_session():
         "message": f"{exercise} session initialized."
     })
 
-
 @app.route('/stop', methods=['POST'])
 def stop_session():
     req_data = request.get_json() or {}
@@ -495,7 +470,6 @@ def stop_session():
             return jsonify({"status": "stopped", "message": "Session terminated."})
         return jsonify({"status": "already_stopped", "message": "Session inactive."})
 
-
 @app.route('/reset', methods=['POST'])
 def reset_workout():
     req_data = request.get_json() or {}
@@ -505,7 +479,6 @@ def reset_workout():
     session.reset()
     return jsonify({"status": "reset", "message": "Session metrics reset successfully."})
 
-
 @app.route('/status', methods=['GET'])
 def get_status():
     session_id = request.args.get('session_id')
@@ -514,7 +487,6 @@ def get_status():
             s = sessions[session_id]
             return jsonify({"is_active": s.is_active, "exercise": s.exercise, "online": True})
         return jsonify({"is_active": True, "exercise": "side_bend", "online": True})
-
 
 @app.route('/metrics')
 def metrics():
@@ -536,7 +508,6 @@ def metrics():
             time.sleep(0.15)
     return Response(event_stream(), mimetype='text/event-stream')
 
-
 @app.route('/video_feed')
 def video_feed():
     session_id = request.args.get('session_id', 'default')
@@ -550,7 +521,6 @@ def video_feed():
                        b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
             time.sleep(0.04)
     return Response(gen(), mimetype='multipart/x-mixed-replace; boundary=frame')
-
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5002, threaded=True)

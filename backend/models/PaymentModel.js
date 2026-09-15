@@ -63,7 +63,6 @@ const paymentSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
-    
 
     stripePaymentIntentId: {
       type: String,
@@ -81,7 +80,6 @@ const paymentSchema = new mongoose.Schema(
       type: String,
       sparse: true,
     },
-    
 
     meetingLink: {
       type: String,
@@ -151,4 +149,3 @@ paymentSchema.index(
 const PaymentModel = mongoose.model("Payment", paymentSchema);
 
 module.exports = PaymentModel;
-

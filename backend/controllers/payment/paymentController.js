@@ -10,7 +10,7 @@ createGoogleMeetEvent,
 
 const {
   sendBookingConfirmationEmails,
-  
+
 } = require("../../services/emailService");
 
 const getStripe = () => {
@@ -20,7 +20,6 @@ const getStripe = () => {
   }
   return new Stripe(secretKey);
 };
-
 
 const getSlotStartDateTime = (appointmentDate, appointmentSlot) => {
   if (!appointmentDate || !appointmentSlot) return null;
@@ -61,7 +60,6 @@ const getSlotStartDateTime = (appointmentDate, appointmentSlot) => {
   return Number.isNaN(slotDate.getTime()) ? null : slotDate;
 };
 
-// 1. Create Payment Session with Direct Connect Transfer Split (20% Platform / 80% Professional)
 const createPayment = async (req, res) => {
   let reservedPayment = null;
 
@@ -142,7 +140,6 @@ const createPayment = async (req, res) => {
       });
     }
 
-    // Prevent invalid dates such as 2026-02-31
     if (
       parsedAppointmentDate.getFullYear() !== year ||
       parsedAppointmentDate.getMonth() !== month - 1 ||
@@ -154,7 +151,6 @@ const createPayment = async (req, res) => {
       });
     }
 
-    // Prevent booking past dates
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
 
@@ -175,7 +171,6 @@ const createPayment = async (req, res) => {
       });
     }
 
-    // Validate appointment day against appointment date
     const DAY_NAMES = [
       "Sunday",
       "Monday",
@@ -199,7 +194,6 @@ const createPayment = async (req, res) => {
       });
     }
 
-    // If booking today, prevent already-passed slots
     if (
       targetDateStart.getTime() ===
       todayStart.getTime()
@@ -373,13 +367,6 @@ const createPayment = async (req, res) => {
       (totalAmount * 0.8).toFixed(2),
     );
 
-    /*
-     * IMPORTANT:
-     * Create the pending payment BEFORE creating Stripe Checkout.
-     *
-     * The compound unique index in paymentModel.js makes this
-     * operation atomic for concurrent booking requests.
-     */
     try {
       reservedPayment =
         await PaymentModel.create({
@@ -403,7 +390,7 @@ const createPayment = async (req, res) => {
           professionalDeleted: false,
         });
     } catch (reservationError) {
-      // MongoDB duplicate key means another request already reserved this slot.
+
       if (reservationError.code === 11000) {
         return res.status(409).json({
           success: false,
@@ -518,7 +505,6 @@ const createPayment = async (req, res) => {
         stripeError,
       );
 
-      // Release the reservation so the slot can be booked again.
       if (reservedPayment?._id) {
         await PaymentModel.findByIdAndUpdate(
           reservedPayment._id,
@@ -537,7 +523,6 @@ const createPayment = async (req, res) => {
       });
     }
 
-    // Save Stripe session against the already-reserved payment.
     await PaymentModel.findByIdAndUpdate(
       reservedPayment._id,
       {
@@ -574,8 +559,6 @@ const createPayment = async (req, res) => {
       error,
     );
 
-    // If an unexpected error happens after reservation,
-    // release the pending booking.
     if (reservedPayment?._id) {
       try {
         await PaymentModel.findByIdAndUpdate(
@@ -602,7 +585,6 @@ const createPayment = async (req, res) => {
   }
 };
 
-// 2. Get single payment details
 const getPayment = async (req, res) => {
   try {
     const { id } = req.params;
@@ -632,7 +614,6 @@ const getPayment = async (req, res) => {
   }
 };
 
-// 3. Get user payment history
 const getUserPayments = async (req, res) => {
   try {
     const userId = req.user.userId;
@@ -656,7 +637,6 @@ const getUserPayments = async (req, res) => {
   }
 };
 
-// 4. Get all payments and metrics for Admin Panel
 const getAdminPayments = async (req, res) => {
   try {
     const { status } = req.query;
@@ -723,7 +703,6 @@ const getAdminPayments = async (req, res) => {
   }
 };
 
-// 5. Delete Payment Record for admin
 const deleteAdminPayment = async (req, res) => {
   try {
     const { id } = req.params;
@@ -756,7 +735,6 @@ const deleteAdminPayment = async (req, res) => {
   }
 };
 
-// 6. Delete Payment Record for professional
 const deleteProfessionalPayment = async (req, res) => {
   try {
     const { id } = req.params;
@@ -803,7 +781,7 @@ const deleteProfessionalPayment = async (req, res) => {
     });
   }
 };
-// 7. booked-slot
+
 const getProfessionalBookedSlots = async (req, res) => {
   try {
     const { id } = req.params;
@@ -891,7 +869,6 @@ const getProfessionalBookedSlots = async (req, res) => {
   }
 };
 
-// 8. Generate Stripe Connect Onboarding Link (Accounts V2)
 const createConnectOnboardingSession = async (req, res) => {
   try {
     const userId = req.user.userId;
@@ -908,7 +885,6 @@ const createConnectOnboardingSession = async (req, res) => {
 
     let accountId = user.stripeAccountId;
 
-    // Verify existing V2 account if present
     if (accountId) {
       try {
         const existingAcc = await stripe.v2.core.accounts.retrieve(accountId);
@@ -920,7 +896,6 @@ const createConnectOnboardingSession = async (req, res) => {
       }
     }
 
-    // Create a new Stripe Connected Account using Accounts V2 API (POST /v2/core/accounts)
     if (!accountId) {
       const v2Account = await stripe.v2.core.accounts.create({
         contact_email: user.email,
@@ -964,7 +939,6 @@ const createConnectOnboardingSession = async (req, res) => {
 
     const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
 
-    // Generate Stripe Onboarding URL using Accounts V2 AccountLinks API (POST /v2/core/account_links)
     const accountLink = await stripe.v2.core.accountLinks.create({
       account: accountId,
       use_case: {
@@ -993,7 +967,6 @@ const createConnectOnboardingSession = async (req, res) => {
   }
 };
 
-// 9. Get Connect Status (Accounts V2)
 const getConnectStatus = async (req, res) => {
   try {
     const targetUserId = req.params.userId || req.user.userId;
@@ -1019,7 +992,6 @@ const getConnectStatus = async (req, res) => {
       });
     }
 
-    // Retrieve status from Stripe Accounts V2 (GET /v2/core/accounts/:id)
     let account;
     try {
       account = await stripe.v2.core.accounts.retrieve(user.stripeAccountId, {
@@ -1054,7 +1026,6 @@ const getConnectStatus = async (req, res) => {
     const payoutsEnabled = transfersActive || payoutsActive;
     const status = payoutsEnabled ? "active" : "pending";
 
-    // Synchronize DB status
     user.chargesEnabled = chargesEnabled;
     user.payoutsEnabled = payoutsEnabled;
     user.stripeAccountStatus = status;
@@ -1080,7 +1051,6 @@ const getConnectStatus = async (req, res) => {
   }
 };
 
-// 10. Get Stripe Express Dashboard link or update link
 const getConnectDashboardLink = async (req, res) => {
   try {
     const userId = req.user.userId;
@@ -1132,7 +1102,6 @@ const getConnectDashboardLink = async (req, res) => {
   }
 };
 
-// 11. Stripe Webhook Handler
 const stripeWebhook = async (req, res) => {
   try {
     const stripe = getStripe();
@@ -1141,7 +1110,6 @@ const stripeWebhook = async (req, res) => {
 
     let event;
 
-    // Verify Stripe webhook signature.
     if (!webhookSecret) {
       console.error("STRIPE_WEBHOOK_SECRET is not configured.");
 
@@ -1177,7 +1145,6 @@ const stripeWebhook = async (req, res) => {
       );
     }
 
-    // Handle completed checkout sessions.
     if (event.type === "checkout.session.completed") {
       const session = event.data.object;
       let payment = null;
@@ -1291,7 +1258,6 @@ const stripeWebhook = async (req, res) => {
           );
         }
 
-        // Create Google Meet if needed.
         if (!payment.meetingLink) {
           try {
             const meeting = await createGoogleMeetEvent({
@@ -1318,7 +1284,6 @@ const stripeWebhook = async (req, res) => {
           }
         }
 
-        // Send booking confirmation emails only for newly created or completed payments.
         if (isNewOrUpdated) {
           try {
             await sendBookingConfirmationEmails({
@@ -1346,7 +1311,6 @@ const stripeWebhook = async (req, res) => {
       }
     }
 
-    // Handle successful payment intents.
     if (event.type === "payment_intent.succeeded") {
       const paymentIntent = event.data.object;
 
@@ -1378,7 +1342,6 @@ const stripeWebhook = async (req, res) => {
       }
     }
 
-    // Handle failed payment intents.
     if (event.type === "payment_intent.payment_failed") {
       const paymentIntent = event.data.object;
 
@@ -1406,7 +1369,6 @@ const stripeWebhook = async (req, res) => {
       }
     }
 
-    // Handle Stripe Connect account updates.
     if (
       event.type === "account.updated" ||
       event.type?.startsWith("v2.core.account")
@@ -1493,8 +1455,6 @@ const stripeWebhook = async (req, res) => {
   }
 };
 
-
-// 12. Verify Stripe Session Status (Read-Only Status Check)
 const verifySession = async (req, res) => {
   try {
     const { session_id } = req.query;
@@ -1524,7 +1484,6 @@ const verifySession = async (req, res) => {
         ""
       ).toString();
 
-      // Authorization check: Ensure authenticated user owns this payment
       if (paymentUserId && currentUserId && paymentUserId !== currentUserId) {
         return res.status(403).json({
           success: false,
@@ -1548,7 +1507,6 @@ const verifySession = async (req, res) => {
       });
     }
 
-    // Payment not yet created by the webhook or still pending
     return res.status(200).json({
       success: true,
       bookingConfirmed: false,
@@ -1577,4 +1535,3 @@ module.exports = {
   stripeWebhook,
   verifySession,
 };
-

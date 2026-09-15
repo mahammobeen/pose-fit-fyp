@@ -114,7 +114,7 @@ export default function AdminProfessionals() {
   return (
     <AdminLayout>
       <div className="min-h-screen pb-16 bg-transparent font-sans">
-        {/* Toast */}
+
         {toast && (
           <div
             className={`fixed top-5 right-5 z-50 px-5 py-3 rounded-btn shadow-card-hover text-white text-sm font-bold border transition-all ${
@@ -127,7 +127,6 @@ export default function AdminProfessionals() {
           </div>
         )}
 
-        {/* Header */}
         <div className="px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 pb-5">
           <div className="rounded-card border border-brand-light/60 bg-surface/75 backdrop-blur-xl shadow-card p-6 sm:p-7 flex items-center justify-between flex-wrap gap-4">
             <div>
@@ -160,7 +159,6 @@ export default function AdminProfessionals() {
           </div>
         </div>
 
-        {/* Status Counts */}
         <div className="px-4 sm:px-6 lg:px-8 mb-5 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           {[
             {
@@ -229,7 +227,6 @@ export default function AdminProfessionals() {
           ))}
         </div>
 
-        {/* Search */}
         <div className="px-4 sm:px-6 lg:px-8 mb-4">
           <div className="relative max-w-sm">
             <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">
@@ -246,7 +243,6 @@ export default function AdminProfessionals() {
           </div>
         </div>
 
-        {/* Table */}
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="rounded-card shadow-card border border-brand-light/50 overflow-hidden bg-surface/85 backdrop-blur-xl">
             {loading ? (
@@ -290,7 +286,7 @@ export default function AdminProfessionals() {
                         key={pro._id}
                         className="hover:bg-brand-light/10 transition-colors"
                       >
-                        {/* Name */}
+
                         <td className="px-5 py-4">
                           <div className="flex items-center gap-3">
                             <div className="w-9 h-9 rounded-btn flex items-center justify-center text-white text-xs font-black shrink-0 bg-brand">
@@ -303,24 +299,20 @@ export default function AdminProfessionals() {
                           </div>
                         </td>
 
-                        {/* Email */}
                         <td className="px-5 py-4 text-gray-600 font-medium">
                           {pro.email}
                         </td>
 
-                        {/* Role */}
                         <td className="px-5 py-4">
                           <span className="inline-block px-2.5 py-0.5 rounded-md text-xs font-bold bg-brand-light/20 text-brand-dark border border-brand-light/60">
                             {pro.professionalType || "Trainer"}
                           </span>
                         </td>
 
-                        {/* Specialization */}
                         <td className="px-5 py-4 text-gray-600 font-medium">
                           {pro.specialization || "General"}
                         </td>
 
-                        {/* Fee */}
                         <td className="px-5 py-4 text-gray-800 font-bold">
                           Rs.{" "}
                           {pro.sessionFee
@@ -328,14 +320,12 @@ export default function AdminProfessionals() {
                             : "0"}
                         </td>
 
-                        {/* Status */}
                         <td className="px-5 py-4">
                           <StatusBadge
                             status={pro.professionalStatus || "invited"}
                           />
                         </td>
 
-                        {/* Stripe */}
                         <td className="px-5 py-4 whitespace-nowrap">
                           {pro.stripeAccountId ? (
                             <div>
@@ -364,7 +354,6 @@ export default function AdminProfessionals() {
                           )}
                         </td>
 
-                        {/* Actions */}
                         <td className="px-5 py-4">
                           <button
                             onClick={() => {
@@ -390,7 +379,6 @@ export default function AdminProfessionals() {
           </p>
         </div>
 
-        {/* ADD / INVITE MODAL */}
         <Modal
           isOpen={addOpen}
           onClose={() => setAddOpen(false)}
@@ -403,7 +391,6 @@ export default function AdminProfessionals() {
               </div>
             )}
 
-            {/* First / Last Name */}
             <div className="grid grid-cols-2 gap-3">
               {[
                 ["firstName", "First Name"],
@@ -429,7 +416,6 @@ export default function AdminProfessionals() {
               ))}
             </div>
 
-            {/* Email */}
             <div>
               <label className="block text-xs font-bold text-gray-600 mb-1.5 uppercase tracking-wider">
                 Email Address
@@ -448,7 +434,6 @@ export default function AdminProfessionals() {
               />
             </div>
 
-            {/* Role / Fee */}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-bold text-gray-600 mb-1.5 uppercase tracking-wider">
@@ -492,7 +477,6 @@ export default function AdminProfessionals() {
               </div>
             </div>
 
-            {/* Specialization */}
             <div>
               <label className="block text-xs font-bold text-gray-600 mb-1.5 uppercase tracking-wider">
                 Specialization
@@ -512,7 +496,6 @@ export default function AdminProfessionals() {
               />
             </div>
 
-            {/* Password */}
             <div>
               <label className="block text-xs font-bold text-gray-600 mb-1.5 uppercase tracking-wider">
                 Temporary Password (Optional)
@@ -537,7 +520,6 @@ export default function AdminProfessionals() {
               instructions will be sent automatically.
             </p>
 
-            {/* Modal Buttons */}
             <div className="flex gap-3 pt-2">
               <button
                 type="button"
@@ -560,7 +542,6 @@ export default function AdminProfessionals() {
           </form>
         </Modal>
 
-        {/* DELETE MODAL */}
         <Modal
           isOpen={deleteOpen}
           onClose={() => setDeleteOpen(false)}

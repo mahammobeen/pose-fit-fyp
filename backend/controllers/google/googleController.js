@@ -25,7 +25,6 @@ const getOAuth2Client = () => {
   );
 };
 
-// Start Google OAuth authorization
 const googleAuth = async (req, res) => {
   try {
     const oauth2Client = getOAuth2Client();
@@ -50,7 +49,6 @@ const googleAuth = async (req, res) => {
   }
 };
 
-// Google OAuth callback
 const googleCallback = async (req, res) => {
   try {
     const { code } = req.query;

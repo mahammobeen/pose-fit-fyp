@@ -16,11 +16,9 @@ export default function AdminProfessionalRequests() {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Review full detail modal
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailPro, setDetailPro] = useState(null);
 
-  // Status update modal
   const [statusOpen, setStatusOpen] = useState(false);
   const [selectedPro, setSelectedPro] = useState(null);
   const [statusAction, setStatusAction] = useState("approved");
@@ -104,7 +102,7 @@ export default function AdminProfessionalRequests() {
   return (
     <AdminLayout>
       <div className="min-h-screen pb-16 bg-transparent font-sans">
-        {/* Toast */}
+
         {toast && (
           <div
             className={`fixed top-5 right-5 z-50 px-5 py-3 rounded-btn shadow-card-hover text-white text-sm font-bold border transition-all ${
@@ -117,7 +115,6 @@ export default function AdminProfessionalRequests() {
           </div>
         )}
 
-        {/* Header */}
         <div className="px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 pb-5">
           <div className="rounded-card border border-brand-light/60 bg-surface/75 backdrop-blur-xl shadow-card p-6 sm:p-7">
             <span className="inline-flex text-xs font-extrabold uppercase tracking-widest px-3 py-1 rounded-full bg-accent-orange/60 text-[#a95f22] border border-accent-orange">
@@ -135,7 +132,6 @@ export default function AdminProfessionalRequests() {
           </div>
         </div>
 
-        {/* Count Badge */}
         <div className="px-4 sm:px-6 lg:px-8 mb-6">
           <div className="inline-flex items-center gap-3 bg-accent-orange/25 border border-accent-orange/70 rounded-card px-4 py-2.5 shadow-card">
             <span className="w-8 h-8 rounded-xl bg-accent-orange text-[#a95f22] font-black text-sm flex items-center justify-center">
@@ -148,7 +144,6 @@ export default function AdminProfessionalRequests() {
           </div>
         </div>
 
-        {/* Loading */}
         {loading ? (
           <div className="flex items-center justify-center h-48">
             <div className="w-8 h-8 border-4 border-brand-light border-t-brand rounded-full animate-spin" />
@@ -177,7 +172,7 @@ export default function AdminProfessionalRequests() {
                 className="rounded-card border border-brand-light/50 bg-surface/80 shadow-card p-6 hover:shadow-card-hover hover:-translate-y-0.5 transition-all backdrop-blur-xl"
               >
                 <div className="flex items-start justify-between gap-4 flex-wrap">
-                  {/* Left */}
+
                   <div className="flex items-start gap-4">
                     {pro.profilePhoto ? (
                       <img
@@ -231,7 +226,6 @@ export default function AdminProfessionalRequests() {
                     </div>
                   </div>
 
-                  {/* Actions */}
                   <div className="flex items-center gap-2 flex-wrap">
                     <button
                       onClick={() => openDetailModal(pro)}
@@ -259,7 +253,6 @@ export default function AdminProfessionalRequests() {
                   </div>
                 </div>
 
-                {/* Previous Rejection Reason */}
                 {pro.rejectionReason && (
                   <div className="mt-3 p-3 bg-rose-50 rounded-btn border border-rose-200 text-xs text-rose-800 font-medium">
                     <span className="font-bold">
@@ -273,7 +266,6 @@ export default function AdminProfessionalRequests() {
           </div>
         )}
 
-        {/* FULL APPLICATION REVIEW MODAL */}
         <Modal
           isOpen={detailOpen}
           onClose={() => setDetailOpen(false)}
@@ -282,7 +274,7 @@ export default function AdminProfessionalRequests() {
         >
           {detailPro && (
             <div className="space-y-6 text-sm">
-              {/* Header */}
+
               <div className="flex items-center gap-4 p-4 bg-brand-light/15 rounded-card border border-brand-light/50">
                 {detailPro.profilePhoto ? (
                   <img
@@ -320,7 +312,6 @@ export default function AdminProfessionalRequests() {
                 </div>
               </div>
 
-              {/* Specialization & Fee */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-brand-light/10 p-4 rounded-card border border-brand-light/50">
                   <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">
@@ -346,7 +337,6 @@ export default function AdminProfessionalRequests() {
                 </div>
               </div>
 
-              {/* Bio */}
               {detailPro.bio && (
                 <div className="bg-brand-light/10 p-4 rounded-card border border-brand-light/50">
                   <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">
@@ -359,7 +349,6 @@ export default function AdminProfessionalRequests() {
                 </div>
               )}
 
-              {/* Credential Documents */}
               <div className="bg-brand-light/10 p-4 rounded-card border border-brand-light/50">
                 <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
                   Submitted Certificates & Credential Documents
@@ -398,7 +387,6 @@ export default function AdminProfessionalRequests() {
                 )}
               </div>
 
-              {/* Availability */}
               <div className="bg-brand-light/10 p-4 rounded-card border border-brand-light/50">
                 <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
                   Submitted Availability Schedule
@@ -431,7 +419,6 @@ export default function AdminProfessionalRequests() {
                 )}
               </div>
 
-              {/* Stripe Connect */}
               <div className="bg-accent-orange/20 p-4 rounded-card border border-accent-orange/70">
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-xs font-bold text-[#8f541f] uppercase tracking-wider flex items-center gap-1.5">
@@ -485,7 +472,6 @@ export default function AdminProfessionalRequests() {
                 </div>
               </div>
 
-              {/* Modal Actions */}
               <div className="flex gap-3 pt-2">
                 <button
                   onClick={() => openStatus(detailPro, "rejected")}
@@ -507,7 +493,6 @@ export default function AdminProfessionalRequests() {
           )}
         </Modal>
 
-        {/* DECISION MODAL */}
         <Modal
           isOpen={statusOpen}
           onClose={() => setStatusOpen(false)}

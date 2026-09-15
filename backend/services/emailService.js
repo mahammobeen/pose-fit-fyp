@@ -160,11 +160,22 @@ const sendBookingConfirmationEmails = async ({
     `,
   };
 
-  await Promise.all([
-    transporter.sendMail(userMail),
-    transporter.sendMail(professionalMail),
-  ]);
+  // await Promise.all([
+  //   transporter.sendMail(userMail),
+  //   transporter.sendMail(professionalMail),
+  // ]);
+const [userResult, professionalResult] = await Promise.all([
+  transporter.sendMail(userMail),
+  transporter.sendMail(professionalMail),
+]);
 
+console.log("Confirmation email sent to user:", userResult.messageId);
+console.log(
+  "Confirmation email sent to professional:",
+  professionalResult.messageId
+);
+
+return true;
   return true;
 };
 
@@ -355,4 +366,3 @@ module.exports = {
   sendBookingConfirmationEmails,
   sendBookingReminderEmails,
 };
-

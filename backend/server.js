@@ -15,18 +15,14 @@ const uploadRoutes = require("./routes/upload/uploadRoutes");
 const userRoutes = require("./routes/user/userRoutes");
 const googleRoutes = require("./routes/google/googleRoutes");
 
-
 const { stripeWebhook } = require("./controllers/payment/paymentController");
-const {
-  startBookingReminderScheduler,
-} = require("./services/bookingReminderService");
+const { startBookingReminderScheduler } = require("./services/bookingReminderService");
 const ConnectToDB = require("./models/db");
 
 const app = express();
 
 const PORT = process.env.PORT || 4000;
 
-// UPLOADS DIRECTORY
 const uploadsPath = path.join(__dirname, "uploads");
 const photosPath = path.join(uploadsPath, "photos");
 const documentsPath = path.join(uploadsPath, "documents");
@@ -39,7 +35,6 @@ if (!fs.existsSync(documentsPath)) {
   fs.mkdirSync(documentsPath, { recursive: true });
 }
 
-// CORS
 app.use(
   cors({
     origin: process.env.FRONTEND_URL || "http://localhost:5173",
@@ -47,20 +42,16 @@ app.use(
   }),
 );
 
-// STRIPE WEBHOOK
 app.post(
   "/api/payment/webhook",
   express.raw({ type: "application/json" }),
   stripeWebhook,
 );
 
-// BODY PARSER
 app.use(express.json());
 
-// STATIC UPLOADS
 app.use("/uploads", express.static(uploadsPath));
 
-// API ROUTES
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/payment", paymentRoutes);
@@ -70,7 +61,6 @@ app.use("/api/upload", uploadRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/google", googleRoutes);
 
-// ROOT
 app.get("/", (req, res) => {
   res.json({
     success: true,
@@ -78,7 +68,6 @@ app.get("/", (req, res) => {
   });
 });
 
-// 404
 app.use((req, res) => {
   res.status(404).json({
     success: false,
@@ -87,7 +76,6 @@ app.use((req, res) => {
   });
 });
 
-// START SERVER
 const startServer = async () => {
   try {
     await ConnectToDB();

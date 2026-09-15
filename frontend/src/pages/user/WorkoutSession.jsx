@@ -90,7 +90,6 @@ export default function WorkoutSession() {
 
   const lastSpokenRef = useRef({ text: "", time: 0 });
 
-  // Initial status check
   useEffect(() => {
     axios
       .get(`${POSE_API_URL}/status?session_id=${sessionIdRef.current}`)
@@ -103,7 +102,6 @@ export default function WorkoutSession() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Voice Feedback
   useEffect(() => {
     if (isMuted) return;
 
@@ -134,7 +132,6 @@ export default function WorkoutSession() {
     };
   }, [feedback, warning, isMuted]);
 
-  // Frame processing loop from browser webcam to Python pose service
   const sendNextFrame = async () => {
     if (!isActiveRef.current) return;
 
@@ -202,7 +199,6 @@ export default function WorkoutSession() {
     } catch (_) {}
   };
 
-  // Permission Request
   const requestCamera = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -221,7 +217,6 @@ export default function WorkoutSession() {
     }
   };
 
-  // Session Controls
   const handleStart = async () => {
     if (!hasPermission) {
       await requestCamera();
@@ -314,11 +309,9 @@ export default function WorkoutSession() {
     }
   };
 
-  // Calculations
   const absAngle = Math.abs(angle);
   const percentage = Math.min(100, Math.round((absAngle / 90) * 100));
 
-  // Permission Prompt Screen
   if (!hasPermission) {
     return (
       <UserLayout>
@@ -365,7 +358,7 @@ export default function WorkoutSession() {
     <UserLayout>
       <div className="min-h-screen bg-transparent p-4 font-sans sm:p-6 md:p-8">
         <div className="space-y-6">
-          {/* Header */}
+
           <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <button
@@ -388,7 +381,6 @@ export default function WorkoutSession() {
               </div>
             </div>
 
-            {/* Action Badges */}
             <div className="flex flex-wrap items-center gap-3">
               <button
                 onClick={() => {
@@ -429,7 +421,6 @@ export default function WorkoutSession() {
             </div>
           </div>
 
-          {/* Offline Alert */}
           {!serverOnline && (
             <div className="mx-auto flex max-w-6xl items-center gap-3 rounded-card border border-rose-200 bg-rose-50 p-4 text-xs text-rose-700">
               <ShieldAlert size={20} />
@@ -444,11 +435,10 @@ export default function WorkoutSession() {
             </div>
           )}
 
-          {/* Main Grid */}
           <div className="mx-auto grid max-w-6xl grid-cols-1 items-stretch gap-6 lg:grid-cols-12">
-            {/* Large Camera Feed */}
+
             <div className="relative flex min-h-[460px] flex-col justify-center overflow-hidden rounded-card border border-brand-light/50 bg-surface/70 shadow-card backdrop-blur-xl lg:col-span-8 md:min-h-[520px]">
-              {/* Browser camera elements */}
+
               <video
                 ref={videoRef}
                 playsInline
@@ -504,9 +494,8 @@ export default function WorkoutSession() {
               )}
             </div>
 
-            {/* Stats Column */}
             <div className="flex flex-col justify-between gap-4 lg:col-span-4">
-              {/* Rep Count */}
+
               <div className="rounded-card border border-brand-light/50 bg-surface/80 p-6 text-center shadow-card backdrop-blur-xl">
                 <span className="text-[10px] font-extrabold uppercase tracking-widest text-brand-dark">
                   {exerciseId === "plank"
@@ -523,7 +512,6 @@ export default function WorkoutSession() {
                 </span>
               </div>
 
-              {/* Posture Gauge */}
               <div className="flex flex-col items-center space-y-4 rounded-card border border-brand-light/50 bg-surface/80 p-6 shadow-card backdrop-blur-xl">
                 <span className="text-[10px] font-extrabold uppercase tracking-widest text-brand-dark">
                   Form & Angle
@@ -574,7 +562,6 @@ export default function WorkoutSession() {
                   </div>
                 </div>
 
-                {/* Feedback Banner */}
                 <div className="w-full text-center">
                   {warning ? (
                     <div className="flex items-center justify-center gap-2 rounded-btn border border-rose-200 bg-rose-50 p-3 text-xs font-bold text-rose-600">
@@ -599,7 +586,6 @@ export default function WorkoutSession() {
                 </div>
               </div>
 
-              {/* Action Buttons */}
               <div className="flex gap-3 rounded-card border border-brand-light/50 bg-surface/80 p-4 shadow-card backdrop-blur-xl">
                 {isActive ? (
                   <button

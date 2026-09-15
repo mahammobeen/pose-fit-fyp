@@ -1,11 +1,3 @@
-"""
-main.py: FastAPI Entry Point for PoseFit Diet Plan Recommendation Microservice.
-Endpoints:
-  - POST /generate-diet-plan
-  - GET  /health
-  - GET  /docs (Auto-generated OpenAPI Swagger documentation)
-"""
-
 import os
 from typing import Dict, List, Optional, Any
 from fastapi import FastAPI, HTTPException, status
@@ -14,15 +6,12 @@ from pydantic import BaseModel, Field, field_validator
 
 from src.recommender import DietRecommender
 
-
-# Initialize FastAPI application
 app = FastAPI(
     title="PoseFit Diet Plan Recommendation Service",
     description="ML-powered content-based dietary recommendation engine using unsupervised KNN, rule-based beverage layering, and portion optimization.",
     version="1.1.0",
 )
 
-# CORS Middleware configuration
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -31,32 +20,24 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Lazy loading or startup initialization of Recommender
 recommender: Optional[DietRecommender] = None
 
-
 def get_recommender() -> DietRecommender:
-    """Retrieve or instantiate singleton DietRecommender instance."""
+
     global recommender
     if recommender is None:
         models_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "models")
         recommender = DietRecommender(models_dir=models_dir)
     return recommender
 
-
 @app.on_event("startup")
 def startup_event():
-    """Load ML models upon server startup."""
+
     try:
         get_recommender()
         print("PoseFit Diet Recommender loaded and ready.")
     except Exception as e:
         print(f"Warning: Could not pre-load model artifacts at startup: {e}")
-
-
-# =====================================================================
-# PYDANTIC SCHEMAS
-# =====================================================================
 
 class DietPlanRequest(BaseModel):
     target_calories: float = Field(
@@ -117,7 +98,6 @@ class DietPlanRequest(BaseModel):
             return "maintain weight"
         return v_clean
 
-
 class MealItemSchema(BaseModel):
     food_id: int
     dish_name: str
@@ -127,7 +107,6 @@ class MealItemSchema(BaseModel):
     protein: float
     carbs: float
     fats: float
-
 
 class MealSlotSchema(BaseModel):
     slot_name: str
@@ -143,13 +122,11 @@ class MealSlotSchema(BaseModel):
     weighted_loss: float
     calorie_error_pct: float
 
-
 class DailyTotalsSchema(BaseModel):
     calories: float
     protein_g: float
     carbs_g: float
     fats_g: float
-
 
 class DailyErrorPercentagesSchema(BaseModel):
     calories_error_pct: float
@@ -157,14 +134,12 @@ class DailyErrorPercentagesSchema(BaseModel):
     carbs_error_pct: float
     fats_error_pct: float
 
-
 class DayPlanSchema(BaseModel):
     day: int
     meals: Dict[str, Any]
     daily_totals: DailyTotalsSchema
     target_totals: DailyTotalsSchema
     error_percentages: DailyErrorPercentagesSchema
-
 
 class DietPlanResponse(BaseModel):
     status: str
@@ -174,22 +149,16 @@ class DietPlanResponse(BaseModel):
     target_daily_macros: Dict[str, float]
     plan_days: List[DayPlanSchema]
 
-
 class HealthResponse(BaseModel):
     status: str
     service: str
     model_loaded: bool
     version: str
 
-
-# =====================================================================
-# API ROUTES
-# =====================================================================
-
 @app.get("/", tags=["Health"])
 @app.get("/health", response_model=HealthResponse, tags=["Health"])
 def health_check():
-    """Health check endpoint to verify microservice status."""
+
     is_loaded = recommender is not None and recommender.knn_model is not None
     return {
         "status": "healthy",
@@ -197,7 +166,6 @@ def health_check():
         "model_loaded": is_loaded,
         "version": "1.1.0",
     }
-
 
 @app.post(
     "/generate-diet-plan",
@@ -207,14 +175,7 @@ def health_check():
     summary="Generate multi-day personalized Pakistani meal plan",
 )
 def generate_diet_plan(req: DietPlanRequest):
-    """
-    Generate an optimized multi-day diet plan based on calorie and macronutrient targets.
-    - Excludes preference filters (all real Pakistani food catalog items available).
-    - Rule-based beverage layer assigns goal-matched beverages to Breakfast and Snack slots.
-    - Optimizes portions with greedy portion multiplier search (0.5x to 3.0x).
-    - Minimizes weighted macro error (40% Cal, 25% Pro, 20% Carb, 15% Fat).
-    - Distributes meals across Breakfast (25%), Lunch (35%), Dinner (30%), Snack (10%).
-    """
+
     print("\n" + "=" * 80)
     print(f"[FASTAPI ENDPOINT RECEIVED REQUEST]")
     print(f"  * target_calories : {req.target_calories} kcal")
@@ -256,7 +217,6 @@ def generate_diet_plan(req: DietPlanRequest):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to generate diet plan: {str(exc)}",
         )
-
 
 if __name__ == "__main__":
     import uvicorn

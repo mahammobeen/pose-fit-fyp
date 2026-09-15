@@ -43,7 +43,6 @@ const reviewSchema = new mongoose.Schema(
   }
 );
 
-// One professional rating per user while the review exists
 reviewSchema.index(
   { user: 1, professional: 1 },
   {
@@ -67,7 +66,6 @@ reviewSchema.index({
 
 const ReviewModel = mongoose.model("Review", reviewSchema);
 
-// Remove old legacy unique index if it still exists
 ReviewModel.collection
   .indexes()
   .then(async (indexes) => {

@@ -31,7 +31,7 @@ export default function Modal({
         style={{ animation: "modalIn 0.2s ease" }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Modal Header */}
+
         <div className="flex items-center justify-between border-b border-brand-light/40 px-6 py-5">
           <h2 className="text-lg font-extrabold tracking-tight text-gray-800">
             {title}
@@ -46,7 +46,6 @@ export default function Modal({
           </button>
         </div>
 
-        {/* Modal Content */}
         <div className="px-6 py-5">{children}</div>
       </div>
 

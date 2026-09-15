@@ -1,8 +1,3 @@
-"""
-train.py: Model Training, 5-Fold CV Hyperparameter Tuning, Evaluation,
-and Consolidated Artifact Serialization for PoseFit Diet Recommendation Engine.
-"""
-
 import os
 import sys
 
@@ -21,14 +16,13 @@ from src.data_pipeline import (
     engineer_features,
 )
 
-
 def train_test_split_custom(
     df: pd.DataFrame,
     test_size: float = 0.20,
     random_state: int = 42,
     stratify_col: Optional[str] = "slot_meal_type",
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
-    """Stratified train/test split across meal slot categories."""
+
     np.random.seed(random_state)
     ref_rows = []
     query_rows = []
@@ -49,18 +43,13 @@ def train_test_split_custom(
 
     return ref_df, query_df
 
-
 def compute_reconstruction_mae(
     knn_model: NearestNeighbors,
     ref_df: pd.DataFrame,
     query_df: pd.DataFrame,
     query_features: np.ndarray,
 ) -> Dict[str, float]:
-    """
-    Step 9: Hold-out neighbor reconstruction MAE.
-    For each item in query set, find nearest neighbor in reference set and compute
-    mean absolute error across calories, protein, carbs, and fats.
-    """
+
     distances, indices = knn_model.kneighbors(query_features, n_neighbors=1)
     retrieved_indices = indices.flatten()
 
@@ -93,7 +82,6 @@ def compute_reconstruction_mae(
         "avg_neighbor_distance": round(float(np.mean(distances)), 4),
     }
 
-
 def tune_hyperparameters_5fold_cv(
     ref_features: np.ndarray,
     ref_df: pd.DataFrame,
@@ -101,10 +89,7 @@ def tune_hyperparameters_5fold_cv(
     metrics_list: List[str] = ["euclidean", "manhattan"],
     n_splits: int = 5,
 ) -> Tuple[pd.DataFrame, Dict[str, Any]]:
-    """
-    Step 8: Hyperparameter tuning via 5-Fold Cross Validation on reference set.
-    Evaluates every parameter combination and reports complete comparison table.
-    """
+
     np.random.seed(42)
     indices = np.arange(len(ref_features))
     np.random.shuffle(indices)
@@ -160,7 +145,6 @@ def tune_hyperparameters_5fold_cv(
     best_config = results_df.iloc[0].to_dict()
     return results_df, best_config
 
-
 def evaluate_meal_weight_comparison(
     ref_df: pd.DataFrame,
     query_df: pd.DataFrame,
@@ -168,7 +152,7 @@ def evaluate_meal_weight_comparison(
     metric: str = "euclidean",
     n_neighbors: int = 15,
 ) -> pd.DataFrame:
-    """Compare different meal_weight blendings in feature vector."""
+
     comparison = []
 
     for w in weights:
@@ -191,21 +175,13 @@ def evaluate_meal_weight_comparison(
     comp_df = pd.DataFrame(comparison)
     return comp_df
 
-
 def train_and_serialize_pipeline(
     data_path: str,
     models_dir: str,
     test_size: float = 0.20,
     random_state: int = 42,
 ) -> Dict[str, Any]:
-    """
-    Full training pipeline:
-    - Step 5: Data Split (Reference 80% vs Query 20%)
-    - Step 6: Model Selection (NearestNeighbors)
-    - Step 8: Hyperparameter Tuning (5-fold CV)
-    - Step 9: Evaluation on Hold-Out Query Set
-    - Step 7: Consolidated Artifact Serialization (diet_recommender.joblib)
-    """
+
     os.makedirs(models_dir, exist_ok=True)
 
     print("=" * 80)
@@ -295,7 +271,6 @@ def train_and_serialize_pipeline(
         "final_eval": final_eval,
     }
 
-    # Consolidated Single Joblib Artifact
     bundle_path = os.path.join(models_dir, "diet_recommender.joblib")
     joblib.dump(
         {
@@ -318,7 +293,6 @@ def train_and_serialize_pipeline(
         "final_eval": final_eval,
         "cv_table": cv_table,
     }
-
 
 if __name__ == "__main__":
     current_dir = os.path.dirname(os.path.abspath(__file__))

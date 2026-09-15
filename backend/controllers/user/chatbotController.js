@@ -1,10 +1,8 @@
 const axios = require("axios");
 const crypto = require("crypto");
 
-// ----- IN‑MEMORY SESSION STORE (Resets on server restart) -----
 const sessionStore = new Map();
 
-// Helper: keyword matching with punctuation handling (ONLY for safety guardrails)
 const containsKeyword = (text, keywords) => {
   const clean = text
     .replace(/[^\w\s]/gi, " ")
@@ -16,7 +14,6 @@ const containsKeyword = (text, keywords) => {
   });
 };
 
-// Language detection: Roman Urdu fallback
 const detectLanguage = (text) => {
   const romanUrduWords = [
     "mujhe",
@@ -46,7 +43,6 @@ const detectLanguage = (text) => {
   return matches >= 2 ? "urdu" : "english";
 };
 
-// ---------- STATIC SAFETY GUARDRAILS (Never bypass) ----------
 const EMERGENCY_KEYWORDS = [
   "ambulance",
   "1122",
@@ -67,9 +63,6 @@ const EMERGENCY_KEYWORDS = [
   "choking",
 ];
 
-// FIX: "how much" removed — it was matching normal fitness/nutrition
-// questions ("how much protein", "how much water") and wrongly blocking
-// them. Now only matches phrases that actually mean "give me a dosage".
 const MEDICAL_REQUEST_KEYWORDS = [
   "prescribe",
   "prescription",
@@ -90,7 +83,6 @@ const MEDICAL_REQUEST_KEYWORDS = [
   "panadol",
 ];
 
-// Generic diet-plan requests (not tied to a specific disease)
 const DIET_KEYWORDS = [
   "diet plan",
   "meal plan",
@@ -98,10 +90,6 @@ const DIET_KEYWORDS = [
   "personalized diet",
 ];
 
-// NEW: any mention of a specific medical condition/disease — regardless of
-// whether the user is asking about diet, exercise, or anything else for it.
-// Per your requirement: chatbot should NEVER give advice tied to a named
-// condition, it should always redirect to a doctor.
 const MEDICAL_CONDITION_KEYWORDS = [
   "kidney",
   "gurda",
@@ -139,11 +127,8 @@ const MEDICAL_CONDITION_KEYWORDS = [
   "tuberculosis",
 ];
 
-// NEW: common out-of-scope categories — handled with hardcoded refusal
-// instead of relying on the LLM to self-police, since a small model won't
-// reliably decline on its own.
 const OUT_OF_SCOPE_KEYWORDS = [
-  // politics
+
   "election",
   "government policy",
   "prime minister",
@@ -153,7 +138,7 @@ const OUT_OF_SCOPE_KEYWORDS = [
   "political party",
   "vote for",
   "geopolitics",
-  // finance
+
   "stock market",
   "share price",
   "crypto",
@@ -164,7 +149,7 @@ const OUT_OF_SCOPE_KEYWORDS = [
   "interest rate",
   "tax return",
   "forex",
-  // astronomy
+
   "planet",
   "galaxy",
   "black hole",
@@ -173,14 +158,14 @@ const OUT_OF_SCOPE_KEYWORDS = [
   "solar system",
   "telescope",
   "universe",
-  // animals (unrelated to fitness)
+
   "dog breed",
   "cat breed",
   "wildlife",
   "zoo",
   "pet care",
   "animal species",
-  // clinical mental health (standalone, not tied to fitness fatigue)
+
   "depression",
   "anxiety attack",
   "panic attack",
@@ -188,7 +173,6 @@ const OUT_OF_SCOPE_KEYWORDS = [
   "mental illness",
 ];
 
-// Fatigue-related words that make a "mental health-ish" message still in-scope
 const FATIGUE_CONTEXT_WORDS = [
   "tired",
   "fatigue",
@@ -200,13 +184,11 @@ const FATIGUE_CONTEXT_WORDS = [
   "exhausted",
 ];
 
-// ---------- CLASSIFICATION ----------
 const classifyQuestion = (question) => {
   const lower = question.toLowerCase().trim();
 
   if (containsKeyword(lower, EMERGENCY_KEYWORDS)) return "emergency";
 
-  // Disease/condition mentions take priority over generic diet/medical checks
   if (containsKeyword(lower, MEDICAL_CONDITION_KEYWORDS))
     return "medical_condition";
 
@@ -215,7 +197,7 @@ const classifyQuestion = (question) => {
     return "medical_request";
 
   if (containsKeyword(lower, OUT_OF_SCOPE_KEYWORDS)) {
-    // don't block genuine "I feel tired/low energy" fitness questions
+
     const isFatigueContext = containsKeyword(lower, FATIGUE_CONTEXT_WORDS);
     const isMentalHealthWord = containsKeyword(lower, [
       "depression",
@@ -233,7 +215,6 @@ const classifyQuestion = (question) => {
   return "allowed";
 };
 
-// ---------- SYSTEM PROMPT (Context-Aware + Anatomical Location Rule) ----------
 const getSystemPrompt = (language) => {
   const langInstruction =
     language === "urdu"
@@ -270,25 +251,18 @@ RULES:
 `;
 };
 
-// Main handler
 const handleChatbot = async (req, res) => {
   const GROQ_API_KEY = process.env.GROQ_API_KEY;
   if (!GROQ_API_KEY)
     return res.status(500).json({ reply: "Chatbot service unavailable." });
 
-  const { message, sessionId } = req.body; // Expect sessionId from frontend
+  const { message, sessionId } = req.body;
   if (!message || message.trim() === "") {
     return res
       .status(400)
       .json({ reply: "Please ask a question about fitness or nutrition." });
   }
 
-  // ----- 1. Get or create session memory -----
-  // FIX: if the frontend doesn't send a sessionId, we generate one and send
-  // it back in the response. The frontend MUST store this (e.g. in
-  // localStorage or React state) and send it back with every subsequent
-  // request under the same conversation — otherwise every message starts a
-  // brand-new, empty history and the bot will "forget" everything.
   let id = sessionId || req.headers["x-session-id"];
   let isNewSession = false;
   if (!id) {
@@ -300,14 +274,12 @@ const handleChatbot = async (req, res) => {
   }
   let chatHistory = sessionStore.get(id);
 
-  // ----- 2. Add user message to history -----
   chatHistory.push({ role: "user", content: message });
 
   const lang = detectLanguage(message);
   const isUrdu = lang === "urdu";
   const intent = classifyQuestion(message);
 
-  // ----- HARDCODED SAFETY GUARDRAILS (Run before LLM) -----
   const respondHardcoded = (reply) => {
     chatHistory.push({ role: "assistant", content: reply });
     sessionStore.set(id, chatHistory.slice(-8));
@@ -350,9 +322,6 @@ const handleChatbot = async (req, res) => {
     );
   }
 
-  // ----- 3. Build full conversation with history -----
-  // Trim to the last 8 messages right before sending to the LLM, so the
-  // just-added user message is never lost and the trim reflects true state.
   chatHistory = chatHistory.slice(-8);
   sessionStore.set(id, chatHistory);
 
@@ -381,14 +350,12 @@ const handleChatbot = async (req, res) => {
 
     let reply = response.data?.choices?.[0]?.message?.content?.trim();
 
-    // Fallback if LLM returns empty
     if (!reply) {
       reply = isUrdu
         ? "Mai is sawal ka jawab nahi de sakta, lekin agar aap fitness ya nutrition ke baare mein poochhna chahte hain toh main madad kar sakta hoon."
         : "I can only assist with fitness and nutrition questions. How can I help you with your health today?";
     }
 
-    // ----- 4. Save assistant reply to memory -----
     chatHistory.push({ role: "assistant", content: reply });
     chatHistory = chatHistory.slice(-8);
     sessionStore.set(id, chatHistory);

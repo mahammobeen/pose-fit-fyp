@@ -300,7 +300,7 @@ export default function ProfessionalProfileSettings() {
   return (
     <ProfessionalLayout>
       <div className="min-h-screen bg-transparent pb-16 font-sans">
-        {/* Toast */}
+
         {toast && (
           <div
             className={`fixed right-5 top-5 z-50 rounded-card border px-5 py-3 text-sm font-bold text-white shadow-card-hover ${
@@ -313,7 +313,6 @@ export default function ProfessionalProfileSettings() {
           </div>
         )}
 
-        {/* Page Header */}
         <div className="px-4 pb-6 pt-6 sm:px-6 sm:pt-8 lg:px-8">
           <span className="inline-flex items-center rounded-full border border-brand-light bg-brand-light/40 px-3 py-1.5 text-xs font-extrabold uppercase tracking-widest text-brand-dark">
             Account Management
@@ -335,7 +334,7 @@ export default function ProfessionalProfileSettings() {
           </div>
         ) : (
           <div className="max-w-5xl space-y-5 px-4 sm:px-6 lg:px-8">
-            {/* Profile Overview */}
+
             <section className="overflow-hidden rounded-card border border-brand-light/60 bg-surface/90 shadow-card">
               <div className="p-6">
                 <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
@@ -375,7 +374,6 @@ export default function ProfessionalProfileSettings() {
                     </div>
                   </div>
 
-                  {/* Payment Account */}
                   <div className="rounded-card border border-brand-light/50 bg-brand-light/10 p-4 lg:w-[360px]">
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-2.5">
@@ -437,7 +435,6 @@ export default function ProfessionalProfileSettings() {
                   </div>
                 </div>
 
-                {/* Rejection Reason */}
                 {profile?.professionalStatus === "rejected" && (
                   <div className="mt-5 flex items-start gap-3 rounded-card border border-rose-200 bg-rose-50 p-4">
                     <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-rose-600" />
@@ -456,12 +453,11 @@ export default function ProfessionalProfileSettings() {
               </div>
             </section>
 
-            {/* Main Profile Form */}
             <form
               onSubmit={handleSubmit}
               className="overflow-hidden rounded-card border border-brand-light/60 bg-surface/90 shadow-card"
             >
-              {/* Section Header */}
+
               <div className="border-b border-brand-light/40 px-7 py-5">
                 <h2 className="text-lg font-extrabold tracking-tight text-gray-800">
                   Professional Information
@@ -473,7 +469,7 @@ export default function ProfessionalProfileSettings() {
               </div>
 
               <div className="space-y-7 p-7">
-                {/* Profile Photo */}
+
                 <div>
                   <div className="mb-3 flex items-center justify-between">
                     <div>
@@ -539,7 +535,6 @@ export default function ProfessionalProfileSettings() {
                   </div>
                 </div>
 
-                {/* Basic Details */}
                 <div className="border-t border-brand-light/40 pt-6">
                   <div className="mb-4">
                     <h3 className="text-xs font-extrabold uppercase tracking-wider text-gray-600">
@@ -586,7 +581,6 @@ export default function ProfessionalProfileSettings() {
                   </div>
                 </div>
 
-                {/* Professional Details */}
                 <div className="border-t border-brand-light/40 pt-6">
                   <div className="mb-4">
                     <h3 className="text-xs font-extrabold uppercase tracking-wider text-gray-600">
@@ -690,7 +684,6 @@ export default function ProfessionalProfileSettings() {
                   </div>
                 </div>
 
-                {/* Credentials */}
                 <div className="border-t border-brand-light/40 pt-6">
                   <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                     <div>
@@ -786,7 +779,6 @@ export default function ProfessionalProfileSettings() {
                   </div>
                 </div>
 
-                {/* Save */}
                 <div className="flex flex-col gap-4 border-t border-brand-light/40 pt-6 sm:flex-row sm:items-center sm:justify-between">
                   <p className="text-[11px] font-medium text-gray-400">
                     Changes will be saved to your professional profile.

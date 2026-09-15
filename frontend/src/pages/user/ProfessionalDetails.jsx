@@ -519,7 +519,6 @@ export default function ProfessionalDetails() {
         return;
       }
 
-      // Clear search query from URL without re-triggering this effect
       navigate(location.pathname, {
         replace: true,
       });
@@ -527,7 +526,7 @@ export default function ProfessionalDetails() {
       let isCancelled = false;
       let timerId = null;
       let attempts = 0;
-      const MAX_ATTEMPTS = 10; // Poll every 2s for up to 20 seconds
+      const MAX_ATTEMPTS = 10;
       const POLL_INTERVAL = 2000;
 
       setBookingPending(true);
@@ -561,7 +560,7 @@ export default function ProfessionalDetails() {
           if (attempts < MAX_ATTEMPTS) {
             timerId = setTimeout(pollSessionStatus, POLL_INTERVAL);
           } else {
-            // Timeout reached: webhook has not completed yet or failed
+
             setBookingPending(false);
             toast.info(
               "Your payment is being processed. Your booking will appear once payment confirmation is received."
@@ -581,7 +580,7 @@ export default function ProfessionalDetails() {
       pollSessionStatus();
 
       return () => {
-        // If query parameters change to a non-success state or component unmounts, cancel timer
+
         if (timerId) clearTimeout(timerId);
       };
     }
@@ -1290,7 +1289,6 @@ export default function ProfessionalDetails() {
                     )}
                   </div>
 
-                  {/* HTML5 Date Input Picker */}
                   <div className="mb-3">
                     <div className="relative flex items-center">
                       <Calendar className="pointer-events-none absolute left-3.5 h-4 w-4 text-gray-400" />
@@ -1307,7 +1305,6 @@ export default function ProfessionalDetails() {
                     </p>
                   </div>
 
-                  {/* Upcoming Available Dates */}
                   {availability.length === 0 ? (
                     <p className="text-xs font-medium text-gray-400">
                       No availability slots configured by this professional yet.

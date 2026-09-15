@@ -13,9 +13,7 @@ const {
 const DietPlan = require("../../models/DietPlan");
 
 const UserMetricsController = {
-  // =========================================================
-  // SAVE / UPDATE USER METRICS
-  // =========================================================
+
   save: async (req, res) => {
     try {
       const { userId } = req.params;
@@ -38,10 +36,6 @@ const UserMetricsController = {
       console.log("BODY:", req.body);
       console.log("---------");
 
-      // =====================================================
-      // VALIDATE USER ID
-      // =====================================================
-
       if (!userId) {
         return res.status(400).json({
           success: false,
@@ -55,10 +49,6 @@ const UserMetricsController = {
           message: "Invalid user ID",
         });
       }
-
-      // =====================================================
-      // VALIDATION
-      // =====================================================
 
       const validGenders = ["male", "female"];
 
@@ -74,7 +64,6 @@ const UserMetricsController = {
 
       const errors = {};
 
-      // AGE
       if (age === undefined || age === null || age === "") {
         errors.age = "Age is required";
       } else {
@@ -86,7 +75,6 @@ const UserMetricsController = {
         }
       }
 
-      // HEIGHT
       if (height === undefined || height === null || height === "") {
         errors.height = "Height is required";
       } else {
@@ -97,7 +85,6 @@ const UserMetricsController = {
         }
       }
 
-      // WEIGHT
       if (weight === undefined || weight === null || weight === "") {
         errors.weight = "Weight is required";
       } else {
@@ -108,7 +95,6 @@ const UserMetricsController = {
         }
       }
 
-      // GENDER
       const normalizedGender = String(gender || "")
         .trim()
         .toLowerCase();
@@ -117,7 +103,6 @@ const UserMetricsController = {
         errors.gender = "Gender must be either 'male' or 'female'";
       }
 
-      // ACTIVITY LEVEL
       const normalizedActivity = String(activityLevel || "")
         .trim()
         .toLowerCase();
@@ -128,7 +113,6 @@ const UserMetricsController = {
         )}`;
       }
 
-      // GOAL
       const normalizedGoal = String(goal || "")
         .trim()
         .toLowerCase();
@@ -137,7 +121,6 @@ const UserMetricsController = {
         errors.goal = `Goal must be one of: ${validGoals.join(", ")}`;
       }
 
-      // RETURN VALIDATION ERRORS
       if (Object.keys(errors).length > 0) {
         return res.status(400).json({
           success: false,
@@ -146,20 +129,14 @@ const UserMetricsController = {
         });
       }
 
-      // =====================================================
-      // BACKEND CALCULATIONS
-      // =====================================================
-
       const numericWeight = Number(weight);
       const numericHeight = Number(height);
       const numericAge = Number(age);
 
-      // BMI
       const bmi = calculateBMI(numericWeight, numericHeight);
 
       const bmiCategory = getBMICategory(bmi);
 
-      // BMR
       const bmr = calculateBMR(
         numericWeight,
         numericHeight,
@@ -167,24 +144,16 @@ const UserMetricsController = {
         normalizedGender,
       );
 
-      // TDEE
       const tdee = calculateTDEE(bmr, normalizedActivity);
 
-      // GOAL CALORIES
       const goalCalories = calculateGoalCalories(tdee, normalizedGoal);
 
-      // MACROS
       const macros = calculateMacros(goalCalories, normalizedGoal);
 
-      // WATER
       const waterIntake = calculateWaterIntake(
         numericWeight,
         normalizedActivity,
       );
-
-      // =====================================================
-      // LOG CALCULATIONS
-      // =====================================================
 
       console.log("---------");
       console.log("CALCULATED VALUES");
@@ -195,10 +164,6 @@ const UserMetricsController = {
       console.log("MACROS:", macros);
       console.log("WATER INTAKE:", waterIntake);
       console.log("---------");
-
-      // =====================================================
-      // SAVE / UPDATE USER METRICS
-      // =====================================================
 
       const savedMetrics = await UserMetrics.findOneAndUpdate(
         {
@@ -222,7 +187,6 @@ const UserMetricsController = {
 
             allergiesNuts: Boolean(allergiesNuts),
 
-            // CALCULATED VALUES
             bmi,
             bmiValue: bmi,
             bmiCategory,
@@ -239,7 +203,6 @@ const UserMetricsController = {
 
             macros,
 
-            // WATER
             waterIntake,
           },
         },
@@ -255,24 +218,6 @@ const UserMetricsController = {
       console.log(savedMetrics);
       console.log("---------");
 
-      // =====================================================
-      // DELETE OLD DIET PLAN
-      // =====================================================
-      //
-      // Every time health metrics are recalculated,
-      // the previous diet plan becomes invalid.
-      //
-      // The new metrics may produce different:
-      // - calories
-      // - macros
-      // - BMI
-      // - BMR
-      // - TDEE
-      // - fitness goal
-      //
-      // Therefore the old diet plan must be removed.
-      // =====================================================
-
       const deletedDietPlan = await DietPlan.deleteOne({
         userId,
       });
@@ -281,10 +226,6 @@ const UserMetricsController = {
       console.log("OLD DIET PLAN CLEANUP");
       console.log("Deleted diet plans:", deletedDietPlan.deletedCount);
       console.log("---------");
-
-      // =====================================================
-      // RESPONSE
-      // =====================================================
 
       return res.status(200).json({
         success: true,
@@ -307,9 +248,6 @@ const UserMetricsController = {
     }
   },
 
-  // =========================================================
-  // GET USER METRICS
-  // =========================================================
   get: async (req, res) => {
     try {
       const { userId } = req.params;

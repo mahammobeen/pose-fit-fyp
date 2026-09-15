@@ -1,12 +1,3 @@
-"""
-recommender.py: Consolidated Core ML Recommendation Engine for PoseFit.
-Combines:
-  1. ML Primitives (StandardScaler, OneHotEncoder, NearestNeighbors)
-  2. Rule-Based Beverage Layer (BeverageManager)
-  3. Constrained Portion Optimizer (PortionOptimizer)
-  4. Unified Inference Engine (DietRecommender)
-"""
-
 import os
 from typing import Any, Dict, List, Optional, Set, Tuple
 import joblib
@@ -14,7 +5,6 @@ import numpy as np
 import pandas as pd
 import scipy.spatial.distance as dist
 
-# Core Constants
 NUMERIC_FEATURES = ["calories_kcal", "protein_g", "carbs_g", "fats_g"]
 STANDARD_MEAL_TYPES = ["Breakfast", "Lunch", "Dinner", "Snack", "Dessert"]
 
@@ -32,13 +22,7 @@ SLOT_TO_CATALOG_MEAL_TYPE = {
     "Snack": "Snack",
 }
 
-
-# =====================================================================
-# SECTION 1: CUSTOM ML ALGORITHMIC PRIMITIVES
-# =====================================================================
-
 class StandardScaler:
-    """Standardize features by removing mean and scaling to unit variance (z = (x - u) / s)."""
 
     def __init__(self):
         self.mean_ = None
@@ -62,9 +46,7 @@ class StandardScaler:
     def fit_transform(self, X: np.ndarray, y=None) -> np.ndarray:
         return self.fit(X).transform(X)
 
-
 class OneHotEncoder:
-    """Encode categorical features as a one-hot numeric matrix."""
 
     def __init__(self, categories: Optional[List[List[str]]] = None):
         self.categories = categories
@@ -90,9 +72,7 @@ class OneHotEncoder:
     def fit_transform(self, X: np.ndarray, y=None) -> np.ndarray:
         return self.fit(X).transform(X)
 
-
 class NearestNeighbors:
-    """Unsupervised K-Nearest-Neighbors implementation in continuous macro space."""
 
     def __init__(
         self,
@@ -138,11 +118,6 @@ class NearestNeighbors:
         if return_distance:
             return sorted_distances, sorted_indices
         return sorted_indices
-
-
-# =====================================================================
-# SECTION 2: RULE-BASED BEVERAGE MANAGER
-# =====================================================================
 
 STANDALONE_BEVERAGE_KEYWORDS = [
     "Doodh Patti", "Green Tea", "Black Tea", "Milk Tea", "Kahwa",
@@ -204,9 +179,8 @@ BEVERAGE_RULES = {
     },
 }
 
-
 def normalize_goal_key(goal: str) -> str:
-    """Normalize user goal string into weight_loss, weight_gain, or maintenance."""
+
     g = str(goal).strip().lower()
     if "lose" in g or "deficit" in g or "loss" in g:
         return "weight_loss"
@@ -215,9 +189,8 @@ def normalize_goal_key(goal: str) -> str:
     else:
         return "maintenance"
 
-
 def get_standalone_beverage_food_ids(catalog_df: pd.DataFrame) -> Set[int]:
-    """Return set of food_ids corresponding to standalone beverage items."""
+
     bev_ids = set()
     for _, row in catalog_df.iterrows():
         dish_name = str(row["dish_name"]).strip()
@@ -227,9 +200,7 @@ def get_standalone_beverage_food_ids(catalog_df: pd.DataFrame) -> Set[int]:
                 break
     return bev_ids
 
-
 class BeverageManager:
-    """Manages goal-matched beverage selection, nutrient deduction, and rotation."""
 
     def __init__(self, catalog_df: pd.DataFrame):
         self.catalog_df = catalog_df.drop_duplicates(subset=["food_id"]).copy()
@@ -307,13 +278,7 @@ class BeverageManager:
             "is_beverage": True,
         }
 
-
-# =====================================================================
-# SECTION 3: CONSTRAINED PORTION OPTIMIZER
-# =====================================================================
-
 class PortionOptimizer:
-    """Constrained portion grid search solver [0.5x, 3.0x] with single-dish preference."""
 
     def __init__(
         self,
@@ -350,7 +315,7 @@ class PortionOptimizer:
         target_carb: float,
         target_fat: float,
     ) -> float:
-        """Compute weighted percentage macro loss."""
+
         cal_err = abs(actual_cal - target_cal) / max(target_cal, 1.0)
         pro_err = abs(actual_pro - target_pro) / max(target_pro, 1.0)
         carb_err = abs(actual_carb - target_carb) / max(target_carb, 1.0)
@@ -460,7 +425,6 @@ class PortionOptimizer:
         if is_single_good:
             return self._sample_or_best(single_dish_plans, random_sample, rng)
 
-        # Fallback to two-dish combinations
         two_dish_mults = np.array([0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.5])
         pair_candidates = candidates[:12]
         num_cand = len(pair_candidates)
@@ -569,13 +533,7 @@ class PortionOptimizer:
 
         return top_k[chosen_idx]
 
-
-# =====================================================================
-# SECTION 4: UNIFIED DIET RECOMMENDER INFERENCE ENGINE
-# =====================================================================
-
 class DietRecommender:
-    """High-level recommendation engine orchestrating KNN retrieval, beverages, and portion optimization."""
 
     def __init__(self, models_dir: Optional[str] = None):
         if models_dir is None:
@@ -592,7 +550,7 @@ class DietRecommender:
         self._load_artifacts()
 
     def _load_artifacts(self):
-        """Load model artifacts from consolidated diet_recommender.joblib file."""
+
         consolidated_path = os.path.join(self.models_dir, "diet_recommender.joblib")
 
         if os.path.exists(consolidated_path):
@@ -602,7 +560,6 @@ class DietRecommender:
             self.encoder = bundle["encoder"]
             self.food_metadata = bundle["food_metadata"]
         else:
-            # Fallback to individual artifact files if present
             model_path = os.path.join(self.models_dir, "knn_model.joblib")
             scaler_path = os.path.join(self.models_dir, "scaler.joblib")
             encoder_path = os.path.join(self.models_dir, "meal_encoder.joblib")

@@ -6,7 +6,6 @@ const UserModel = require("../../models/userModel");
 
 const PAKISTAN_OFFSET_MS = 5 * 60 * 60 * 1000;
 
-// Convert appointment date + slot into the actual Pakistan session end time.
 const hasSessionEnded = (
   appointmentDate,
   appointmentSlot,
@@ -28,7 +27,6 @@ const hasSessionEnded = (
   const month = dateObj.getUTCMonth();
   const day = dateObj.getUTCDate();
 
-  // Any appointment on a previous calendar date has already ended.
   const todayPakistan = new Date(
     now.getTime() + PAKISTAN_OFFSET_MS
   );
@@ -57,7 +55,6 @@ const hasSessionEnded = (
     return false;
   }
 
-  // Same-day appointment.
   const slotText = String(
     appointmentSlot || ""
   ).trim();
@@ -151,7 +148,6 @@ const hasSessionEnded = (
         endTime.minutes
       );
 
-    // Session crosses midnight.
     if (
       sessionEndDateTime <=
       startDateTime
@@ -174,7 +170,6 @@ const hasSessionEnded = (
   return sessionEndDateTime <= now;
 };
 
-// Recalculate a professional's rating from existing professional reviews.
 const recalculateProfessionalRating = async (
   professionalId
 ) => {
@@ -240,7 +235,6 @@ const recalculateProfessionalRating = async (
   };
 };
 
-// 1. Create Review
 const createReview = async (req, res) => {
   try {
     const userId = req.user.userId;
@@ -284,7 +278,6 @@ const createReview = async (req, res) => {
         : "PLATFORM";
     }
 
-    // PLATFORM REVIEW
     if (type === "PLATFORM") {
       if (!comment || !comment.trim()) {
         return res.status(400).json({
@@ -317,7 +310,6 @@ const createReview = async (req, res) => {
       });
     }
 
-    // PROFESSIONAL REVIEW
     if (type !== "PROFESSIONAL") {
       return res.status(400).json({
         success: false,
@@ -330,7 +322,6 @@ const createReview = async (req, res) => {
 
     let verifiedPayment = null;
 
-    // Verify the supplied booking belongs to the logged-in user.
     if (
       paymentId &&
       mongoose.Types.ObjectId.isValid(paymentId)
@@ -361,7 +352,6 @@ const createReview = async (req, res) => {
       });
     }
 
-    // One user can rate each professional only once while the review exists.
     const existingReview =
       await ReviewModel.findOne({
         user: userId,
@@ -377,7 +367,6 @@ const createReview = async (req, res) => {
       });
     }
 
-    // If no booking was supplied, find an eligible completed session.
     if (!verifiedPayment) {
       const payments =
         await PaymentModel.find({
@@ -415,7 +404,6 @@ const createReview = async (req, res) => {
       });
     }
 
-    // The selected booking must have ended.
     const sessionEnded =
       hasSessionEnded(
         verifiedPayment.appointmentDate,
@@ -431,7 +419,6 @@ const createReview = async (req, res) => {
       });
     }
 
-    // Always use the professional stored on the verified booking.
     const professionalForReview =
       verifiedPayment.professional;
 
@@ -443,7 +430,6 @@ const createReview = async (req, res) => {
       });
     }
 
-    // Final duplicate check before creation.
     const finalExistingReview =
       await ReviewModel.findOne({
         user: userId,
@@ -508,7 +494,6 @@ const createReview = async (req, res) => {
       error
     );
 
-    // Handles the MongoDB unique-index race condition.
     if (error.code === 11000) {
       return res.status(409).json({
         success: false,
@@ -526,7 +511,6 @@ const createReview = async (req, res) => {
   }
 };
 
-// 2. Get Pending Unrated Professionals
 const getPendingRatings = async (
   req,
   res
@@ -560,7 +544,6 @@ const getPendingRatings = async (
           createdAt: 1,
         });
 
-    // Any existing professional review counts as already rated.
     const userRatings =
       await ReviewModel.find({
         user: userId,
@@ -608,7 +591,6 @@ const getPendingRatings = async (
         continue;
       }
 
-      // Return only one eligible session per professional.
       if (
         !unratedProfessionalsMap.has(
           professionalId
@@ -645,7 +627,6 @@ const getPendingRatings = async (
   }
 };
 
-// 3. Get Professional Rating Summary & Reviews
 const getProfessionalReviews = async (
   req,
   res
@@ -738,7 +719,6 @@ const getProfessionalReviews = async (
   }
 };
 
-// 4. Get Public Platform Reviews
 const getPlatformReviews = async (
   req,
   res
@@ -811,7 +791,6 @@ const getPlatformReviews = async (
   }
 };
 
-// 5. Get Current User's Submitted Reviews
 const getMyReviews = async (
   req,
   res
@@ -854,7 +833,6 @@ const getMyReviews = async (
   }
 };
 
-// 6. Get Booking Review Status
 const getPaymentReview = async (
   req,
   res
@@ -898,7 +876,6 @@ const getPaymentReview = async (
   }
 };
 
-// 7. Get All Reviews for Admin
 const getAllReviews = async (
   req,
   res
@@ -971,7 +948,6 @@ const getAllReviews = async (
   }
 };
 
-// 8. Delete Review
 const deleteReview = async (
   req,
   res
@@ -1024,10 +1000,8 @@ const deleteReview = async (
       review.reviewType ===
       "PROFESSIONAL";
 
-    // Permanently delete the review.
     await ReviewModel.findByIdAndDelete(id);
 
-    // Recalculate professional rating after deletion.
     if (
       isProfessionalReview &&
       professionalId
@@ -1068,4 +1042,3 @@ module.exports = {
   getAllReviews,
   deleteReview,
 };
-

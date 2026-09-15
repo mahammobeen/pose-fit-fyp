@@ -22,10 +22,6 @@ import lunchImg from "../../assets/lunch.jpg";
 import dinnerImg from "../../assets/dinner.jpg";
 import snackImg from "../../assets/snack.jpg";
 
-// =====================================================
-// DUMMY DIET DATA
-// =====================================================
-
 const dietData = [
   {
     id: 1,
@@ -61,24 +57,15 @@ const dietData = [
   },
 ];
 
-// =====================================================
-// USER DASHBOARD
-// =====================================================
-
 export default function UserDashboard() {
   const [metrics, setMetrics] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Automatic Professional Rating Dialog
   const [activeRatingSession, setActiveRatingSession] = useState(null);
 
   const [selectedRating, setSelectedRating] = useState(5);
   const [hoverRating, setHoverRating] = useState(0);
   const [submittingRating, setSubmittingRating] = useState(false);
-
-  // ===================================================
-  // DISMISSED PROFESSIONAL RATINGS
-  // ===================================================
 
   const getDismissedProIds = () => {
     try {
@@ -109,10 +96,6 @@ export default function UserDashboard() {
     }
   };
 
-  // ===================================================
-  // FETCH PENDING RATINGS
-  // ===================================================
-
   const fetchPendingRatings = async () => {
     try {
       const res = await httpClient.get("/reviews/pending-ratings");
@@ -139,10 +122,6 @@ export default function UserDashboard() {
     }
   };
 
-  // ===================================================
-  // DISMISS RATING DIALOG
-  // ===================================================
-
   const handleDismissDialog = () => {
     if (activeRatingSession) {
       const proId =
@@ -154,10 +133,6 @@ export default function UserDashboard() {
 
     setActiveRatingSession(null);
   };
-
-  // ===================================================
-  // SUBMIT RATING
-  // ===================================================
 
   const handleSubmitRating = async (e) => {
     if (e) e.preventDefault();
@@ -197,17 +172,9 @@ export default function UserDashboard() {
     }
   };
 
-  // ===================================================
-  // FETCH PENDING RATINGS
-  // ===================================================
-
   useEffect(() => {
     fetchPendingRatings();
   }, []);
-
-  // ===================================================
-  // GET LOGGED-IN USER
-  // ===================================================
 
   const getLoggedInUser = () => {
     const storedUser = localStorage.getItem("pose-fit-user");
@@ -229,15 +196,7 @@ export default function UserDashboard() {
 
   const user = getLoggedInUser();
 
-  // ===================================================
-  // USER ID
-  // ===================================================
-
   const userId = user?._id || user?.id || user?.userId || user?.user_id;
-
-  // ===================================================
-  // FETCH USER METRICS
-  // ===================================================
 
   useEffect(() => {
     const fetchMetrics = async () => {
@@ -283,10 +242,6 @@ export default function UserDashboard() {
     fetchMetrics();
   }, [userId]);
 
-  // ===================================================
-  // FETCH TODAY'S DIET PLAN
-  // ===================================================
-
   const [todayDiet, setTodayDiet] = useState(null);
 
   useEffect(() => {
@@ -321,10 +276,6 @@ export default function UserDashboard() {
     };
   }, [userId]);
 
-  // ===================================================
-  // LOADING
-  // ===================================================
-
   if (loading) {
     return (
       <UserLayout>
@@ -340,10 +291,6 @@ export default function UserDashboard() {
       </UserLayout>
     );
   }
-
-  // ===================================================
-  // STATS
-  // ===================================================
 
   const stats = [
     {
@@ -377,16 +324,9 @@ export default function UserDashboard() {
     },
   ];
 
-  // ===================================================
-  // MAIN UI
-  // ===================================================
-
   return (
     <UserLayout>
       <main className="relative p-4 sm:p-6 lg:p-8 space-y-8 sm:space-y-10 font-sans bg-stone-50 min-h-full">
-        {/* =================================================
-            HEADER
-        ================================================= */}
 
         <section className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
@@ -407,10 +347,6 @@ export default function UserDashboard() {
             </span>
           </div>
         </section>
-
-        {/* =================================================
-            MAIN STATS
-        ================================================= */}
 
         <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {stats.map((stat) => {
@@ -467,10 +403,6 @@ export default function UserDashboard() {
             );
           })}
         </section>
-
-        {/* =================================================
-            BODY METRICS
-        ================================================= */}
 
         <section>
           <div className="mb-6">
@@ -554,10 +486,6 @@ export default function UserDashboard() {
           </div>
         </section>
 
-        {/* =================================================
-            FITNESS PROFILE
-        ================================================= */}
-
         <section className="card bg-surface/85 border-brand-light/40 p-6 md:p-8">
           <div className="flex items-center gap-3 mb-6">
             <div className="p-3 bg-brand-light/35 rounded-btn">
@@ -626,10 +554,6 @@ export default function UserDashboard() {
           </div>
         </section>
 
-        {/* =================================================
-            TODAY'S NUTRITION
-        ================================================= */}
-
         <section>
           <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
             <div>
@@ -660,8 +584,6 @@ export default function UserDashboard() {
             </Link>
           </div>
 
-          {/* EXPIRED */}
-
           {todayDiet?.isExpired ? (
             <div className="card bg-amber-50/80 border-amber-200 p-6 md:p-8 text-center space-y-3">
               <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center text-amber-700 mx-auto">
@@ -687,7 +609,6 @@ export default function UserDashboard() {
               </div>
             </div>
           ) : todayDiet?.meals ? (
-            /* GENERATED DIET */
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {[
@@ -791,7 +712,6 @@ export default function UserDashboard() {
               })}
             </div>
           ) : (
-            /* NO DIET PLAN */
 
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -864,10 +784,6 @@ export default function UserDashboard() {
           )}
         </section>
       </main>
-
-      {/* =================================================
-          AUTOMATIC PROFESSIONAL RATING DIALOG
-      ================================================= */}
 
       {activeRatingSession && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
