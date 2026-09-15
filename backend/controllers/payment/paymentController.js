@@ -63,6 +63,8 @@ const getSlotStartDateTime = (appointmentDate, appointmentSlot) => {
 
 // 1. Create Payment Session with Direct Connect Transfer Split (20% Platform / 80% Professional)
 const createPayment = async (req, res) => {
+  let reservedPayment = null;
+
   try {
     const stripe = getStripe();
 
@@ -110,7 +112,11 @@ const createPayment = async (req, res) => {
 
     const dateStr = String(appointmentDate).slice(0, 10);
     const dateParts = dateStr.split("-").map(Number);
-    if (dateParts.length !== 3 || dateParts.some(Number.isNaN)) {
+
+    if (
+      dateParts.length !== 3 ||
+      dateParts.some(Number.isNaN)
+    ) {
       return res.status(400).json({
         success: false,
         message: "Invalid appointment date format. Expected YYYY-MM-DD",
@@ -118,9 +124,30 @@ const createPayment = async (req, res) => {
     }
 
     const [year, month, day] = dateParts;
-    const parsedAppointmentDate = new Date(year, month - 1, day);
+
+    const parsedAppointmentDate = new Date(
+      year,
+      month - 1,
+      day,
+      0,
+      0,
+      0,
+      0,
+    );
 
     if (Number.isNaN(parsedAppointmentDate.getTime())) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid appointment date",
+      });
+    }
+
+    // Prevent invalid dates such as 2026-02-31
+    if (
+      parsedAppointmentDate.getFullYear() !== year ||
+      parsedAppointmentDate.getMonth() !== month - 1 ||
+      parsedAppointmentDate.getDate() !== day
+    ) {
       return res.status(400).json({
         success: false,
         message: "Invalid appointment date",
@@ -131,8 +158,15 @@ const createPayment = async (req, res) => {
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
 
-    const targetDateStart = new Date(year, month - 1, day);
-    targetDateStart.setHours(0, 0, 0, 0);
+    const targetDateStart = new Date(
+      year,
+      month - 1,
+      day,
+      0,
+      0,
+      0,
+      0,
+    );
 
     if (targetDateStart < todayStart) {
       return res.status(400).json({
@@ -141,7 +175,7 @@ const createPayment = async (req, res) => {
       });
     }
 
-    // Validate that appointmentDay matches the appointmentDate day of week
+    // Validate appointment day against appointment date
     const DAY_NAMES = [
       "Sunday",
       "Monday",
@@ -151,18 +185,34 @@ const createPayment = async (req, res) => {
       "Friday",
       "Saturday",
     ];
-    const actualDay = DAY_NAMES[parsedAppointmentDate.getDay()];
-    if (actualDay.toLowerCase() !== appointmentDay.trim().toLowerCase()) {
+
+    const actualDay =
+      DAY_NAMES[parsedAppointmentDate.getDay()];
+
+    if (
+      actualDay.toLowerCase() !==
+      appointmentDay.trim().toLowerCase()
+    ) {
       return res.status(400).json({
         success: false,
         message: `Appointment day (${appointmentDay}) does not match appointment date (${actualDay}).`,
       });
     }
 
-    // If booking for today, prevent booking slots whose start time has already passed
-    if (targetDateStart.getTime() === todayStart.getTime()) {
-      const slotStart = getSlotStartDateTime(dateStr, appointmentSlot);
-      if (!slotStart || slotStart.getTime() <= Date.now()) {
+    // If booking today, prevent already-passed slots
+    if (
+      targetDateStart.getTime() ===
+      todayStart.getTime()
+    ) {
+      const slotStart = getSlotStartDateTime(
+        dateStr,
+        appointmentSlot,
+      );
+
+      if (
+        !slotStart ||
+        slotStart.getTime() <= Date.now()
+      ) {
         return res.status(400).json({
           success: false,
           message:
@@ -171,19 +221,26 @@ const createPayment = async (req, res) => {
       }
     }
 
-    const parsedSessionDuration = Number(sessionDuration) || 1;
+    const parsedSessionDuration =
+      Number(sessionDuration) || 1;
 
-    if (parsedSessionDuration < 1 || parsedSessionDuration > 3) {
+    if (
+      parsedSessionDuration < 1 ||
+      parsedSessionDuration > 3
+    ) {
       return res.status(400).json({
         success: false,
-        message: "Session duration must be between 1 and 3 hours",
+        message:
+          "Session duration must be between 1 and 3 hours",
       });
     }
 
     const professional = await UserModel.findOne({
       _id: professionalId,
       role: "PROFESSIONAL",
-      professionalStatus: { $in: ["approved", "APPROVED"] },
+      professionalStatus: {
+        $in: ["approved", "APPROVED"],
+      },
     });
 
     if (!professional) {
@@ -193,52 +250,35 @@ const createPayment = async (req, res) => {
       });
     }
 
-    const selectedDay = professional.availability?.find(
-      (item) =>
-        item.day?.trim().toLowerCase() ===
-        appointmentDay.trim().toLowerCase(),
-    );
+    const selectedDay =
+      professional.availability?.find(
+        (item) =>
+          item.day?.trim().toLowerCase() ===
+          appointmentDay.trim().toLowerCase(),
+      );
 
     if (!selectedDay) {
       return res.status(400).json({
         success: false,
-        message: "The selected day is not available for this professional.",
+        message:
+          "The selected day is not available for this professional.",
       });
     }
 
-    const slotExists = selectedDay.slots?.some(
-      (slot) => slot.trim() === appointmentSlot.trim(),
-    );
+    const normalizedSlot =
+      appointmentSlot.trim();
+
+    const slotExists =
+      selectedDay.slots?.some(
+        (slot) =>
+          slot.trim() === normalizedSlot,
+      );
 
     if (!slotExists) {
       return res.status(400).json({
         success: false,
-        message: "The selected appointment slot is not available.",
-      });
-    }
-
-    const startOfDay = new Date(parsedAppointmentDate);
-    startOfDay.setHours(0, 0, 0, 0);
-
-    const endOfDay = new Date(startOfDay);
-    endOfDay.setDate(endOfDay.getDate() + 1);
-
-    const existingBooking = await PaymentModel.findOne({
-      professional: professionalId,
-      appointmentDate: {
-        $gte: startOfDay,
-        $lt: endOfDay,
-      },
-      appointmentSlot: appointmentSlot.trim(),
-      status: "completed",
-      professionalDeleted: false,
-    });
-
-    if (existingBooking) {
-      return res.status(409).json({
-        success: false,
         message:
-          "This appointment slot is no longer available. Please select another slot.",
+          "The selected appointment slot is not available.",
       });
     }
 
@@ -250,51 +290,64 @@ const createPayment = async (req, res) => {
       });
     }
 
-    let payoutsEnabled = professional.payoutsEnabled;
+    let payoutsEnabled =
+      professional.payoutsEnabled;
 
     try {
       let v2Account;
 
       try {
-        v2Account = await stripe.v2.core.accounts.retrieve(
-          professional.stripeAccountId,
-          {
-            include: ["configuration.recipient"],
-          },
-        );
+        v2Account =
+          await stripe.v2.core.accounts.retrieve(
+            professional.stripeAccountId,
+            {
+              include: [
+                "configuration.recipient",
+              ],
+            },
+          );
       } catch {
         v2Account = null;
       }
 
       if (v2Account) {
         const recipientCaps =
-          v2Account.configuration?.recipient?.capabilities?.stripe_balance;
+          v2Account.configuration?.recipient
+            ?.capabilities?.stripe_balance;
 
         const transfersActive =
-          recipientCaps?.stripe_transfers?.status === "active";
+          recipientCaps?.stripe_transfers
+            ?.status === "active";
 
         const payoutsActive =
-          recipientCaps?.payouts?.status === "active";
+          recipientCaps?.payouts?.status ===
+          "active";
 
         payoutsEnabled =
           transfersActive ||
           payoutsActive ||
           professional.payoutsEnabled;
       } else {
-        const account = await stripe.accounts.retrieve(
-          professional.stripeAccountId,
-        );
+        const account =
+          await stripe.accounts.retrieve(
+            professional.stripeAccountId,
+          );
 
         payoutsEnabled =
           !!account.payouts_enabled ||
           !!account.charges_enabled;
       }
 
-      professional.payoutsEnabled = payoutsEnabled;
-      professional.chargesEnabled = payoutsEnabled;
-      professional.stripeAccountStatus = payoutsEnabled
-        ? "active"
-        : "pending";
+      professional.payoutsEnabled =
+        payoutsEnabled;
+
+      professional.chargesEnabled =
+        payoutsEnabled;
+
+      professional.stripeAccountStatus =
+        payoutsEnabled
+          ? "active"
+          : "pending";
 
       await professional.save();
     } catch (acctErr) {
@@ -320,8 +373,51 @@ const createPayment = async (req, res) => {
       (totalAmount * 0.8).toFixed(2),
     );
 
+    /*
+     * IMPORTANT:
+     * Create the pending payment BEFORE creating Stripe Checkout.
+     *
+     * The compound unique index in paymentModel.js makes this
+     * operation atomic for concurrent booking requests.
+     */
+    try {
+      reservedPayment =
+        await PaymentModel.create({
+          user: userId,
+          professional: professionalId,
+          amount: totalAmount,
+          adminCommission,
+          professionalAmount,
+          currency: "pkr",
+          appointmentDay:
+            appointmentDay.trim(),
+          appointmentSlot: normalizedSlot,
+          appointmentDate:
+            parsedAppointmentDate,
+          sessionDuration:
+            parsedSessionDuration,
+          notes: notes?.trim() || "",
+          status: "pending",
+          payoutStatus: "pending",
+          adminDeleted: false,
+          professionalDeleted: false,
+        });
+    } catch (reservationError) {
+      // MongoDB duplicate key means another request already reserved this slot.
+      if (reservationError.code === 11000) {
+        return res.status(409).json({
+          success: false,
+          message:
+            "This appointment slot is no longer available. Please select another slot.",
+        });
+      }
+
+      throw reservationError;
+    }
+
     const frontendUrl =
-      process.env.FRONTEND_URL || "http://localhost:5173";
+      process.env.FRONTEND_URL ||
+      "http://localhost:5173";
 
     const slotInfo =
       appointmentDay && appointmentSlot
@@ -329,70 +425,109 @@ const createPayment = async (req, res) => {
         : "";
 
     const bookingMetadata = {
-      professionalId: professionalId.toString(),
-      userId: userId.toString(),
-      amount: totalAmount.toString(),
-      adminCommission: adminCommission.toString(),
-      professionalAmount: professionalAmount.toString(),
-      appointmentDay: appointmentDay ? appointmentDay.trim() : "",
-      appointmentSlot: appointmentSlot ? appointmentSlot.trim() : "",
-      appointmentDate: parsedAppointmentDate.toISOString(),
-      sessionDuration: parsedSessionDuration.toString(),
-      notes: notes?.trim() || "",
+      paymentId:
+        reservedPayment._id.toString(),
+
+      professionalId:
+        professionalId.toString(),
+
+      userId:
+        userId.toString(),
+
+      amount:
+        totalAmount.toString(),
+
+      adminCommission:
+        adminCommission.toString(),
+
+      professionalAmount:
+        professionalAmount.toString(),
+
+      appointmentDay:
+        appointmentDay.trim(),
+
+      appointmentSlot:
+        normalizedSlot,
+
+      appointmentDate:
+        parsedAppointmentDate.toISOString(),
+
+      sessionDuration:
+        parsedSessionDuration.toString(),
+
+      notes:
+        notes?.trim() || "",
     };
 
     let session;
 
     try {
-      session = await stripe.checkout.sessions.create({
-        mode: "payment",
+      session =
+        await stripe.checkout.sessions.create({
+          mode: "payment",
 
-        line_items: [
-          {
-            price_data: {
-              currency: "pkr",
+          line_items: [
+            {
+              price_data: {
+                currency: "pkr",
 
-              product_data: {
-                name: `PoseFit Session with ${professional.firstName} ${professional.lastName}${slotInfo}`,
+                product_data: {
+                  name: `PoseFit Session with ${professional.firstName} ${professional.lastName}${slotInfo}`,
 
-                description:
-                  `Appointment: ${appointmentDay} ${appointmentSlot}`,
+                  description:
+                    `Appointment: ${appointmentDay} ${normalizedSlot}`,
+                },
+
+                unit_amount:
+                  Math.round(
+                    totalAmount * 100,
+                  ),
               },
 
-              unit_amount: Math.round(totalAmount * 100),
+              quantity: 1,
+            },
+          ],
+
+          payment_intent_data: {
+            application_fee_amount:
+              Math.round(
+                adminCommission * 100,
+              ),
+
+            transfer_data: {
+              destination:
+                professional.stripeAccountId,
             },
 
-            quantity: 1,
-          },
-        ],
-
-        payment_intent_data: {
-          application_fee_amount: Math.round(
-            adminCommission * 100,
-          ),
-
-          transfer_data: {
-            destination: professional.stripeAccountId,
+            metadata: bookingMetadata,
           },
 
           metadata: bookingMetadata,
-        },
 
-        metadata: bookingMetadata,
+          success_url:
+            `${frontendUrl}/user/professionals/${professionalId}` +
+            `?booking_success=true&session_id={CHECKOUT_SESSION_ID}`,
 
-        success_url:
-          `${frontendUrl}/user/professionals/${professionalId}` +
-          `?booking_success=true&session_id={CHECKOUT_SESSION_ID}`,
-
-        cancel_url:
-          `${frontendUrl}/user/professionals/${professionalId}` +
-          `?booking_cancelled=true`,
-      });
+          cancel_url:
+            `${frontendUrl}/user/professionals/${professionalId}` +
+            `?booking_cancelled=true`,
+        });
     } catch (stripeError) {
       console.error(
         "Stripe checkout session creation error:",
         stripeError,
       );
+
+      // Release the reservation so the slot can be booked again.
+      if (reservedPayment?._id) {
+        await PaymentModel.findByIdAndUpdate(
+          reservedPayment._id,
+          {
+            status: "failed",
+            payoutStatus: "failed",
+          },
+        );
+      }
 
       return res.status(500).json({
         success: false,
@@ -402,23 +537,61 @@ const createPayment = async (req, res) => {
       });
     }
 
+    // Save Stripe session against the already-reserved payment.
+    await PaymentModel.findByIdAndUpdate(
+      reservedPayment._id,
+      {
+        stripeSessionId: session.id,
+      },
+    );
+
     return res.status(200).json({
       success: true,
 
       message:
         "Payment session created successfully.",
 
-      checkoutUrl: session.url,
+      checkoutUrl:
+        session.url,
 
       appointment: {
-        day: appointmentDay.trim(),
-        slot: appointmentSlot.trim(),
-        date: parsedAppointmentDate,
-        sessionDuration: parsedSessionDuration,
+        day:
+          appointmentDay.trim(),
+
+        slot:
+          normalizedSlot,
+
+        date:
+          parsedAppointmentDate,
+
+        sessionDuration:
+          parsedSessionDuration,
       },
     });
   } catch (error) {
-    console.error("Create payment error:", error);
+    console.error(
+      "Create payment error:",
+      error,
+    );
+
+    // If an unexpected error happens after reservation,
+    // release the pending booking.
+    if (reservedPayment?._id) {
+      try {
+        await PaymentModel.findByIdAndUpdate(
+          reservedPayment._id,
+          {
+            status: "failed",
+            payoutStatus: "failed",
+          },
+        );
+      } catch (cleanupError) {
+        console.error(
+          "Payment reservation cleanup error:",
+          cleanupError,
+        );
+      }
+    }
 
     return res.status(500).json({
       success: false,
