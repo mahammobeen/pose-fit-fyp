@@ -38,7 +38,7 @@ if (!email || !password) {
 
     console.log("Admin created successfully");
     console.log("Email:", email);
-    console.log("Password:", password);
+   
 
     process.exit(0);
   } catch (error) {

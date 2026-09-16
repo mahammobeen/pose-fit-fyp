@@ -319,6 +319,7 @@ export default function ProfessionalDetails() {
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [bookingCancelled, setBookingCancelled] = useState(false);
   const [bookingPending, setBookingPending] = useState(false);
+  const [paymentReceipt, setPaymentReceipt] = useState(null);
 
   const [proReviews, setProReviews] = useState([]);
   const [reviewsLoading, setReviewsLoading] = useState(true);
@@ -548,12 +549,13 @@ export default function ProfessionalDetails() {
             String(data?.payment?.status || "").toLowerCase() === "completed";
 
           if (isConfirmed) {
-            setBookingSuccess(true);
-            setBookingPending(false);
-            toast.success("Booking confirmed successfully!");
-            fetchBookedSlots();
-            return;
-          }
+  setPaymentReceipt(data?.payment || null);
+  setBookingSuccess(true);
+  setBookingPending(false);
+  toast.success("Booking confirmed successfully!");
+  fetchBookedSlots();
+  return;
+}
 
           attempts += 1;
 
@@ -925,24 +927,173 @@ export default function ProfessionalDetails() {
           </div>
         )}
 
-        {bookingSuccess && (
-          <div className="mx-auto mb-6 max-w-5xl px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center gap-3 rounded-card border border-brand-light bg-brand-light/20 p-4">
-              <CheckCircle className="h-5 w-5 shrink-0 text-brand-dark" />
+        {bookingSuccess && paymentReceipt && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+    <div className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
+      
+      <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-200 bg-white px-6 py-4">
+        <h2 className="text-lg font-bold text-gray-900">
+          Payment Receipt
+        </h2>
 
-              <div>
-                <p className="text-sm font-bold text-brand-dark">
-                  Booking Confirmed!
-                </p>
+        <button
+          type="button"
+          onClick={() => {
+            setBookingSuccess(false);
+            setPaymentReceipt(null);
+          }}
+          className="rounded-full p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-900"
+          aria-label="Close receipt"
+        >
+          ×
+        </button>
+      </div>
 
-                <p className="mt-0.5 text-xs font-medium text-brand-dark/80">
-                  Your payment was successful. The professional will be in touch
-                  to confirm your session details.
-                </p>
-              </div>
-            </div>
+      <div id="payment-receipt" className="p-6">
+        <div className="border-b border-gray-200 pb-5 text-center">
+          <CheckCircle className="mx-auto h-10 w-10 text-green-600" />
+
+          <h3 className="mt-3 text-xl font-bold text-gray-900">
+            Payment Successful
+          </h3>
+
+          <p className="mt-1 text-sm text-gray-500">
+            Your appointment has been confirmed.
+          </p>
+
+          <p className="mt-4 text-sm font-medium text-gray-500">
+            Amount Paid
+          </p>
+
+          <p className="mt-1 text-3xl font-bold text-gray-900">
+            Rs. {Number(paymentReceipt.amount || 0).toLocaleString()}
+          </p>
+
+          <p className="mt-1 text-sm font-semibold text-green-600">
+            Payment Completed
+          </p>
+        </div>
+
+        <div className="mt-6 grid gap-4 sm:grid-cols-2">
+          <div className="rounded-lg bg-gray-50 p-4">
+            <p className="text-xs font-medium text-gray-500">
+              Transaction ID
+            </p>
+            <p className="mt-1 break-all text-sm font-semibold text-gray-900">
+              {paymentReceipt.stripeSessionId ||
+                paymentReceipt._id ||
+                "N/A"}
+            </p>
           </div>
-        )}
+
+          <div className="rounded-lg bg-gray-50 p-4">
+            <p className="text-xs font-medium text-gray-500">
+              Payment Date
+            </p>
+            <p className="mt-1 text-sm font-semibold text-gray-900">
+              {paymentReceipt.createdAt
+                ? new Date(paymentReceipt.createdAt).toLocaleString()
+                : "N/A"}
+            </p>
+          </div>
+
+          <div className="rounded-lg bg-gray-50 p-4">
+            <p className="text-xs font-medium text-gray-500">
+              Professional
+            </p>
+            <p className="mt-1 text-sm font-semibold text-gray-900">
+              {paymentReceipt.professional
+                ? `${paymentReceipt.professional.firstName || ""} ${
+                    paymentReceipt.professional.lastName || ""
+                  }`.trim()
+                : "N/A"}
+            </p>
+          </div>
+
+          <div className="rounded-lg bg-gray-50 p-4">
+            <p className="text-xs font-medium text-gray-500">
+              Appointment Date
+            </p>
+            <p className="mt-1 text-sm font-semibold text-gray-900">
+              {paymentReceipt.appointmentDate || "N/A"}
+            </p>
+          </div>
+
+          <div className="rounded-lg bg-gray-50 p-4">
+            <p className="text-xs font-medium text-gray-500">
+              Appointment Day
+            </p>
+            <p className="mt-1 text-sm font-semibold text-gray-900">
+              {paymentReceipt.appointmentDay || "N/A"}
+            </p>
+          </div>
+
+          <div className="rounded-lg bg-gray-50 p-4">
+            <p className="text-xs font-medium text-gray-500">
+              Appointment Time
+            </p>
+            <p className="mt-1 text-sm font-semibold text-gray-900">
+              {paymentReceipt.appointmentSlot || "N/A"}
+            </p>
+          </div>
+
+          <div className="rounded-lg bg-gray-50 p-4">
+            <p className="text-xs font-medium text-gray-500">
+              Session Duration
+            </p>
+            <p className="mt-1 text-sm font-semibold text-gray-900">
+              {paymentReceipt.sessionDuration
+                ? `${paymentReceipt.sessionDuration} hour${
+                    paymentReceipt.sessionDuration > 1 ? "s" : ""
+                  }`
+                : "N/A"}
+            </p>
+          </div>
+
+          <div className="rounded-lg bg-gray-50 p-4">
+            <p className="text-xs font-medium text-gray-500">
+              Payment Status
+            </p>
+            <p className="mt-1 text-sm font-semibold capitalize text-green-600">
+              {paymentReceipt.status || "Completed"}
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-6 rounded-lg border border-gray-200 p-4">
+          <p className="text-xs font-medium text-gray-500">
+            Receipt Reference
+          </p>
+
+          <p className="mt-1 break-all text-sm font-semibold text-gray-900">
+            {paymentReceipt._id || "N/A"}
+          </p>
+        </div>
+      </div>
+
+      <div className="sticky bottom-0 flex flex-col gap-3 border-t border-gray-200 bg-white p-6 sm:flex-row">
+        <button
+          type="button"
+          onClick={() => {
+            setBookingSuccess(false);
+            setPaymentReceipt(null);
+          }}
+          className="flex-1 rounded-lg border border-gray-300 px-5 py-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+        >
+          Back
+        </button>
+
+        <button
+          type="button"
+          onClick={() => window.print()}
+          className="flex-1 rounded-lg bg-brand-dark px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90"
+        >
+          Save Receipt
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
         {bookingCancelled && (
           <div className="mx-auto mb-6 max-w-5xl px-4 sm:px-6 lg:px-8">

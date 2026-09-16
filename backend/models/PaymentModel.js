@@ -95,6 +95,10 @@ const paymentSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    confirmationEmailSent: {
+  type: Boolean,
+  default: false,
+},
 
     adminDeleted: {
       type: Boolean,

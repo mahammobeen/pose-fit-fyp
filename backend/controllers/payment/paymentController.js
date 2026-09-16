@@ -1284,26 +1284,32 @@ const stripeWebhook = async (req, res) => {
           }
         }
 
-        if (isNewOrUpdated) {
-          try {
-            await sendBookingConfirmationEmails({
-              user: payment.user,
-              professional: payment.professional,
-              appointmentDate: payment.appointmentDate,
-              appointmentDay: payment.appointmentDay,
-              appointmentSlot: payment.appointmentSlot,
-            });
+        if (
+  payment.status === "completed" &&
+  !payment.confirmationEmailSent
+) {
+  try {
+    await sendBookingConfirmationEmails({
+      user: payment.user,
+      professional: payment.professional,
+      appointmentDate: payment.appointmentDate,
+      appointmentDay: payment.appointmentDay,
+      appointmentSlot: payment.appointmentSlot,
+    });
 
-            console.log(
-              `Booking confirmation emails sent for payment ${payment._id}.`
-            );
-          } catch (emailError) {
-            console.error(
-              `Booking confirmation email error for payment ${payment._id}:`,
-              emailError
-            );
-          }
-        }
+    payment.confirmationEmailSent = true;
+    await payment.save();
+
+    console.log(
+      `Booking confirmation emails sent for payment ${payment._id}.`
+    );
+  } catch (emailError) {
+    console.error(
+      `Booking confirmation email error for payment ${payment._id}:`,
+      emailError
+    );
+  }
+}
       } else {
         console.error(
           "Unable to resolve or create payment for checkout.session.completed."
