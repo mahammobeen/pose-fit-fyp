@@ -16,34 +16,114 @@ const containsKeyword = (text, keywords) => {
   });
 };
 
-// Language detection: Roman Urdu fallback
-const detectLanguage = (text) => {
-  const romanUrduWords = [
-    "mujhe",
-    "mera",
-    "meri",
-    "tum",
-    "tumhara",
-    "kya",
-    "kyun",
-    "kaise",
-    "hai",
-    "hain",
-    "hoon",
-    "karna",
-    "chahiye",
-    "nahi",
-    "bohat",
-    "bimaar",
-    "tabiyat",
-    "udaas",
-    "pareshan",
-    "thaka",
-  ];
-  const matches = romanUrduWords.filter((w) =>
-    new RegExp(`\\b${w}\\b`, "i").test(text),
-  ).length;
-  return matches >= 2 ? "urdu" : "english";
+// ---------- LANGUAGE GATE: English-only chatbot ----------
+// The bot must ONLY understand/answer English, and ONLY reply in English.
+// Any other language (Urdu script, Roman Urdu, or anything else) gets a
+// fixed English refusal and never reaches the LLM.
+// Expanded on purpose: even ONE of these words appearing in an otherwise
+// English-looking sentence means it's not pure English (e.g. "Can you
+// mujhe beginner workout suggest kar sakte ho?" is mostly English words but
+// is a Roman Urdu sentence and must be rejected).
+const ROMAN_URDU_WORDS = [
+  "mujhe",
+  "mujhy",
+  "mjhy",
+  "mera",
+  "meri",
+  "mere",
+  "tum",
+  "tumhara",
+  "tumhari",
+  "tumhe",
+  "kya",
+  "kyun",
+  "kyu",
+  "kaise",
+  "kaisay",
+  "hai",
+  "hain",
+  "hoon",
+  "ho",
+  "raha",
+  "rahi",
+  "rahe",
+  "karna",
+  "karo",
+  "kar",
+  "krna",
+  "kro",
+  "sakte",
+  "sakta",
+  "sakti",
+  "chahiye",
+  "chahye",
+  "nahi",
+  "nahin",
+  "bohat",
+  "bahut",
+  "bimaar",
+  "tabiyat",
+  "udaas",
+  "pareshan",
+  "thaka",
+  "thaki",
+  "pucha",
+  "pochna",
+  "poochna",
+  "batao",
+  "bataye",
+  "dijiye",
+  "dena",
+  "kijiye",
+  "aap",
+  "ap",
+  "hum",
+  "humein",
+  "humko",
+  "apna",
+  "apni",
+  "apne",
+  "iska",
+  "uska",
+  "iski",
+  "uski",
+  "se",
+  "sy",
+  "sey",
+  "mein",
+  "ke",
+  "ki",
+  "ka",
+  "liye",
+  "wala",
+  "wali",
+  "walay",
+  "acha",
+  "accha",
+  "theek",
+  "thek",
+  "zyada",
+  "thoda",
+  "abhi",
+  "phir",
+  "lekin",
+  "magar",
+  "kuch",
+  "sab",
+  "koi",
+  "kisi",
+  "kaha",
+  "kahan",
+  "kab",
+  "kitna",
+  "kitni",
+];
+const isNonEnglish = (text) => {
+  // Non-Latin script (Arabic/Urdu, Chinese, etc.)
+  if (/[^\x00-\x7F]/.test(text)) return true;
+  // Romanized Urdu / Hindi — a single strong indicator word is enough,
+  // since these words essentially never appear in genuine English sentences.
+  return ROMAN_URDU_WORDS.some((w) => new RegExp(`\\b${w}\\b`, "i").test(text));
 };
 
 // ---------- STATIC SAFETY GUARDRAILS (Never bypass) ----------
@@ -67,9 +147,8 @@ const EMERGENCY_KEYWORDS = [
   "choking",
 ];
 
-// FIX: "how much" removed — it was matching normal fitness/nutrition
-// questions ("how much protein", "how much water") and wrongly blocking
-// them. Now only matches phrases that actually mean "give me a dosage".
+// "how much" removed — was matching normal fitness/nutrition questions
+// ("how much protein", "how much water") and wrongly blocking them.
 const MEDICAL_REQUEST_KEYWORDS = [
   "prescribe",
   "prescription",
@@ -90,18 +169,33 @@ const MEDICAL_REQUEST_KEYWORDS = [
   "panadol",
 ];
 
-// Generic diet-plan requests (not tied to a specific disease)
+// Generic diet-plan / meal-schedule requests (not tied to a specific disease).
+// Expanded to catch any request for concrete meal-by-meal recommendations,
+// not just messages that literally say "diet plan".
 const DIET_KEYWORDS = [
   "diet plan",
   "meal plan",
   "custom diet",
   "personalized diet",
+  "nutrition plan",
+  "diet schedule",
+  "meal schedule",
+  "eating schedule",
+  "what should i eat",
+  "eat for breakfast",
+  "eat for lunch",
+  "eat for dinner",
+  "calculate my meals",
+  "weekly meal",
+  "monthly meal",
+  "full day diet",
+  "daily diet",
+  "diet for a month",
+  "diet for the month",
 ];
 
-// NEW: any mention of a specific medical condition/disease — regardless of
+// Any mention of a specific medical condition/disease — regardless of
 // whether the user is asking about diet, exercise, or anything else for it.
-// Per your requirement: chatbot should NEVER give advice tied to a named
-// condition, it should always redirect to a doctor.
 const MEDICAL_CONDITION_KEYWORDS = [
   "kidney",
   "gurda",
@@ -139,9 +233,8 @@ const MEDICAL_CONDITION_KEYWORDS = [
   "tuberculosis",
 ];
 
-// NEW: common out-of-scope categories — handled with hardcoded refusal
-// instead of relying on the LLM to self-police, since a small model won't
-// reliably decline on its own.
+// Common out-of-scope categories — handled with hardcoded refusal instead
+// of relying on the LLM to self-police (a small model won't reliably decline).
 const OUT_OF_SCOPE_KEYWORDS = [
   // politics
   "election",
@@ -188,17 +281,42 @@ const OUT_OF_SCOPE_KEYWORDS = [
   "mental illness",
 ];
 
-// Fatigue-related words that make a "mental health-ish" message still in-scope
-const FATIGUE_CONTEXT_WORDS = [
-  "tired",
-  "fatigue",
-  "low energy",
-  "thaka",
-  "thaki",
-  "susti",
-  "kamzori",
-  "exhausted",
+// NEW: any request to write code/programs/scripts, solve math/equations, or
+// produce content for an unrelated subject (essays, homework, other
+// sciences). Catches "wrapped" tricky requests like "write a Python program
+// to calculate my BMI" — the ask is fundamentally a coding task, not
+// fitness advice, so it must be refused regardless of the fitness wording.
+const OFF_TOPIC_TASK_KEYWORDS = [
+  "write a program",
+  "write a python",
+  "write code",
+  "write a script",
+  "write a function",
+  "coding",
+  "programming",
+  "algorithm",
+  "write an essay",
+  "write a poem",
+  "write a story",
+  "solve for x",
+  "math problem",
+  "algebra",
+  "calculus",
+  "derivative",
+  "integral",
+  "chemistry formula",
+  "physics formula",
+  "homework",
+  "assignment",
+  "write a letter",
+  "write an email",
+  "sql query",
+  "html code",
+  "css code",
 ];
+
+// Fatigue-related words that make a "mental health-ish" message still in-scope
+const FATIGUE_CONTEXT_WORDS = ["tired", "fatigue", "low energy", "exhausted"];
 
 // ---------- CLASSIFICATION ----------
 const classifyQuestion = (question) => {
@@ -210,12 +328,13 @@ const classifyQuestion = (question) => {
   if (containsKeyword(lower, MEDICAL_CONDITION_KEYWORDS))
     return "medical_condition";
 
+  if (containsKeyword(lower, OFF_TOPIC_TASK_KEYWORDS)) return "out_of_scope";
+
   if (containsKeyword(lower, DIET_KEYWORDS)) return "nutritionist";
   if (containsKeyword(lower, MEDICAL_REQUEST_KEYWORDS))
     return "medical_request";
 
   if (containsKeyword(lower, OUT_OF_SCOPE_KEYWORDS)) {
-    // don't block genuine "I feel tired/low energy" fitness questions
     const isFatigueContext = containsKeyword(lower, FATIGUE_CONTEXT_WORDS);
     const isMentalHealthWord = containsKeyword(lower, [
       "depression",
@@ -234,18 +353,19 @@ const classifyQuestion = (question) => {
 };
 
 // ---------- SYSTEM PROMPT (Context-Aware + Anatomical Location Rule) ----------
-const getSystemPrompt = (language) => {
-  const langInstruction =
-    language === "urdu"
-      ? "Respond in natural Roman Urdu (Latin script)."
-      : "Respond in clear, simple English.";
-
+const getSystemPrompt = () => {
   return `
 You are PoseFit — a strictly focused fitness, nutrition, and wellness assistant.
+
+LANGUAGE RULE (STRICT):
+- ALWAYS respond only in English. Never respond in Urdu, Roman Urdu, or any other language, no matter what language the user writes in.
 
 CRITICAL RULE: STAY IN THE CONVERSATION
 - You will receive the full conversation history. Use it to understand what the user is referring to.
 - If the user gives a short reply (like "inside", "front", "yes", "no", "left") AFTER you asked them a question, treat it as a CONTINUATION of that conversation. Do NOT reset to a generic opening.
+
+CONSISTENCY RULE:
+- Your answers must stay logically consistent with what you already told this user earlier in the conversation. Do not contradict your own previous advice. If new information genuinely changes your recommendation, briefly acknowledge the change rather than silently contradicting yourself.
 
 ANATOMICAL LOCATION RULE:
 - If a user replies with a short location word like "front", "back", "inside", "outside", "left", "right", "top", "bottom" – and you previously asked them about pain location – you MUST interpret these as specific anatomical locations. Do NOT ask for clarification on these words. Continue giving injury advice (RICE, stretches, doctor referral) based on that location.
@@ -256,12 +376,13 @@ IN-SCOPE TOPICS (Always answer):
 - Tiredness, fatigue, low energy (hydration, rest, light activity).
 - Food, diet, weight, nutrition (general/healthy population only — NOT tied to any diagnosed disease).
 
-OUT-OF-SCOPE TOPICS (Always decline, never answer even partially):
-- Politics, finance, astronomy, animals, unrelated events, clinical mental health (depression, anxiety) unless tied to fitness fatigue.
-- Example of a correct refusal: "I'm only able to help with fitness, exercise, and general nutrition questions — I can't help with that topic."
+OUT-OF-SCOPE — ALWAYS DECLINE, NEVER PARTIALLY ANSWER:
+- Politics, finance, astronomy, animals, unrelated events, clinical mental health (unless tied to fitness fatigue), math, any academic subject other than fitness/nutrition.
+- NEVER write code, a program, a script, a function, or solve equations/homework — even if the request is dressed up as a fitness task (e.g. "write a Python program to calculate my BMI"). Refuse and instead just explain the concept in plain language if relevant.
+- Example refusal: "I'm only able to help with fitness, exercise, and general nutrition questions — I can't help with that."
 
 RULES:
-1. ${langInstruction}
+1. Respond only in English, always.
 2. NEVER prescribe medication or dosages. Say: "Consult a doctor for severe pain."
 3. NEVER give diet, exercise, or lifestyle advice tied to a specific diagnosed medical condition (e.g. kidney disease, diabetes, thyroid, heart conditions). Redirect to a doctor instead.
 4. Keep answers concise (2–4 sentences). No emojis.
@@ -284,27 +405,31 @@ const handleChatbot = async (req, res) => {
   }
 
   // ----- 1. Get or create session memory -----
-  // FIX: if the frontend doesn't send a sessionId, we generate one and send
-  // it back in the response. The frontend MUST store this (e.g. in
-  // localStorage or React state) and send it back with every subsequent
-  // request under the same conversation — otherwise every message starts a
-  // brand-new, empty history and the bot will "forget" everything.
+  // If the frontend doesn't send a sessionId, generate one and send it back
+  // in the response. The frontend MUST store this and send it back with
+  // every subsequent request in the same conversation, otherwise every
+  // message starts a brand-new, empty history.
   let id = sessionId || req.headers["x-session-id"];
-  let isNewSession = false;
   if (!id) {
     id = crypto.randomUUID();
-    isNewSession = true;
   }
   if (!sessionStore.has(id)) {
     sessionStore.set(id, []);
   }
   let chatHistory = sessionStore.get(id);
 
-  // ----- 2. Add user message to history -----
+  // ----- 2. English-only gate (runs before anything else) -----
+  if (isNonEnglish(message)) {
+    return res.json({
+      reply:
+        "I can understand and respond only in English. Please ask your question in English.",
+      sessionId: id,
+    });
+  }
+
+  // ----- 3. Add user message to history -----
   chatHistory.push({ role: "user", content: message });
 
-  const lang = detectLanguage(message);
-  const isUrdu = lang === "urdu";
   const intent = classifyQuestion(message);
 
   // ----- HARDCODED SAFETY GUARDRAILS (Run before LLM) -----
@@ -316,48 +441,36 @@ const handleChatbot = async (req, res) => {
 
   if (intent === "emergency") {
     return respondHardcoded(
-      isUrdu
-        ? "Agar emergency hai to foran local emergency services (1122) ko call karein aur kisi qareebi shakhs ko bataayein."
-        : "If you are experiencing an emergency, please call local emergency services immediately.",
+      "If you are experiencing an emergency, please call local emergency services immediately.",
     );
   }
   if (intent === "medical_condition") {
     return respondHardcoded(
-      isUrdu
-        ? "Kisi bhi specific medical condition (jaise kidney, diabetes, thyroid, heart) ke liye main diet ya exercise advice nahi de sakta. Baraye meherbani apne doctor ya specialist se mashwara karein."
-        : "I can't give diet or exercise advice tied to a specific medical condition. Please consult your doctor or a specialist for that.",
+      "I can't give diet or exercise advice tied to a specific medical condition. Please consult your doctor or a specialist for that.",
     );
   }
   if (intent === "nutritionist") {
     return respondHardcoded(
-      isUrdu
-        ? "Personalized diet plan ke liye aap PoseFit ke certified nutritionist se rabta kar sakte hain."
-        : "For a customized meal plan, please consult with a PoseFit certified nutritionist.",
+      "For a diet plan, please use the Diet Plan Generator module on our website. For more accurate, personalized guidance, you can also book an appointment with one of our professionals through the website.",
     );
   }
   if (intent === "medical_request") {
     return respondHardcoded(
-      isUrdu
-        ? "Main medicines ya medical treatments suggest nahi kar sakta. Khas dosage ke liye doctor ya pharmacist se mashwara karein."
-        : "I cannot prescribe or recommend specific medications. Please consult a qualified doctor or pharmacist.",
+      "I cannot prescribe or recommend specific medications. Please consult a qualified doctor or pharmacist.",
     );
   }
   if (intent === "out_of_scope") {
     return respondHardcoded(
-      isUrdu
-        ? "Main sirf fitness, exercise aur general nutrition se related sawalon mein madad kar sakta hoon. Ye topic mere scope se bahar hai."
-        : "I can only help with fitness, exercise, and general nutrition questions — that topic is outside what I can help with.",
+      "I can only help with fitness, exercise, and general nutrition questions — that topic (or task) is outside what I can help with.",
     );
   }
 
-  // ----- 3. Build full conversation with history -----
-  // Trim to the last 8 messages right before sending to the LLM, so the
-  // just-added user message is never lost and the trim reflects true state.
+  // ----- 4. Build full conversation with history -----
   chatHistory = chatHistory.slice(-8);
   sessionStore.set(id, chatHistory);
 
   const conversation = [
-    { role: "system", content: getSystemPrompt(lang) },
+    { role: "system", content: getSystemPrompt() },
     ...chatHistory,
   ];
 
@@ -381,14 +494,12 @@ const handleChatbot = async (req, res) => {
 
     let reply = response.data?.choices?.[0]?.message?.content?.trim();
 
-    // Fallback if LLM returns empty
     if (!reply) {
-      reply = isUrdu
-        ? "Mai is sawal ka jawab nahi de sakta, lekin agar aap fitness ya nutrition ke baare mein poochhna chahte hain toh main madad kar sakta hoon."
-        : "I can only assist with fitness and nutrition questions. How can I help you with your health today?";
+      reply =
+        "I can only assist with fitness and nutrition questions. How can I help you with your health today?";
     }
 
-    // ----- 4. Save assistant reply to memory -----
+    // ----- 5. Save assistant reply to memory -----
     chatHistory.push({ role: "assistant", content: reply });
     chatHistory = chatHistory.slice(-8);
     sessionStore.set(id, chatHistory);
@@ -397,9 +508,7 @@ const handleChatbot = async (req, res) => {
   } catch (error) {
     console.error("Groq API Error:", error.response?.data || error.message);
     return res.status(500).json({
-      reply: isUrdu
-        ? "Server mein masla aa raha hai. Baraye meherbani kuch der baad dobara koshish karein."
-        : "Something went wrong on our end. Please try again in a moment.",
+      reply: "Something went wrong on our end. Please try again in a moment.",
       sessionId: id,
     });
   }
