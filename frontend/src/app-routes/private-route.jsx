@@ -7,32 +7,13 @@ const PrivateRoute = ({ children, allowedRoles = [] }) => {
   const role = getUserRole();
   const user = getUser();
 
-  // =====================================================
+ 
   // NOT LOGGED IN
-  // =====================================================
-
-  if (!role) {
-    if (location.pathname.startsWith("/admin")) {
-      return <Navigate to="/admin/login" replace state={{ from: location }} />;
-    }
-
-    if (location.pathname.startsWith("/professional")) {
-      return (
-        <Navigate to="/professional/login" replace state={{ from: location }} />
-      );
-    }
-
-    if (location.pathname.startsWith("/user")) {
-      return <Navigate to="/user/login" replace state={{ from: location }} />;
-    }
-
-    return <Navigate to="/" replace />;
-  }
-
-  // =====================================================
+  
+  if (!role) { return ( <Navigate to="/user/login" replace state={{ from: location }} /> ); }
+  
   // ROLE NOT ALLOWED
-  // =====================================================
-
+  
   if (allowedRoles.length > 0 && !allowedRoles.includes(role)) {
     if (role === "ADMIN") {
       return <Navigate to="/admin/dashboard" replace />;
@@ -49,9 +30,7 @@ const PrivateRoute = ({ children, allowedRoles = [] }) => {
     return <Navigate to="/" replace />;
   }
 
-  // =====================================================
   // PROFESSIONAL ONBOARDING
-  // =====================================================
 
   if (role === "PROFESSIONAL") {
     const status = (user?.professionalStatus || "").toLowerCase();

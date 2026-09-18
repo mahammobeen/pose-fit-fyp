@@ -1,270 +1,234 @@
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import {
+  Sparkles,
+  RefreshCw,
+  AlertCircle,
+  Calendar,
+  Scale,
+  HeartPulse,
+} from "lucide-react";
 import UserLayout from "../../components/user/UserLayout";
 import { httpClient } from "../../lib/http";
 
-export default function DietPlan() {
-  // =========================================================
-  // USER
-  // =========================================================
+import breakfastImg from "../../assets/breakfast.jpg";
+import lunchImg from "../../assets/lunch.jpg";
+import dinnerImg from "../../assets/dinner.jpg";
+import snackImg from "../../assets/snack.jpg";
 
+const MEAL_CATEGORY_IMAGES = {
+  Breakfast: breakfastImg,
+  breakfast: breakfastImg,
+  BREAKFAST: breakfastImg,
+
+  Lunch: lunchImg,
+  lunch: lunchImg,
+  LUNCH: lunchImg,
+
+  Dinner: dinnerImg,
+  dinner: dinnerImg,
+  DINNER: dinnerImg,
+
+  Snack: snackImg,
+  snack: snackImg,
+  SNACK: snackImg,
+};
+
+export default function DietPlan() {
   const [userId, setUserId] = useState(null);
 
   // =========================================================
   // USER INPUTS
   // =========================================================
-
+  const [age, setAge] = useState("");
   const [height, setHeight] = useState("");
   const [weight, setWeight] = useState("");
-  const [age, setAge] = useState("");
-
   const [gender, setGender] = useState("");
   const [activityLevel, setActivityLevel] = useState("");
   const [goal, setGoal] = useState("");
 
   // =========================================================
-  // BACKEND CALCULATIONS
+  // HEALTH METRICS + DIET PLAN
   // =========================================================
-
-  const [bmiResult, setBmiResult] = useState("");
-  const [bmiCategory, setBmiCategory] = useState("");
-  const [bmr, setBmr] = useState("");
-  const [tdee, setTdee] = useState("");
-  const [goalCalories, setGoalCalories] = useState("");
-
-  const [macros, setMacros] = useState({
-    protein: 0,
-    carbs: 0,
-    fat: 0,
-  });
-
-  // =========================================================
-  // DIET PREFERENCES
-  // =========================================================
-
-  const [dietPreference, setDietPreference] = useState("");
-  const [diabetesPref, setDiabetesPref] = useState(false);
-  const [nutAllergyPref, setNutAllergyPref] = useState(false);
-
-  // =========================================================
-  // UI
-  // =========================================================
-
-  const [showResult, setShowResult] = useState(false);
-
-  const [showDialog, setShowDialog] = useState(false);
-  const [dialogStep, setDialogStep] = useState(1);
-
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [generatingPlan, setGeneratingPlan] = useState(false);
-
-  const [errors, setErrors] = useState({});
-
-  // =========================================================
-  // ACTUAL DIET PLAN
-  // =========================================================
-
+  const [metrics, setMetrics] = useState(null);
   const [dietPlan, setDietPlan] = useState(null);
 
   // =========================================================
-  // TOAST
+  // ACTIVE DAY
   // =========================================================
-
-  const showToast = (message, type = "success") => {
-    window.dispatchEvent(
-      new CustomEvent("app-toast", {
-        detail: {
-          message,
-          type,
-        },
-      }),
-    );
-  };
+  const [selectedDay, setSelectedDay] = useState(1);
 
   // =========================================================
-  // STYLES
+  // UI STATES
   // =========================================================
-
-  const inputClass =
-    "w-full px-4 py-3 rounded-2xl border border-gray-200 bg-gray-50 text-gray-800 outline-none focus:ring-2 focus:ring-indigo-300 focus:bg-white transition-all";
-
-  const noSpinClass =
-    "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none";
-
-  const buttonClass =
-    "w-full py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold transition-all duration-200 shadow-lg shadow-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed";
+  const [loading, setLoading] = useState(true);
+  const [savingMetrics, setSavingMetrics] = useState(false);
+  const [generatingPlan, setGeneratingPlan] = useState(false);
+  const [errors, setErrors] = useState({});
 
   // =========================================================
   // GET USER ID
   // =========================================================
-
   const getUserId = () => {
-    const storedUser = localStorage.getItem("pose-fit-user");
-
-    if (!storedUser) {
-      console.error("pose-fit-user NOT FOUND IN LOCAL STORAGE");
-      return null;
-    }
-
     try {
-      const user = JSON.parse(storedUser);
+      const stored = localStorage.getItem("pose-fit-user");
 
-      const id =
-        user?._id ||
-        user?.id ||
-        user?.userId ||
-        user?.user?._id ||
-        user?.user?.id ||
-        user?.user?.userId;
+      if (!stored) return null;
 
-      return id || null;
-    } catch (error) {
-      console.error("FAILED TO PARSE pose-fit-user:", error);
+      const parsed = JSON.parse(stored);
+
+      return (
+        parsed?._id ||
+        parsed?.id ||
+        parsed?.userId ||
+        parsed?.user?._id ||
+        parsed?.user?.id
+      );
+    } catch (e) {
+      console.error("Failed to parse pose-fit-user:", e);
       return null;
     }
   };
 
   // =========================================================
-  // APPLY BACKEND DATA
+  // CLEAR FORM
   // =========================================================
-
-  const applyBackendData = (data) => {
-    if (!data) return;
-
-    setHeight(data.height ?? "");
-    setWeight(data.weight ?? "");
-    setAge(data.age ?? "");
-
-    setGender(data.gender ?? "");
-    setActivityLevel(data.activityLevel ?? "");
-    setGoal(data.goal ?? "");
-
-    setDietPreference(data.dietPref ?? "");
-    setDiabetesPref(Boolean(data.diabetes));
-    setNutAllergyPref(Boolean(data.allergiesNuts));
-
-    if (data.bmi !== undefined && data.bmi !== null) {
-      const bmi = Number(data.bmi);
-
-      setBmiResult(Number.isFinite(bmi) ? bmi.toFixed(1) : "");
-
-      if (bmi < 18.5) {
-        setBmiCategory("Underweight");
-      } else if (bmi < 25) {
-        setBmiCategory("Normal");
-      } else if (bmi < 30) {
-        setBmiCategory("Overweight");
-      } else {
-        setBmiCategory("Obese");
-      }
-    } else {
-      setBmiResult("");
-      setBmiCategory("");
-    }
-
-    setBmr(data.bmr ?? "");
-    setTdee(data.tdee ?? "");
-    setGoalCalories(data.goalCalories ?? "");
-
-    if (data.macros) {
-      setMacros({
-        protein: data.macros.protein ?? 0,
-        carbs: data.macros.carbs ?? 0,
-        fat: data.macros.fat ?? 0,
-      });
-    } else {
-      setMacros({
-        protein: 0,
-        carbs: 0,
-        fat: 0,
-      });
-    }
+  const clearMetricForm = () => {
+    setAge("");
+    setHeight("");
+    setWeight("");
+    setGender("");
+    setActivityLevel("");
+    setGoal("");
+    setErrors({});
   };
 
   // =========================================================
-  // LOAD USER METRICS
+  // DISCARD OLD DIET PLAN
   // =========================================================
+  const discardDietPlan = () => {
+    setDietPlan(null);
+    setSelectedDay(1);
 
+    window.dispatchEvent(new CustomEvent("diet-plan-updated"));
+  };
+
+  // =========================================================
+  // LOAD METRICS + DIET PLAN
+  // =========================================================
   useEffect(() => {
-    const loadUserMetrics = async () => {
+    const init = async () => {
+      const id = getUserId();
+
+      if (!id) {
+        setLoading(false);
+        toast.error("User session not found. Please log in again.");
+        return;
+      }
+
+      setUserId(id);
+
       try {
         setLoading(true);
 
-        const id = getUserId();
+        // =====================================================
+        // LOAD SAVED HEALTH METRICS
+        // =====================================================
+        try {
+          const metricsRes = await httpClient.get(`/user/user-metrics/${id}`);
 
-        if (!id) {
-          showToast(
-            "User ID not found. Please logout and login again.",
-            "error",
-          );
-          return;
+          if (metricsRes.data?.data) {
+            const savedMetrics = metricsRes.data.data;
+
+            // Show saved metrics only in Calculated Targets.
+            // Health Information fields stay empty.
+            setMetrics(savedMetrics);
+            clearMetricForm();
+          }
+        } catch (err) {
+          if (err?.response?.status !== 404) {
+            console.error("Error loading metrics:", err);
+          }
         }
 
-        setUserId(id);
+        // =====================================================
+        // LOAD ACTIVE DIET PLAN
+        // =====================================================
+        try {
+          const planRes = await httpClient.get(`/user/diet-plan/${id}`);
 
-        const response = await httpClient.get(`/user-metrics/${id}`);
+          if (planRes.data?.data) {
+            setDietPlan(planRes.data.data);
 
-        const data = response.data?.data;
-
-        if (!data) {
-          setShowResult(false);
-          return;
+            if (planRes.data.data.currentDay) {
+              setSelectedDay(planRes.data.data.currentDay);
+            }
+          }
+        } catch (err) {
+          if (err?.response?.status !== 404) {
+            console.error("Error loading diet plan:", err);
+          }
         }
-
-        applyBackendData(data);
-        setShowResult(true);
-      } catch (error) {
-        console.error("LOAD USER METRICS ERROR:", error);
-        console.error("BACKEND ERROR:", error?.response?.data);
-
-        if (error?.response?.status === 404) {
-          setShowResult(false);
-          return;
-        }
-
-        const errorMessage =
-          error?.response?.data?.message ||
-          error?.response?.data?.error ||
-          "Failed to load your health information.";
-
-        showToast(errorMessage, "error");
       } finally {
         setLoading(false);
       }
     };
 
-    loadUserMetrics();
+    init();
   }, []);
 
   // =========================================================
   // VALIDATION
   // =========================================================
-
-  const validateForm = () => {
+  const validate = () => {
     const newErrors = {};
 
-    if (!height || Number(height) <= 0) {
-      newErrors.height = "Enter a valid height";
+    // AGE
+    if (!age || age.trim() === "") {
+      newErrors.age = "Age is required";
+    } else {
+      const numAge = Number(age);
+
+      if (!Number.isInteger(numAge) || numAge < 16 || numAge > 50) {
+        newErrors.age = "Age must be between 16 and 50 years inclusive";
+      }
     }
 
-    if (!weight || Number(weight) <= 0) {
-      newErrors.weight = "Enter a valid weight";
+    // HEIGHT
+    if (!height || height.trim() === "") {
+      newErrors.height = "Height is required";
+    } else {
+      const numHeight = Number(height);
+
+      if (isNaN(numHeight) || numHeight < 100 || numHeight > 250) {
+        newErrors.height = "Height must be between 100 and 250 cm inclusive";
+      }
     }
 
-    if (!age || Number(age) <= 0) {
-      newErrors.age = "Enter a valid age";
+    // WEIGHT
+    if (!weight || weight.trim() === "") {
+      newErrors.weight = "Weight is required";
+    } else {
+      const numWeight = Number(weight);
+
+      if (isNaN(numWeight) || numWeight < 25 || numWeight > 200) {
+        newErrors.weight = "Weight must be between 25 and 200 kg inclusive";
+      }
     }
 
+    // GENDER
     if (!gender) {
-      newErrors.gender = "Select gender";
+      newErrors.gender = "Please select your gender";
     }
 
+    // ACTIVITY LEVEL
     if (!activityLevel) {
-      newErrors.activityLevel = "Select activity level";
+      newErrors.activityLevel = "Please select your activity level";
     }
 
+    // GOAL
     if (!goal) {
-      newErrors.goal = "Select your goal";
+      newErrors.goal = "Please select your fitness goal";
     }
 
     setErrors(newErrors);
@@ -273,166 +237,129 @@ export default function DietPlan() {
   };
 
   // =========================================================
-  // OPEN DIET PREFERENCES
+  // SAVE / RECALCULATE HEALTH METRICS
   // =========================================================
+  const handleSaveMetrics = async (e) => {
+    if (e) {
+      e.preventDefault();
+    }
 
-  const handleContinue = () => {
-    if (!validateForm()) {
-      showToast("Please complete all required health information.", "error");
+    if (!validate()) {
+      toast.error("Please fix the validation errors in the form.");
       return;
     }
 
-    setDialogStep(1);
-    setShowDialog(true);
-  };
+    const currentId = userId || getUserId();
 
-  // =========================================================
-  // SAVE METRICS
-  // =========================================================
-
-  const saveMetrics = async ({ dietPref, diabetes, allergiesNuts }) => {
-    const currentUserId = userId || getUserId();
-
-    if (!currentUserId) {
-      showToast("User ID not found. Please logout and login again.", "error");
+    if (!currentId) {
+      toast.error("User session missing. Please log in again.");
       return;
-    }
-
-    if (!userId) {
-      setUserId(currentUserId);
     }
 
     try {
-      setSaving(true);
+      setSavingMetrics(true);
 
       const payload = {
-        weight: Number(weight),
-        height: Number(height),
         age: Number(age),
+        height: Number(height),
+        weight: Number(weight),
         gender,
-        goal,
         activityLevel,
-        dietPref,
-        diabetes: Boolean(diabetes),
-        allergiesNuts: Boolean(allergiesNuts),
+        goal,
       };
 
-      const response = await httpClient.post(
-        `/user/user-metrics/${currentUserId}`,
+      const res = await httpClient.post(
+        `/user/user-metrics/${currentId}`,
         payload,
       );
 
-      const savedData = response.data?.data;
+      const saved = res.data?.data;
 
-      if (!savedData) {
-        throw new Error("Backend did not return saved metrics.");
+      if (!saved) {
+        throw new Error("Server did not return saved metrics");
       }
 
-      applyBackendData(savedData);
+      // Backend already deletes previous diet plan.
+      discardDietPlan();
 
-      setShowDialog(false);
-      setDialogStep(1);
-      setShowResult(true);
+      // Keep calculated metrics visible.
+      setMetrics(saved);
 
-      setDietPlan(null);
+      // Clear form after calculation.
+      clearMetricForm();
 
-      showToast(
-        "Your health metrics have been calculated and saved successfully.",
-        "success",
+      toast.success(
+        "Health metrics calculated successfully! Your previous diet plan has been discarded.",
       );
-    } catch (error) {
-      console.error("SAVE USER METRICS ERROR:", error);
-      console.error("BACKEND ERROR:", error?.response?.data);
+    } catch (err) {
+      console.error("Save metrics error:", err);
 
-      const errorMessage =
-        error?.response?.data?.message ||
-        error?.response?.data?.error ||
-        error?.message ||
-        "Failed to save your health information.";
+      const msg =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Failed to save health metrics.";
 
-      showToast(errorMessage, "error");
+      toast.error(msg);
     } finally {
-      setSaving(false);
+      setSavingMetrics(false);
     }
   };
 
   // =========================================================
-  // STEP 1
+  // GENERATE / REGENERATE DIET PLAN
   // =========================================================
+  const handleGeneratePlan = async () => {
+    const currentId = userId || getUserId();
 
-  const handleDietPreference = (value) => {
-    setDietPreference(value);
-    setDialogStep(2);
-  };
-
-  // =========================================================
-  // STEP 2
-  // =========================================================
-
-  const handleDiabetes = (value) => {
-    setDiabetesPref(value);
-    setDialogStep(3);
-  };
-
-  // =========================================================
-  // STEP 3
-  // =========================================================
-
-  const handleNutAllergy = async (value) => {
-    setNutAllergyPref(value);
-
-    await saveMetrics({
-      dietPref: dietPreference,
-      diabetes: diabetesPref,
-      allergiesNuts: value,
-    });
-  };
-
-  // =========================================================
-  // GENERATE DIET PLAN
-  // =========================================================
-
-  const generateDietPlan = async () => {
-    const currentUserId = userId || getUserId();
-
-    if (!currentUserId) {
-      showToast("User ID not found. Please logout and login again.", "error");
+    if (!currentId) {
+      toast.error("User session missing. Please log in again.");
       return;
     }
 
-    if (!showResult) {
-      showToast("Please save your health information first.", "error");
+    if (!metrics) {
+      toast.error(
+        "Please calculate and save your Health Metrics first before generating a plan.",
+      );
       return;
     }
 
     try {
       setGeneratingPlan(true);
 
-      const response = await httpClient.post(`/diet-plan/${currentUserId}`);
+      const hadExistingPlan = Boolean(dietPlan);
 
-      const plan = response.data?.data;
+      const res = await httpClient.post(`/user/diet-plan/${currentId}`);
 
-      if (!plan) {
-        throw new Error("Backend did not return a diet plan.");
+      const planData = res.data?.data;
+
+      if (!planData) {
+        throw new Error("Did not receive generated plan from server");
       }
 
-      setDietPlan(plan);
+      setDietPlan(planData);
 
-      showToast(
-        "Your personalized diet plan has been generated successfully.",
-        "success",
+      if (planData.currentDay) {
+        setSelectedDay(planData.currentDay);
+      } else {
+        setSelectedDay(1);
+      }
+
+      window.dispatchEvent(new CustomEvent("diet-plan-updated"));
+
+      toast.success(
+        hadExistingPlan
+          ? "Your 3-day diet plan has been regenerated!"
+          : "Your 3-day personalized diet plan has been generated!",
       );
-    } catch (error) {
-      console.error("GENERATE DIET PLAN ERROR:", error);
-      console.error("BACKEND ERROR:", error?.response?.data);
+    } catch (err) {
+      console.error("Generate plan error:", err);
 
-      const errorMessage =
-        error?.response?.data?.message ||
-        error?.response?.data?.error ||
-        error?.message ||
-        "Failed to generate your diet plan.";
+      const msg =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Failed to generate diet plan. Please ensure the recommendation service is active.";
 
-      showToast(errorMessage, "error");
+      toast.error(msg);
     } finally {
       setGeneratingPlan(false);
     }
@@ -441,16 +368,15 @@ export default function DietPlan() {
   // =========================================================
   // LOADING SCREEN
   // =========================================================
-
   if (loading) {
     return (
       <UserLayout>
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="min-h-[70vh] w-full flex items-center justify-center px-4">
           <div className="text-center">
-            <div className="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto" />
+            <div className="w-10 h-10 border-4 border-brand border-t-transparent rounded-full animate-spin mx-auto mb-4" />
 
-            <p className="mt-4 text-sm font-bold text-gray-500">
-              Loading your health information...
+            <p className="text-xs sm:text-sm font-bold text-gray-500">
+              Loading your diet plan & health metrics...
             </p>
           </div>
         </div>
@@ -459,55 +385,105 @@ export default function DietPlan() {
   }
 
   // =========================================================
-  // MAIN UI
+  // CURRENT DAY DATA
   // =========================================================
+  const currentDayData =
+    dietPlan?.planDays?.find((d) => d.day === selectedDay) ||
+    dietPlan?.planDays?.[0];
+
+  // =========================================================
+  // CHECK IF FORM HAS VALUES
+  // =========================================================
+  const hasFormValues = Boolean(
+    age || height || weight || gender || activityLevel || goal,
+  );
 
   return (
     <UserLayout>
-      <div className="min-h-screen bg-gray-50/50 p-4 md:p-8">
-        {/* HEADER */}
+      <main className="w-full min-w-0 overflow-x-hidden bg-transparent px-3 py-5 sm:px-5 sm:py-6 md:px-6 lg:px-8 lg:py-8 space-y-6 sm:space-y-8 font-sans">
+        {/* =====================================================
+            PAGE HEADER
+        ====================================================== */}
+        <div className="w-full max-w-6xl mx-auto min-w-0">
+          <div className="flex flex-col gap-2">
+            <h1 className="text-xl leading-tight sm:text-2xl md:text-3xl font-extrabold tracking-tight text-gray-800">
+              Personalized{" "}
+              <span className="inline-block mt-1 sm:mt-0 rounded-btn bg-brand-light/40 px-2.5 py-1 sm:px-3 sm:py-1 text-brand-dark">
+                Diet Planner
+              </span>
+            </h1>
 
-        <div className="max-w-6xl mx-auto mb-10">
-          <h1 className="text-3xl md:text-4xl font-black text-gray-900 tracking-tight">
-            Personalized Diet Planner
-          </h1>
-
-          <p className="text-gray-500 mt-2 font-medium">
-            Define your goals and dietary preferences for a personalized
-            nutrition plan.
-          </p>
+            <p className="max-w-3xl text-[11px] sm:text-xs md:text-sm font-medium leading-5 sm:leading-6 text-gray-500">
+              Calculate your precise nutritional targets and generate an
+              authentic 3-day Pakistani meal plan optimized by our ML model.
+            </p>
+          </div>
         </div>
 
-        {/* MAIN GRID */}
+        {/* =====================================================
+            HEALTH INFORMATION + CALCULATED TARGETS
+        ====================================================== */}
+        <div className="w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 lg:gap-8 items-start min-w-0">
+          {/* ===================================================
+              HEALTH INFORMATION
+          ==================================================== */}
+          <section className="lg:col-span-6 min-w-0 card bg-surface/90 border border-brand-light/40 p-4 sm:p-5 md:p-6 lg:p-8">
+            <div className="flex items-start gap-2.5 sm:gap-3 mb-5 sm:mb-6">
+              <div className="shrink-0 p-2.5 sm:p-3 bg-brand-light/35 rounded-btn">
+                <Scale className="w-4 h-4 sm:w-5 sm:h-5 text-brand-dark" />
+              </div>
 
-        <div
-          className={`max-w-6xl mx-auto grid grid-cols-1 ${
-            showResult ? "lg:grid-cols-12" : "lg:grid-cols-1"
-          } gap-8 items-start`}
-        >
-          {/* FORM */}
+              <div className="min-w-0">
+                <h2 className="text-base sm:text-lg md:text-xl font-extrabold text-gray-800">
+                  Health Information
+                </h2>
 
-          <div
-            className={`shadow-sm bg-white/90 border border-gray-100 ${
-              showResult ? "lg:col-span-6" : "lg:col-span-1"
-            }`}
-          >
-            <div className="p-8 border-b border-gray-100">
-              <h2 className="text-2xl font-black text-gray-900">
-                Health Metrics
-              </h2>
-
-              <p className="text-sm text-gray-500 mt-1">
-                Enter your information for backend calculation.
-              </p>
+                <p className="text-[11px] sm:text-xs leading-5 text-gray-400 mt-1">
+                  Enter your physical parameters to compute BMI, BMR, TDEE, &
+                  Macros.
+                </p>
+              </div>
             </div>
 
-            <div className="p-8 space-y-8">
-              {/* HEIGHT / WEIGHT / AGE */}
+            <form
+              onSubmit={handleSaveMetrics}
+              className="space-y-4 sm:space-y-5"
+            >
+              {/* AGE / HEIGHT / WEIGHT */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                {/* AGE */}
+                <div className="min-w-0">
+                  <label className="block text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-500 mb-1.5">
+                    Age (yrs)
+                  </label>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div>
-                  <label className="block text-[10px] uppercase font-bold tracking-widest text-gray-400 mb-2">
+                  <input
+                    type="number"
+                    value={age}
+                    onChange={(e) => {
+                      setAge(e.target.value);
+
+                      if (errors.age) {
+                        setErrors((prev) => ({
+                          ...prev,
+                          age: "",
+                        }));
+                      }
+                    }}
+                    placeholder="16 - 50"
+                    className="w-full min-w-0 rounded-btn border border-gray-200 bg-white/80 px-3 py-2.5 sm:px-3.5 sm:py-3 text-xs sm:text-sm text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand-light/60 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  />
+
+                  {errors.age && (
+                    <p className="text-[10px] sm:text-xs text-red-500 mt-1.5 font-semibold leading-4">
+                      {errors.age}
+                    </p>
+                  )}
+                </div>
+
+                {/* HEIGHT */}
+                <div className="min-w-0">
+                  <label className="block text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-500 mb-1.5">
                     Height (cm)
                   </label>
 
@@ -517,22 +493,27 @@ export default function DietPlan() {
                     onChange={(e) => {
                       setHeight(e.target.value);
 
-                      setErrors((prev) => ({
-                        ...prev,
-                        height: "",
-                      }));
+                      if (errors.height) {
+                        setErrors((prev) => ({
+                          ...prev,
+                          height: "",
+                        }));
+                      }
                     }}
-                    className={`${inputClass} ${noSpinClass}`}
-                    placeholder="170"
+                    placeholder="100 - 250"
+                    className="w-full min-w-0 rounded-btn border border-gray-200 bg-white/80 px-3 py-2.5 sm:px-3.5 sm:py-3 text-xs sm:text-sm text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand-light/60 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
 
                   {errors.height && (
-                    <p className="text-xs text-red-500 mt-1">{errors.height}</p>
+                    <p className="text-[10px] sm:text-xs text-red-500 mt-1.5 font-semibold leading-4">
+                      {errors.height}
+                    </p>
                   )}
                 </div>
 
-                <div>
-                  <label className="block text-[10px] uppercase font-bold tracking-widest text-gray-400 mb-2">
+                {/* WEIGHT */}
+                <div className="min-w-0">
+                  <label className="block text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-500 mb-1.5">
                     Weight (kg)
                   </label>
 
@@ -542,54 +523,32 @@ export default function DietPlan() {
                     onChange={(e) => {
                       setWeight(e.target.value);
 
-                      setErrors((prev) => ({
-                        ...prev,
-                        weight: "",
-                      }));
+                      if (errors.weight) {
+                        setErrors((prev) => ({
+                          ...prev,
+                          weight: "",
+                        }));
+                      }
                     }}
-                    className={`${inputClass} ${noSpinClass}`}
-                    placeholder="70"
+                    placeholder="25 - 200"
+                    className="w-full min-w-0 rounded-btn border border-gray-200 bg-white/80 px-3 py-2.5 sm:px-3.5 sm:py-3 text-xs sm:text-sm text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand-light/60 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
 
                   {errors.weight && (
-                    <p className="text-xs text-red-500 mt-1">{errors.weight}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-[10px] uppercase font-bold tracking-widest text-gray-400 mb-2">
-                    Age
-                  </label>
-
-                  <input
-                    type="number"
-                    value={age}
-                    onChange={(e) => {
-                      setAge(e.target.value);
-
-                      setErrors((prev) => ({
-                        ...prev,
-                        age: "",
-                      }));
-                    }}
-                    className={`${inputClass} ${noSpinClass}`}
-                    placeholder="25"
-                  />
-
-                  {errors.age && (
-                    <p className="text-xs text-red-500 mt-1">{errors.age}</p>
+                    <p className="text-[10px] sm:text-xs text-red-500 mt-1.5 font-semibold leading-4">
+                      {errors.weight}
+                    </p>
                   )}
                 </div>
               </div>
 
               {/* GENDER */}
-
               <div>
-                <label className="block text-[10px] uppercase font-bold tracking-widest text-gray-400 mb-3">
+                <label className="block text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-500 mb-1.5">
                   Gender
                 </label>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
                   {["male", "female"].map((g) => (
                     <button
                       key={g}
@@ -597,15 +556,17 @@ export default function DietPlan() {
                       onClick={() => {
                         setGender(g);
 
-                        setErrors((prev) => ({
-                          ...prev,
-                          gender: "",
-                        }));
+                        if (errors.gender) {
+                          setErrors((prev) => ({
+                            ...prev,
+                            gender: "",
+                          }));
+                        }
                       }}
-                      className={`p-5 rounded-2xl border-2 font-bold capitalize transition-all ${
+                      className={`min-w-0 py-2.5 sm:py-3 px-3 sm:px-4 rounded-btn border font-bold capitalize text-xs sm:text-sm transition-all ${
                         gender === g
-                          ? "border-indigo-600 bg-indigo-50 text-indigo-600"
-                          : "border-gray-100 bg-gray-50 text-gray-500 hover:bg-gray-100"
+                          ? "border-brand bg-brand-light/40 text-brand-dark shadow-xs"
+                          : "border-gray-200 bg-white/70 text-gray-600 hover:bg-brand-light/15"
                       }`}
                     >
                       {g}
@@ -614,14 +575,15 @@ export default function DietPlan() {
                 </div>
 
                 {errors.gender && (
-                  <p className="text-xs text-red-500 mt-1">{errors.gender}</p>
+                  <p className="text-[10px] sm:text-xs text-red-500 mt-1.5 font-semibold">
+                    {errors.gender}
+                  </p>
                 )}
               </div>
 
-              {/* ACTIVITY */}
-
+              {/* ACTIVITY LEVEL */}
               <div>
-                <label className="block text-[10px] uppercase font-bold tracking-widest text-gray-400 mb-2">
+                <label className="block text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-500 mb-1.5">
                   Activity Level
                 </label>
 
@@ -630,33 +592,49 @@ export default function DietPlan() {
                   onChange={(e) => {
                     setActivityLevel(e.target.value);
 
-                    setErrors((prev) => ({
-                      ...prev,
-                      activityLevel: "",
-                    }));
+                    if (errors.activityLevel) {
+                      setErrors((prev) => ({
+                        ...prev,
+                        activityLevel: "",
+                      }));
+                    }
                   }}
-                  className={inputClass}
+                  className="w-full min-w-0 rounded-btn border border-gray-200 bg-white/80 px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm text-gray-800 outline-none transition-all focus:border-brand focus:ring-2 focus:ring-brand-light/60"
                 >
                   <option value="">Select activity level</option>
-                  <option value="sedentary">Sedentary</option>
-                  <option value="light">Light</option>
-                  <option value="moderate">Moderate</option>
-                  <option value="active">Active</option>
-                  <option value="very active">Very Active</option>
+
+                  <option value="sedentary">
+                    Sedentary (little to no exercise)
+                  </option>
+
+                  <option value="light">
+                    Light (light exercise 1-3 days/wk)
+                  </option>
+
+                  <option value="moderate">
+                    Moderate (moderate exercise 3-5 days/wk)
+                  </option>
+
+                  <option value="active">
+                    Active (hard exercise 6-7 days/wk)
+                  </option>
+
+                  <option value="very active">
+                    Very Active (intense daily exercise)
+                  </option>
                 </select>
 
                 {errors.activityLevel && (
-                  <p className="text-xs text-red-500 mt-1">
+                  <p className="text-[10px] sm:text-xs text-red-500 mt-1.5 font-semibold">
                     {errors.activityLevel}
                   </p>
                 )}
               </div>
 
-              {/* GOAL */}
-
+              {/* FITNESS GOAL */}
               <div>
-                <label className="block text-[10px] uppercase font-bold tracking-widest text-gray-400 mb-2">
-                  Your Goal
+                <label className="block text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-500 mb-1.5">
+                  Fitness Goal
                 </label>
 
                 <select
@@ -664,430 +642,555 @@ export default function DietPlan() {
                   onChange={(e) => {
                     setGoal(e.target.value);
 
-                    setErrors((prev) => ({
-                      ...prev,
-                      goal: "",
-                    }));
+                    if (errors.goal) {
+                      setErrors((prev) => ({
+                        ...prev,
+                        goal: "",
+                      }));
+                    }
                   }}
-                  className={inputClass}
+                  className="w-full min-w-0 rounded-btn border border-gray-200 bg-white/80 px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm text-gray-800 outline-none transition-all focus:border-brand focus:ring-2 focus:ring-brand-light/60"
                 >
                   <option value="">Select your goal</option>
-                  <option value="lose weight">Weight Loss</option>
-                  <option value="maintain weight">Maintain Weight</option>
-                  <option value="gain weight">Weight Gain</option>
+
+                  <option value="lose weight">
+                    Weight Loss (500 kcal deficit)
+                  </option>
+
+                  <option value="maintain weight">
+                    Maintain Weight (equipoise)
+                  </option>
+
+                  <option value="gain weight">
+                    Weight Gain (500 kcal surplus)
+                  </option>
                 </select>
 
                 {errors.goal && (
-                  <p className="text-xs text-red-500 mt-1">{errors.goal}</p>
-                )}
-              </div>
-
-              {/* CONTINUE */}
-
-              <button
-                type="button"
-                onClick={handleContinue}
-                className={buttonClass}
-              >
-                Continue
-              </button>
-            </div>
-          </div>
-
-          {/* RESULTS */}
-
-          {showResult && (
-            <div className="lg:col-span-6">
-              <div className="shadow-sm bg-white/90 border border-gray-100 p-8 space-y-8">
-                <div>
-                  <h2 className="text-2xl font-black text-gray-900">
-                    Your Results
-                  </h2>
-
-                  <p className="text-sm text-gray-500 mt-1">
-                    These values were calculated by the backend.
+                  <p className="text-[10px] sm:text-xs text-red-500 mt-1.5 font-semibold">
+                    {errors.goal}
                   </p>
-                </div>
-
-                {/* METRICS */}
-
-                <div className="grid grid-cols-2 gap-4">
-                  <Metric label="BMI" value={bmiResult} sub={bmiCategory} />
-
-                  <Metric label="BMR" value={bmr} sub="kcal/day" />
-
-                  <Metric label="TDEE" value={tdee} sub="kcal/day" />
-
-                  <Metric
-                    label="Goal Calories"
-                    value={goalCalories}
-                    sub="kcal/day target"
-                  />
-                </div>
-
-                {/* MACROS */}
-
-                <div>
-                  <h3 className="text-lg font-black text-gray-900 mb-4">
-                    Daily Macros
-                  </h3>
-
-                  <div className="space-y-3">
-                    <Macro label="Protein" value={`${macros.protein}g`} />
-
-                    <Macro label="Carbohydrates" value={`${macros.carbs}g`} />
-
-                    <Macro label="Fats" value={`${macros.fat}g`} />
-                  </div>
-                </div>
-
-                {/* GENERATE DIET PLAN */}
-
-                {!dietPlan && (
-                  <div className="pt-2">
-                    <button
-                      type="button"
-                      onClick={generateDietPlan}
-                      disabled={generatingPlan}
-                      className={buttonClass}
-                    >
-                      {generatingPlan ? (
-                        <span className="flex items-center justify-center gap-3">
-                          <span className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                          Generating Diet Plan...
-                        </span>
-                      ) : (
-                        "Generate Diet Plan"
-                      )}
-                    </button>
-                  </div>
                 )}
-
-                {/* UPDATE */}
-
-                <button
-                  type="button"
-                  onClick={handleContinue}
-                  disabled={generatingPlan}
-                  className="w-full py-3 rounded-2xl border-2 border-gray-200 text-gray-600 font-bold hover:bg-gray-50 transition-all disabled:opacity-50"
-                >
-                  Update Health Information
-                </button>
               </div>
-            </div>
-          )}
-        </div>
 
-        {/* ACTUAL DIET PLAN */}
+              {/* SAVE / CALCULATE BUTTON */}
+              <button
+                type="submit"
+                disabled={savingMetrics}
+                className="w-full min-h-[46px] sm:min-h-[50px] py-3 rounded-btn bg-gray-800 hover:bg-gray-700 text-white font-bold text-xs sm:text-sm shadow-card transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {savingMetrics ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Calculating & Saving...</span>
+                  </span>
+                ) : hasFormValues ? (
+                  "Recalculate Health Metrics"
+                ) : (
+                  "Calculate Health Metrics"
+                )}
+              </button>
+            </form>
+          </section>
 
-        {dietPlan && (
-          <div className="max-w-6xl mx-auto mt-10">
-            <div className="bg-white/90 border border-gray-100 shadow-sm p-8">
-              <div className="mb-8">
-                <h2 className="text-2xl md:text-3xl font-black text-gray-900">
-                  Your Personalized Diet Plan
+          {/* ===================================================
+              CALCULATED TARGETS
+          ==================================================== */}
+          <section className="lg:col-span-6 min-w-0 card bg-surface/90 border border-brand-light/40 p-4 sm:p-5 md:p-6 lg:p-8 space-y-5 sm:space-y-6">
+            <div className="flex items-start gap-2.5 sm:gap-3">
+              <div className="shrink-0 p-2.5 sm:p-3 bg-accent-blue/30 rounded-btn">
+                <HeartPulse className="w-4 h-4 sm:w-5 sm:h-5 text-blue-700" />
+              </div>
+
+              <div className="min-w-0">
+                <h2 className="text-base sm:text-lg md:text-xl font-extrabold text-gray-800">
+                  Calculated Targets
                 </h2>
 
-                <p className="text-sm text-gray-500 mt-2">
-                  Your plan is based on your health metrics and dietary
-                  preferences.
+                <p className="text-[11px] sm:text-xs leading-5 text-gray-400 mt-1">
+                  {metrics
+                    ? "Updated from your latest health metrics."
+                    : "Enter and save your metrics on the left to see your targets."}
+                </p>
+              </div>
+            </div>
+
+            {/* METRIC CARDS */}
+            <div className="grid grid-cols-2 gap-2.5 sm:gap-3 md:gap-4">
+              {/* BMI */}
+              <div className="min-w-0 bg-brand-light/15 rounded-btn p-3 sm:p-4 border border-brand-light/30">
+                <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-400">
+                  BMI
+                </p>
+
+                <p className="text-xl sm:text-2xl md:text-3xl font-extrabold text-gray-800 mt-1 break-words">
+                  {metrics?.bmiValue || metrics?.bmi
+                    ? Number(metrics?.bmiValue || metrics?.bmi).toFixed(1)
+                    : "--"}
+                </p>
+
+                <span className="inline-block mt-1 text-[9px] sm:text-[11px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full bg-brand-light/40 text-brand-dark max-w-full truncate">
+                  {metrics?.bmiCategory || "--"}
+                </span>
+              </div>
+
+              {/* BMR */}
+              <div className="min-w-0 bg-accent-blue/15 rounded-btn p-3 sm:p-4 border border-accent-blue/30">
+                <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-400">
+                  BMR
+                </p>
+
+                <p className="text-xl sm:text-2xl md:text-3xl font-extrabold text-gray-800 mt-1 break-words">
+                  {metrics?.bmr ? Math.round(metrics.bmr) : "--"}
+                </p>
+
+                <p className="text-[9px] sm:text-[11px] text-gray-500 font-medium mt-1">
+                  kcal / day (Basal)
                 </p>
               </div>
 
-              <DietPlanContent dietPlan={dietPlan} />
+              {/* TDEE */}
+              <div className="min-w-0 bg-accent-orange/15 rounded-btn p-3 sm:p-4 border border-accent-orange/30">
+                <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-400">
+                  TDEE
+                </p>
+
+                <p className="text-xl sm:text-2xl md:text-3xl font-extrabold text-gray-800 mt-1 break-words">
+                  {metrics?.tdee ? Math.round(metrics.tdee) : "--"}
+                </p>
+
+                <p className="text-[9px] sm:text-[11px] text-gray-500 font-medium mt-1">
+                  kcal / day (Maintenance)
+                </p>
+              </div>
+
+              {/* TARGET CALORIES */}
+              <div className="min-w-0 bg-brand-light/25 rounded-btn p-3 sm:p-4 border border-brand-light/40">
+                <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-brand-dark">
+                  Target Calories
+                </p>
+
+                <p className="text-xl sm:text-2xl md:text-3xl font-extrabold text-gray-800 mt-1 break-words">
+                  {metrics?.targetCalories || metrics?.goalCalories
+                    ? Math.round(metrics.targetCalories || metrics.goalCalories)
+                    : "--"}
+                </p>
+
+                <p className="text-[9px] sm:text-[11px] text-brand-dark font-medium mt-1 capitalize truncate">
+                  {metrics?.goal || "Goal Target"}
+                </p>
+              </div>
             </div>
-          </div>
-        )}
 
-        {/* PREFERENCE DIALOG */}
+            {/* MACRONUTRIENTS */}
+            <div>
+              <h3 className="text-xs sm:text-sm font-extrabold text-gray-800 mb-3 uppercase tracking-wider">
+                Daily Macronutrient Targets
+              </h3>
 
-        {showDialog && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-            <div className="w-full max-w-lg bg-white shadow-2xl p-8">
-              <div className="flex items-center justify-between mb-8">
-                <div>
-                  <h2 className="text-2xl font-black text-gray-900">
-                    Diet Preferences
-                  </h2>
+              <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                {/* PROTEIN */}
+                <div className="min-w-0 p-2.5 sm:p-3.5 rounded-btn bg-brand-light/20 border border-brand-light/35">
+                  <span className="block text-[8px] sm:text-[10px] md:text-[11px] font-bold text-gray-500 uppercase">
+                    Protein
+                  </span>
 
-                  <p className="text-sm text-gray-500 mt-1">
-                    Step {dialogStep} of 3
-                  </p>
+                  <span className="text-base sm:text-lg md:text-xl font-extrabold text-brand-dark break-words">
+                    {metrics?.protein || metrics?.macros?.protein
+                      ? `${Math.round(
+                          metrics.protein || metrics.macros.protein,
+                        )}g`
+                      : "--"}
+                  </span>
+                </div>
+
+                {/* CARBS */}
+                <div className="min-w-0 p-2.5 sm:p-3.5 rounded-btn bg-accent-blue/20 border border-accent-blue/35">
+                  <span className="block text-[8px] sm:text-[10px] md:text-[11px] font-bold text-gray-500 uppercase">
+                    Carbs
+                  </span>
+
+                  <span className="text-base sm:text-lg md:text-xl font-extrabold text-blue-700 break-words">
+                    {metrics?.carbs || metrics?.macros?.carbs
+                      ? `${Math.round(metrics.carbs || metrics.macros.carbs)}g`
+                      : "--"}
+                  </span>
+                </div>
+
+                {/* FATS */}
+                <div className="min-w-0 p-2.5 sm:p-3.5 rounded-btn bg-accent-orange/20 border border-accent-orange/35">
+                  <span className="block text-[8px] sm:text-[10px] md:text-[11px] font-bold text-gray-500 uppercase">
+                    Fats
+                  </span>
+
+                  <span className="text-base sm:text-lg md:text-xl font-extrabold text-accent-orange-dark break-words">
+                    {metrics?.fats || metrics?.macros?.fat
+                      ? `${Math.round(metrics.fats || metrics.macros.fat)}g`
+                      : "--"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* GENERATE DIET PLAN */}
+            <div className="pt-3 border-t border-brand-light/30">
+              <button
+                type="button"
+                onClick={handleGeneratePlan}
+                disabled={generatingPlan || !metrics}
+                className="w-full min-h-[48px] sm:min-h-[54px] py-3 sm:py-4 rounded-btn bg-gray-800 hover:bg-gray-700 text-white font-extrabold text-xs sm:text-sm shadow-card transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 px-3"
+              >
+                {generatingPlan ? (
+                  <>
+                    <span className="shrink-0 w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span className="truncate">
+                      Generating 3-Day Plan with AI Model...
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4 shrink-0" />
+                    <span>Generate 3-Day Diet Plan</span>
+                  </>
+                )}
+              </button>
+
+              {!metrics && (
+                <p className="text-[10px] sm:text-[11px] text-center text-gray-400 mt-2 leading-4">
+                  Please calculate and save your health metrics above first.
+                </p>
+              )}
+            </div>
+          </section>
+        </div>
+
+        {/* =====================================================
+            3-DAY DIET PLAN
+        ====================================================== */}
+        {dietPlan && (
+          <section className="w-full max-w-6xl mx-auto min-w-0 space-y-5 sm:space-y-6">
+            {/* EXPIRY BANNER */}
+            {dietPlan.isExpired && (
+              <div className="rounded-card bg-amber-50 border border-amber-200 p-3.5 sm:p-4 md:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+                <div className="flex items-start gap-2.5 sm:gap-3 min-w-0">
+                  <div className="shrink-0 p-2 sm:p-2.5 bg-amber-100 rounded-btn text-amber-700">
+                    <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+                  </div>
+
+                  <div className="min-w-0">
+                    <h3 className="text-xs sm:text-sm font-extrabold text-amber-900">
+                      Your 3-Day Diet Plan Has Expired
+                    </h3>
+
+                    <p className="text-[10px] sm:text-xs text-amber-700 mt-0.5 leading-5">
+                      Completed Day 3. Regenerate your plan to receive fresh
+                      meals for the next 3 days!
+                    </p>
+                  </div>
                 </div>
 
                 <button
                   type="button"
-                  disabled={saving}
-                  onClick={() => setShowDialog(false)}
-                  className="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 font-bold disabled:opacity-50"
+                  onClick={handleGeneratePlan}
+                  disabled={generatingPlan}
+                  className="w-full sm:w-auto shrink-0 rounded-btn bg-gray-800 hover:bg-gray-700 text-white text-xs font-bold px-4 py-2.5 transition-all shadow-xs disabled:opacity-50"
                 >
-                  ×
+                  Regenerate New Plan
                 </button>
               </div>
+            )}
 
-              {dialogStep === 1 && (
-                <StepOptions
-                  title="Choose your diet preference"
-                  options={[
-                    {
-                      label: "Vegetarian",
-                      value: "veg",
-                    },
-                    {
-                      label: "Non-Vegetarian",
-                      value: "non-veg",
-                    },
-                  ]}
-                  selected={dietPreference}
-                  onSelect={handleDietPreference}
-                  loading={saving}
-                />
-              )}
+            {/* PLAN HEADER */}
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 border-b border-brand-light/30 pb-4 sm:pb-5">
+              <div className="min-w-0">
+                <h2 className="text-lg sm:text-xl md:text-2xl font-extrabold text-gray-800">
+                  Your 3-Day Meal Plan
+                </h2>
 
-              {dialogStep === 2 && (
-                <StepOptions
-                  title="Do you have diabetes?"
-                  options={[
-                    {
-                      label: "Yes",
-                      value: true,
-                    },
-                    {
-                      label: "No",
-                      value: false,
-                    },
-                  ]}
-                  selected={diabetesPref}
-                  onSelect={handleDiabetes}
-                  loading={saving}
-                />
-              )}
+                <p className="text-[10px] sm:text-xs text-gray-500 mt-1.5 leading-5">
+                  Goal:{" "}
+                  <span className="font-bold capitalize text-brand-dark">
+                    {dietPlan.fitnessGoal}
+                  </span>
+                  <span className="mx-1">•</span>
+                  Daily Target:{" "}
+                  <span className="font-bold text-gray-800">
+                    {Math.round(dietPlan.targetDailyCalories)} kcal
+                  </span>
+                </p>
+              </div>
 
-              {dialogStep === 3 && (
-                <StepOptions
-                  title="Do you have any nut allergies?"
-                  options={[
-                    {
-                      label: "Yes",
-                      value: true,
-                    },
-                    {
-                      label: "No",
-                      value: false,
-                    },
-                  ]}
-                  selected={nutAllergyPref}
-                  onSelect={handleNutAllergy}
-                  loading={saving}
-                />
-              )}
+              {/* DAY TABS */}
+              <div className="flex items-center gap-1.5 sm:gap-2 bg-surface/90 p-1.5 rounded-btn border border-brand-light/40 shadow-xs w-full lg:w-auto overflow-x-auto">
+                {[1, 2, 3].map((dayNum) => {
+                  const isToday = dietPlan.currentDay === dayNum;
 
-              {saving && (
-                <div className="mt-8 pt-6 border-t border-gray-100">
-                  <div className="flex flex-col items-center justify-center">
-                    <div className="w-9 h-9 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+                  const isSelected = selectedDay === dayNum;
 
-                    <p className="mt-3 text-sm font-bold text-indigo-600">
-                      Saving and calculating your health metrics...
-                    </p>
+                  return (
+                    <button
+                      key={dayNum}
+                      type="button"
+                      onClick={() => setSelectedDay(dayNum)}
+                      className={`shrink-0 whitespace-nowrap px-2.5 sm:px-3 md:px-4 py-2 rounded-btn text-[10px] sm:text-xs font-extrabold transition-all flex items-center justify-center gap-1.5 ${
+                        isSelected
+                          ? "bg-brand text-white shadow-xs"
+                          : "text-gray-600 hover:bg-brand-light/20"
+                      }`}
+                    >
+                      <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                      Day {dayNum}
+                      {isToday && (
+                        <span className="ml-0.5 sm:ml-1 text-[7px] sm:text-[9px] px-1 sm:px-1.5 py-0.5 rounded-full bg-white text-brand-dark uppercase tracking-wider font-black">
+                          Today
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
-                    <p className="mt-1 text-xs text-gray-400">
-                      Please wait while we process your information.
-                    </p>
+            {/* MEAL CARDS */}
+            {currentDayData && (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 lg:gap-6">
+                  {["breakfast", "lunch", "dinner", "snack"].map((slotKey) => {
+                    const slot = currentDayData.meals?.[slotKey];
+
+                    if (!slot) return null;
+
+                    const title = slot.slot_name || slotKey.toUpperCase();
+
+                    const categoryImage =
+                      MEAL_CATEGORY_IMAGES[title] || MEAL_CATEGORY_IMAGES.Lunch;
+
+                    return (
+                      <div
+                        key={slotKey}
+                        className="group min-w-0 flex flex-col overflow-hidden rounded-card border border-brand-light/50 bg-surface/90 shadow-card transition-all duration-300 md:hover:-translate-y-1 md:hover:shadow-card-hover"
+                      >
+                        {/* IMAGE */}
+                        <div className="relative h-40 sm:h-44 md:h-48 w-full overflow-hidden bg-brand-light/20">
+                          <img
+                            src={categoryImage}
+                            alt={title}
+                            className="h-full w-full object-cover transition-transform duration-500 md:group-hover:scale-105"
+                          />
+
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+
+                          {/* BADGE */}
+                          <div className="absolute top-3 sm:top-4 left-3 sm:left-4">
+                            <span className="rounded-btn border border-white/40 bg-surface/90 px-2.5 sm:px-3 py-1 text-[9px] sm:text-[10px] md:text-[11px] font-extrabold uppercase tracking-wider text-gray-800 shadow-card backdrop-blur-md">
+                              {title}
+                            </span>
+                          </div>
+
+                          {/* IMAGE BOTTOM */}
+                          <div className="absolute bottom-3 sm:bottom-4 left-3 sm:left-4 right-3 sm:right-4 flex items-end justify-between gap-2 sm:gap-3 text-white">
+                            <h3 className="font-extrabold text-base sm:text-lg md:text-xl min-w-0 truncate">
+                              {title}
+                            </h3>
+
+                            <span className="shrink-0 rounded-btn bg-brand px-2 sm:px-2.5 py-1 text-[10px] sm:text-xs font-black">
+                              {slot.total_calories} kcal
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* CARD BODY */}
+                        <div className="p-4 sm:p-5 md:p-6 space-y-4 sm:space-y-5 flex-1">
+                          {/* DISHES */}
+                          <div className="space-y-2.5">
+                            <p className="text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider text-gray-400">
+                              Recommended Dish(es) & Portion Size
+                            </p>
+
+                            {slot.items?.map((item, idx) => (
+                              <div
+                                key={idx}
+                                className="min-w-0 p-2.5 sm:p-3 rounded-btn bg-white/90 border border-brand-light/30 flex items-center justify-between gap-2 sm:gap-3 shadow-xs"
+                              >
+                                <div className="min-w-0 flex-1">
+                                  <p className="font-bold text-xs sm:text-sm text-gray-800 break-words">
+                                    {item.dish_name}
+                                  </p>
+
+                                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-1 text-[10px] sm:text-xs text-gray-500">
+                                    <span className="font-extrabold text-brand-dark bg-brand-light/30 px-1.5 sm:px-2 py-0.5 rounded-btn text-[9px] sm:text-[11px]">
+                                      Portion: {item.portion_grams}g
+                                    </span>
+
+                                    <span>•</span>
+
+                                    <span>{item.calories} kcal</span>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* MACRO BREAKDOWN */}
+                          <div className="pt-3 sm:pt-4 border-t border-brand-light/30">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                              {/* CALORIES */}
+                              <div className="p-2 sm:p-2.5 rounded-btn bg-brand-light/15 text-center min-w-0">
+                                <span className="block text-[8px] sm:text-[9px] uppercase font-bold text-gray-400">
+                                  Calories
+                                </span>
+
+                                <span className="text-[10px] sm:text-xs font-extrabold text-gray-800 break-words">
+                                  {slot.total_calories}
+                                </span>
+                              </div>
+
+                              {/* PROTEIN */}
+                              <div className="p-2 sm:p-2.5 rounded-btn bg-brand-light/15 text-center min-w-0">
+                                <span className="block text-[8px] sm:text-[9px] uppercase font-bold text-gray-400">
+                                  Protein
+                                </span>
+
+                                <span className="text-[10px] sm:text-xs font-extrabold text-brand-dark break-words">
+                                  {slot.total_protein}g
+                                </span>
+                              </div>
+
+                              {/* CARBS */}
+                              <div className="p-2 sm:p-2.5 rounded-btn bg-accent-blue/15 text-center min-w-0">
+                                <span className="block text-[8px] sm:text-[9px] uppercase font-bold text-gray-400">
+                                  Carbs
+                                </span>
+
+                                <span className="text-[10px] sm:text-xs font-extrabold text-blue-700 break-words">
+                                  {slot.total_carbs}g
+                                </span>
+                              </div>
+
+                              {/* FATS */}
+                              <div className="p-2 sm:p-2.5 rounded-btn bg-accent-orange/15 text-center min-w-0">
+                                <span className="block text-[8px] sm:text-[9px] uppercase font-bold text-gray-400">
+                                  Fats
+                                </span>
+
+                                <span className="text-[10px] sm:text-xs font-extrabold text-accent-orange-dark break-words">
+                                  {slot.total_fats}g
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* DAILY NUTRITION SUMMARY */}
+                <div className="card bg-surface/90 border border-brand-light/40 p-4 sm:p-5 md:p-6 lg:p-8">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-5">
+                    <div className="min-w-0">
+                      <h3 className="text-base sm:text-lg font-extrabold text-gray-800">
+                        Day {selectedDay} Nutrition Summary
+                      </h3>
+
+                      <p className="text-[10px] sm:text-xs text-gray-400 mt-1 leading-5">
+                        Actual daily recommended totals vs your target
+                        requirements.
+                      </p>
+                    </div>
+
+                    <span className="self-start sm:self-auto shrink-0 text-[10px] sm:text-xs font-bold px-2.5 sm:px-3 py-1 rounded-full bg-brand-light/40 text-brand-dark border border-brand-light/60">
+                      Day {selectedDay} Compliance
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 md:gap-4">
+                    {/* CALORIES */}
+                    <div className="min-w-0 bg-brand-light/20 rounded-btn p-3 sm:p-4 border border-brand-light/35">
+                      <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-500">
+                        Calories
+                      </p>
+
+                      <p className="text-lg sm:text-xl md:text-2xl font-extrabold text-gray-800 mt-1 break-words">
+                        {currentDayData.daily_totals?.calories}
+                      </p>
+
+                      <p className="text-[9px] sm:text-[11px] text-gray-400 mt-0.5 leading-4">
+                        Target: {currentDayData.target_totals?.calories} kcal
+                      </p>
+                    </div>
+
+                    {/* PROTEIN */}
+                    <div className="min-w-0 bg-brand-light/20 rounded-btn p-3 sm:p-4 border border-brand-light/35">
+                      <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-brand-dark">
+                        Protein
+                      </p>
+
+                      <p className="text-lg sm:text-xl md:text-2xl font-extrabold text-gray-800 mt-1 break-words">
+                        {currentDayData.daily_totals?.protein_g}g
+                      </p>
+
+                      <p className="text-[9px] sm:text-[11px] text-gray-400 mt-0.5 leading-4">
+                        Target: {currentDayData.target_totals?.protein_g}g
+                      </p>
+                    </div>
+
+                    {/* CARBS */}
+                    <div className="min-w-0 bg-accent-blue/20 rounded-btn p-3 sm:p-4 border border-accent-blue/35">
+                      <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-blue-700">
+                        Carbohydrates
+                      </p>
+
+                      <p className="text-lg sm:text-xl md:text-2xl font-extrabold text-gray-800 mt-1 break-words">
+                        {currentDayData.daily_totals?.carbs_g}g
+                      </p>
+
+                      <p className="text-[9px] sm:text-[11px] text-gray-400 mt-0.5 leading-4">
+                        Target: {currentDayData.target_totals?.carbs_g}g
+                      </p>
+                    </div>
+
+                    {/* FATS */}
+                    <div className="min-w-0 bg-accent-orange/20 rounded-btn p-3 sm:p-4 border border-accent-orange/35">
+                      <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-accent-orange-dark">
+                        Fats
+                      </p>
+
+                      <p className="text-lg sm:text-xl md:text-2xl font-extrabold text-gray-800 mt-1 break-words">
+                        {currentDayData.daily_totals?.fats_g}g
+                      </p>
+
+                      <p className="text-[9px] sm:text-[11px] text-gray-400 mt-0.5 leading-4">
+                        Target: {currentDayData.target_totals?.fats_g}g
+                      </p>
+                    </div>
                   </div>
                 </div>
-              )}
-            </div>
-          </div>
+
+                {/* REGENERATE */}
+                <div className="pt-1 pb-4 sm:pb-6 flex justify-center">
+                  <button
+                    type="button"
+                    onClick={handleGeneratePlan}
+                    disabled={generatingPlan}
+                    className="w-full sm:w-auto min-h-[46px] sm:min-h-[50px] inline-flex items-center justify-center gap-2 rounded-btn bg-gray-800 hover:bg-gray-700 text-white font-bold px-5 sm:px-7 md:px-8 py-3 text-xs sm:text-sm shadow-card transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <RefreshCw
+                      className={`w-4 h-4 shrink-0 ${
+                        generatingPlan ? "animate-spin" : ""
+                      }`}
+                    />
+
+                    <span>
+                      {generatingPlan ? "Regenerating..." : "Regenerate Plan"}
+                    </span>
+                  </button>
+                </div>
+              </>
+            )}
+          </section>
         )}
-      </div>
+      </main>
     </UserLayout>
-  );
-}
-
-// =============================================================
-// METRIC
-// =============================================================
-
-function Metric({ label, value, sub }) {
-  return (
-    <div className="p-5 rounded-2xl bg-gray-50 border border-gray-100">
-      <p className="text-[10px] uppercase tracking-widest font-bold text-gray-400">
-        {label}
-      </p>
-
-      <p className="text-2xl font-black text-gray-900 mt-1 capitalize">
-        {value !== undefined && value !== null && value !== "" ? value : "--"}
-      </p>
-
-      <p className="text-xs text-gray-500 font-medium mt-1">{sub}</p>
-    </div>
-  );
-}
-
-// =============================================================
-// MACRO
-// =============================================================
-
-function Macro({ label, value }) {
-  return (
-    <div className="flex items-center justify-between p-4 rounded-2xl bg-gray-50 border border-gray-100">
-      <span className="text-sm font-bold text-gray-600">{label}</span>
-
-      <span className="text-sm font-black text-indigo-600">{value}</span>
-    </div>
-  );
-}
-
-// =============================================================
-// STEP OPTIONS
-// =============================================================
-
-function StepOptions({ title, options, selected, onSelect, loading = false }) {
-  return (
-    <div className="space-y-5">
-      <p className="font-bold text-gray-900">{title}</p>
-
-      <div className="grid grid-cols-1 gap-4">
-        {options.map((option) => {
-          const isSelected = selected === option.value;
-
-          return (
-            <button
-              key={String(option.value)}
-              type="button"
-              disabled={loading}
-              onClick={() => onSelect(option.value)}
-              className={`p-5 rounded-2xl border-2 font-bold transition-all ${
-                isSelected
-                  ? "border-indigo-600 bg-indigo-50 text-indigo-600"
-                  : "border-gray-100 bg-gray-50 text-gray-500 hover:bg-gray-100"
-              } ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
-            >
-              {option.label}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// =============================================================
-// DIET PLAN CONTENT
-// =============================================================
-
-function DietPlanContent({ dietPlan }) {
-  if (!dietPlan) return null;
-
-  const meals = [
-    ["Breakfast", dietPlan.breakfast],
-    ["Lunch", dietPlan.lunch],
-    ["Dinner", dietPlan.dinner],
-    ["Snack", dietPlan.snack],
-    ["Snacks", dietPlan.snacks],
-  ].filter(([, meal]) => meal);
-
-  if (meals.length > 0) {
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {meals.map(([title, meal]) => (
-          <DietMealCard key={title} title={title} meal={meal} />
-        ))}
-      </div>
-    );
-  }
-
-  if (Array.isArray(dietPlan)) {
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {dietPlan.map((meal, index) => (
-          <DietMealCard
-            key={index}
-            title={meal?.meal || `Meal ${index + 1}`}
-            meal={meal}
-          />
-        ))}
-      </div>
-    );
-  }
-
-  return (
-    <div className="bg-gray-50 rounded-2xl border border-gray-100 p-6">
-      <pre className="text-sm text-gray-700 whitespace-pre-wrap break-words">
-        {JSON.stringify(dietPlan, null, 2)}
-      </pre>
-    </div>
-  );
-}
-
-// =============================================================
-// DIET MEAL CARD
-// =============================================================
-
-function DietMealCard({ title, meal }) {
-  if (typeof meal === "string") {
-    return (
-      <div className="bg-gray-50 border border-gray-100 rounded-2xl p-6">
-        <p className="text-xs uppercase tracking-widest font-bold text-indigo-500">
-          {title}
-        </p>
-
-        <h3 className="text-xl font-black text-gray-900 mt-2">{meal}</h3>
-      </div>
-    );
-  }
-
-  if (!meal || typeof meal !== "object") {
-    return null;
-  }
-
-  return (
-    <div className="bg-gray-50 border border-gray-100 rounded-2xl p-6">
-      <p className="text-xs uppercase tracking-widest font-bold text-indigo-500">
-        {title}
-      </p>
-
-      {meal.name && (
-        <h3 className="text-xl font-black text-gray-900 mt-2">{meal.name}</h3>
-      )}
-
-      {meal.description && (
-        <p className="text-sm text-gray-500 mt-2">{meal.description}</p>
-      )}
-
-      {meal.calories !== undefined && (
-        <p className="text-sm font-bold text-gray-700 mt-4">
-          Calories: {meal.calories} kcal
-        </p>
-      )}
-
-      {meal.protein !== undefined && (
-        <p className="text-sm text-gray-600 mt-1">Protein: {meal.protein}g</p>
-      )}
-
-      {meal.carbs !== undefined && (
-        <p className="text-sm text-gray-600 mt-1">Carbs: {meal.carbs}g</p>
-      )}
-
-      {meal.fat !== undefined && (
-        <p className="text-sm text-gray-600 mt-1">Fat: {meal.fat}g</p>
-      )}
-
-      {Array.isArray(meal.items) && (
-        <div className="mt-4 space-y-2">
-          {meal.items.map((item, index) => (
-            <div
-              key={index}
-              className="bg-white rounded-xl p-3 text-sm text-gray-700"
-            >
-              {typeof item === "string"
-                ? item
-                : item?.name || JSON.stringify(item)}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
   );
 }

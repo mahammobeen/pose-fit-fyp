@@ -9,8 +9,8 @@ const transporter = nodemailer.createTransport({
   port: 465,
   secure: true,
   auth: {
-    user: process.env.USER_EMAIL,
-    pass: process.env.USER_PASS,
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASSWORD,
   },
 });
 
@@ -65,7 +65,7 @@ const signup = async (req, res) => {
 
     // Send verification email
     await transporter.sendMail({
-      from: `"PoseFit" <${process.env.USER_EMAIL}>`,
+      from: `"PoseFit" <${process.env.EMAIL_USER}>`,
       to: email,
       subject: "PoseFit Email Verification",
       text:
@@ -166,7 +166,7 @@ const login = async (req, res) => {
       });
     }
 
-    if (!user.isVerified) {
+    if (user.role === "USER" && !user.isVerified) {
       return res.status(403).json({
         success: false,
         message: "Please verify your email before logging in",
@@ -229,22 +229,39 @@ const forgotPassword = async (req, res) => {
       port: 465,
       secure: true, // true for 465, false for other ports
       auth: {
-        user: process.env.USER_EMAIL,
-        pass: process.env.USER_PASS,
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASSWORD,
       },
     });
 
     await transporter.sendMail({
-      from: '"Pose fit" <support@posefit.com>',
+      from: '"PoseFit" <support@posefit.com>',
       to: email,
-      subject: "Forgot Passowrd ✔",
-      text: "Your password is 1234654798", // plain‑text body
+      subject: "Reset Your PoseFit Password",
+
+      // Plain-text version of the email
+      text: `Hi ${isExisted.firstName} ${isExisted.lastName},
+
+We received a request to reset your PoseFit password.
+
+Please click the link below to create a new password:
+http://localhost:5173/reset-password?email=${encodeURIComponent(
+        isExisted.email,
+      )}
+
+If you did not request a password reset, please ignore this email.
+
+Regards,
+PoseFit Team`,
+
+      // HTML version of the email
       html: `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Reset Password</title>
+
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -252,14 +269,16 @@ const forgotPassword = async (req, res) => {
       margin: 0;
       padding: 0;
     }
+
     .container {
       max-width: 600px;
       margin: 50px auto;
       background-color: #ffffff;
       padding: 30px;
       border-radius: 10px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
+
     .header {
       text-align: center;
       font-size: 24px;
@@ -267,12 +286,14 @@ const forgotPassword = async (req, res) => {
       color: #333333;
       margin-bottom: 20px;
     }
+
     .content {
       font-size: 16px;
       color: #555555;
       line-height: 1.5;
       margin-bottom: 30px;
     }
+
     .button {
       display: inline-block;
       padding: 12px 25px;
@@ -282,50 +303,100 @@ const forgotPassword = async (req, res) => {
       border-radius: 5px;
       text-decoration: none;
     }
+
     .footer {
       font-size: 12px;
       color: #999999;
       text-align: center;
       margin-top: 20px;
     }
+
     .content a {
       color: #ffffff;
-      }
+    }
+
     .footer a {
       color: #4f46e5;
       text-decoration: none;
+      word-break: break-all;
     }
   </style>
 </head>
+
 <body>
+
   <div class="container">
+
     <div class="header">
       Reset Your Password
     </div>
+
     <div class="content">
-      Hi ${isExisted.firstName} ${isExisted.lastName},<br><br>
-      We received a request to reset your password. Click the button below to reset it. This link will expire in 1 hour.<br><br>
-      <a href="http://localhost:5173/reset-password?email=${isExisted.email}" class="button">Reset Password</a><br><br>
+
+      Hi ${isExisted.firstName} ${isExisted.lastName},
+      <br><br>
+
+      We received a request to reset your PoseFit password.
+      Click the button below to create a new password.
+      <br><br>
+
+      <a
+        href="http://localhost:5173/reset-password?email=${encodeURIComponent(
+          isExisted.email,
+        )}"
+        class="button"
+      >
+        Reset Password
+      </a>
+
+      <br><br>
+
+      This password reset link will allow you to create a new password.
+      <br><br>
+
       If you did not request a password reset, please ignore this email.
+
     </div>
+
     <div class="footer">
-      &copy; 2025 PoseFit. All rights reserved.<br>
-      If you’re having trouble, copy and paste this link into your browser: <a href="http://localhost:5173/reset-password?email=${isExisted.email}">http://localhost:5173/reset-password?email=${isExisted.email}</a>
+
+      &copy; 2026 PoseFit. All rights reserved.
+      <br><br>
+
+      If you're having trouble clicking the button, copy and paste this link
+      into your browser:
+
+      <br><br>
+
+      <a
+        href="http://localhost:5173/reset-password?email=${encodeURIComponent(
+          isExisted.email,
+        )}"
+      >
+        http://localhost:5173/reset-password?email=${encodeURIComponent(
+          isExisted.email,
+        )}
+      </a>
+
     </div>
+
   </div>
+
 </body>
-</html>
-`, // HTML body
+</html>`,
     });
+
     return res.status(200).json({
+      success: true,
       message:
-        "We have sent an email to your emailaddress. Please do check your email.",
+        "We have sent a password reset link to your email address. Please check your email.",
     });
   } catch (error) {
-    console.log("some error occured", error);
+    console.log("Some error occurred:", error);
+
     return res.status(500).json({
       success: false,
-      message: error,
+      message: error.message,
     });
   }
 };
@@ -400,6 +471,7 @@ const completeProfessionalProfile = async (req, res) => {
       profilePhoto,
       bio,
       specialization,
+      experience,
       sessionFee,
       credentialDocs,
       bankDetails,
@@ -409,6 +481,7 @@ const completeProfessionalProfile = async (req, res) => {
     if (profilePhoto) professional.profilePhoto = profilePhoto;
     if (bio) professional.bio = bio;
     if (specialization) professional.specialization = specialization;
+    if (experience !== undefined) professional.experience = Number(experience);
     // professionalType is ADMIN-SET and cannot be modified by the professional
     if (sessionFee !== undefined) professional.sessionFee = Number(sessionFee);
     if (credentialDocs) professional.credentialDocs = credentialDocs;

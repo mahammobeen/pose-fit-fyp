@@ -10,11 +10,6 @@ const {
   completeProfessionalProfile,
 } = require("../../controllers/auth/authController");
 
-const {
-  getPublicProfessionals,
-  getPublicProfessionalById,
-} = require("../../controllers/user/userController");
-const { handleChatbot } = require("../../controllers/user/chatbotController");
 
 const router = express.Router();
 
@@ -28,8 +23,6 @@ router.put(
   authMiddleware,
   completeProfessionalProfile,
 );
-// router.get("/public-professionals", getPublicProfessionals);
-// router.get("/public-professionals/:id", getPublicProfessionalById);
-// router.post("/chatbot", handleChatbot);
+
 
 module.exports = router;
