@@ -5,11 +5,18 @@ import { toast } from "sonner";
 import UserLayout from "../../components/user/UserLayout";
 
 const getSessionId = () => {
-  let id = localStorage.getItem('posefit_session_id');
+  let id = localStorage.getItem("posefit_session_id");
+
   if (!id) {
-    id = 'user-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6);
-    localStorage.setItem('posefit_session_id', id);
+    id =
+      "user-" +
+      Date.now() +
+      "-" +
+      Math.random().toString(36).substr(2, 6);
+
+    localStorage.setItem("posefit_session_id", id);
   }
+
   return id;
 };
 
@@ -21,7 +28,7 @@ function Chatbot() {
 
   const messagesEndRef = useRef(null);
 
-    const scrollToBottom = () => {
+  const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({
       behavior: "smooth",
     });
@@ -54,10 +61,11 @@ function Chatbot() {
     try {
       const { data } = await httpClient.post("/user/chatbot", {
         message: cleanText,
-        sessionId: sessionId,
+        sessionId,
       });
 
-      const botReply = data?.reply || "Sorry, I could not generate a response.";
+      const botReply =
+        data?.response || "Sorry, I could not generate a response.";
 
       const botMessage = {
         type: "bot",
@@ -99,8 +107,13 @@ function Chatbot() {
   const clearChat = () => {
     if (messages.length === 0) return;
 
-    const newId = 'user-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6);
-    localStorage.setItem('posefit_session_id', newId);
+    const newId =
+      "user-" +
+      Date.now() +
+      "-" +
+      Math.random().toString(36).substr(2, 6);
+
+    localStorage.setItem("posefit_session_id", newId);
     setSessionId(newId);
 
     setMessages([]);
@@ -119,7 +132,6 @@ function Chatbot() {
   return (
     <UserLayout>
       <div className="relative min-h-full bg-transparent p-4 sm:p-6 md:p-8 font-sans">
-
         <header className="max-w-4xl mx-auto mb-6 sm:mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
           <div>
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-gray-800 tracking-tight flex items-center gap-3">
@@ -145,10 +157,8 @@ function Chatbot() {
           )}
         </header>
 
-              <div className="max-w-4xl mx-auto h-[calc(100vh-14rem)] min-h-[460px] flex flex-col bg-surface/85 rounded-3xl sm:rounded-[2rem] border border-brand-light/50 shadow-card-hover backdrop-blur-xl overflow-hidden">
-
+        <div className="max-w-4xl mx-auto h-[calc(100vh-14rem)] min-h-[460px] flex flex-col bg-surface/85 rounded-3xl sm:rounded-[2rem] border border-brand-light/50 shadow-card-hover backdrop-blur-xl overflow-hidden">
           <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 space-y-6 sm:space-y-7 bg-brand-light/10">
-
             {messages.length === 0 && (
               <div className="h-full flex flex-col items-center justify-center text-center">
                 <div className="relative mb-6">
@@ -164,8 +174,8 @@ function Chatbot() {
                 </h3>
 
                 <p className="text-gray-400 text-sm max-w-sm mx-auto mt-2 font-medium">
-                  Ask me anything about your diet, workouts, posture, or healthy
-                  lifestyle.
+                  Ask me anything about your diet, workouts, posture, or
+                  healthy lifestyle.
                 </p>
 
                 <div className="flex flex-wrap justify-center gap-3 mt-7">
@@ -184,14 +194,13 @@ function Chatbot() {
               </div>
             )}
 
-              {messages.map((msg, index) => (
+            {messages.map((msg, index) => (
               <div
                 key={index}
                 className={`flex items-end gap-3 ${
                   msg.type === "user" ? "flex-row-reverse" : "flex-row"
                 }`}
               >
-
                 <div
                   className={`h-10 w-10 shrink-0 rounded-btn flex items-center justify-center shadow-card ${
                     msg.type === "user"
@@ -199,7 +208,11 @@ function Chatbot() {
                       : "bg-brand-light/30 text-brand-dark border border-brand-light/50"
                   }`}
                 >
-                  {msg.type === "user" ? <User size={20} /> : <Bot size={20} />}
+                  {msg.type === "user" ? (
+                    <User size={20} />
+                  ) : (
+                    <Bot size={20} />
+                  )}
                 </div>
 
                 <div

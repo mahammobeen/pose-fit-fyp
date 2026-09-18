@@ -95,10 +95,11 @@ const paymentSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+
     confirmationEmailSent: {
-  type: Boolean,
-  default: false,
-},
+      type: Boolean,
+      default: false,
+    },
 
     adminDeleted: {
       type: Boolean,
@@ -135,6 +136,7 @@ const paymentSchema = new mongoose.Schema(
     timestamps: true,
   },
 );
+
 paymentSchema.index(
   {
     professional: 1,
@@ -144,12 +146,17 @@ paymentSchema.index(
   {
     unique: true,
     partialFilterExpression: {
-      status: { $in: ["pending", "completed"] },
+      status: {
+        $in: ["pending", "completed"],
+      },
       professionalDeleted: false,
     },
-  }
+  },
 );
 
-const PaymentModel = mongoose.model("Payment", paymentSchema);
+const PaymentModel = mongoose.model(
+  "Payment",
+  paymentSchema,
+);
 
 module.exports = PaymentModel;

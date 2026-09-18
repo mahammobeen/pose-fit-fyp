@@ -65,13 +65,21 @@ export default function WorkoutSession() {
   };
 
   const sessionIdRef = useRef(
-    "session_" + Math.random().toString(36).substring(2, 11) + "_" + Date.now()
+    "session_" +
+      // eslint-disable-next-line react-hooks/purity
+      Math.random().toString(36).substring(2, 11) +
+      "_" +
+      // eslint-disable-next-line react-hooks/purity
+      Date.now(),
   );
+
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
+
   const isActiveRef = useRef(false);
   const frameTimerRef = useRef(null);
+  const processingFrameRef = useRef(false);
 
   const [hasPermission, setHasPermission] = useState(() => {
     return localStorage.getItem("posefit_cam_permission") === "granted";
@@ -88,17 +96,26 @@ export default function WorkoutSession() {
   const [isMuted, setIsMuted] = useState(false);
   const [personDetected, setPersonDetected] = useState(false);
 
-  const lastSpokenRef = useRef({ text: "", time: 0 });
+  const lastSpokenRef = useRef({
+    text: "",
+    time: 0,
+  });
 
   useEffect(() => {
     axios
-      .get(`${POSE_API_URL}/status?session_id=${sessionIdRef.current}`)
+      .get(
+        `${POSE_API_URL}/status?session_id=${sessionIdRef.current}`,
+      )
       .then(() => {
         setServerOnline(true);
       })
-      .catch(() => setServerOnline(false));
+      .catch(() => {
+        setServerOnline(false);
+      });
 
+    // eslint-disable-next-line react-hooks/immutability
     return () => cleanupSession();
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -121,6 +138,7 @@ export default function WorkoutSession() {
     window.speechSynthesis.cancel();
 
     const utterance = new SpeechSynthesisUtterance(msg);
+
     utterance.rate = 1.0;
     utterance.lang = "en-US";
 
@@ -132,88 +150,162 @@ export default function WorkoutSession() {
     };
   }, [feedback, warning, isMuted]);
 
+  const scheduleNextFrame = () => {
+    if (!isActiveRef.current) return;
+
+    if (frameTimerRef.current) {
+      clearTimeout(frameTimerRef.current);
+    }
+
+    frameTimerRef.current = setTimeout(() => {
+      sendNextFrame();
+    }, 50);
+  };
+
   const sendNextFrame = async () => {
     if (!isActiveRef.current) return;
+
+    if (processingFrameRef.current) return;
 
     const video = videoRef.current;
     const canvas = canvasRef.current;
 
-    if (video && canvas && video.readyState >= 2) {
-      try {
-        const width = video.videoWidth || 640;
-        const height = video.videoHeight || 480;
-        canvas.width = width;
-        canvas.height = height;
+    if (!video || !canvas || video.readyState < 2) {
+      scheduleNextFrame();
+      return;
+    }
 
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(video, 0, 0, width, height);
+    processingFrameRef.current = true;
 
-        const base64Image = canvas.toDataURL("image/jpeg", 0.6);
+    try {
+      const width = video.videoWidth || 640;
+      const height = video.videoHeight || 480;
 
-        const res = await axios.post(`${POSE_API_URL}/process_frame`, {
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx = canvas.getContext("2d");
+
+      if (!ctx) {
+        processingFrameRef.current = false;
+        scheduleNextFrame();
+        return;
+      }
+
+      ctx.drawImage(
+        video,
+        0,
+        0,
+        width,
+        height,
+      );
+
+      const base64Image = canvas.toDataURL(
+        "image/jpeg",
+        0.6,
+      );
+
+      const res = await axios.post(
+        `${POSE_API_URL}/process_frame`,
+        {
           session_id: sessionIdRef.current,
           exercise: exerciseId,
           image: base64Image,
-        });
+        },
+      );
 
-        if (isActiveRef.current && res.data) {
-          setReps(res.data.reps ?? 0);
-          setAngle(res.data.angle ?? 0.0);
-          setFeedback(res.data.feedback || "Ready");
-          setWarning(res.data.warning || "");
-          setDirection(res.data.direction || "none");
-          setPersonDetected(res.data.person_detected ?? false);
-          if (res.data.image) {
-            setProcessedImage(res.data.image);
-          }
-          setServerOnline(true);
+      if (isActiveRef.current && res.data) {
+        setReps(res.data.reps ?? 0);
+        setAngle(res.data.angle ?? 0.0);
+        setFeedback(res.data.feedback || "Ready");
+        setWarning(res.data.warning || "");
+        setDirection(res.data.direction || "none");
+        setPersonDetected(
+          res.data.person_detected ?? false,
+        );
+
+        if (res.data.image) {
+          setProcessedImage(res.data.image);
         }
-      } catch (err) {
-        console.error("Frame processing error:", err);
-      }
-    }
 
-    if (isActiveRef.current) {
-      frameTimerRef.current = setTimeout(sendNextFrame, 30);
+        setServerOnline(true);
+      }
+    } catch (err) {
+      if (err?.response?.status === 409) {
+        isActiveRef.current = false;
+        setIsActive(false);
+      } else {
+        console.error(
+          "Frame processing error:",
+          err,
+        );
+      }
+    } finally {
+      processingFrameRef.current = false;
+
+      if (isActiveRef.current) {
+        scheduleNextFrame();
+      }
     }
   };
 
   const cleanupSession = async () => {
     isActiveRef.current = false;
+    processingFrameRef.current = false;
+
     if (frameTimerRef.current) {
       clearTimeout(frameTimerRef.current);
       frameTimerRef.current = null;
     }
+
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current
+        .getTracks()
+        .forEach((track) => track.stop());
+
       streamRef.current = null;
     }
+
     if (videoRef.current) {
       videoRef.current.srcObject = null;
     }
 
     try {
-      await axios.post(`${POSE_API_URL}/stop`, {
-        session_id: sessionIdRef.current,
-      });
+      await axios.post(
+        `${POSE_API_URL}/stop`,
+        {
+          session_id: sessionIdRef.current,
+        },
+      );
     } catch (_) {}
   };
 
   const requestCamera = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 640, height: 480 },
-      });
+      const stream =
+        await navigator.mediaDevices.getUserMedia({
+          video: {
+            width: 640,
+            height: 480,
+          },
+        });
 
-      stream.getTracks().forEach((t) => t.stop());
+      stream
+        .getTracks()
+        .forEach((track) => track.stop());
 
       setHasPermission(true);
 
-      localStorage.setItem("posefit_cam_permission", "granted");
+      localStorage.setItem(
+        "posefit_cam_permission",
+        "granted",
+      );
 
       toast.success("Camera permitted!");
     } catch {
-      toast.error("Camera permission denied in browser settings.");
+      toast.error(
+        "Camera permission denied in browser settings.",
+      );
     }
   };
 
@@ -223,85 +315,153 @@ export default function WorkoutSession() {
       return;
     }
 
+    if (isActiveRef.current) return;
+
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 640, height: 480 },
-      });
+      const stream =
+        await navigator.mediaDevices.getUserMedia({
+          video: {
+            width: 640,
+            height: 480,
+          },
+        });
 
       streamRef.current = stream;
+
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+
         await videoRef.current.play();
       }
 
-      await axios.post(`${POSE_API_URL}/start`, {
-        session_id: sessionIdRef.current,
-        exercise: exerciseId,
-      });
+      await axios.post(
+        `${POSE_API_URL}/start`,
+        {
+          session_id: sessionIdRef.current,
+          exercise: exerciseId,
+        },
+      );
 
+      processingFrameRef.current = false;
       isActiveRef.current = true;
+
       setIsActive(true);
       setPersonDetected(false);
+      setProcessedImage(null);
       setServerOnline(true);
 
-      toast.success(`${currentEx.name} tracking started.`);
+      setReps(0);
+      setAngle(0.0);
+      setFeedback(
+        "Position yourself in front of the camera",
+      );
+      setWarning("");
+      setDirection("none");
 
-      sendNextFrame();
+      toast.success(
+        `${currentEx.name} tracking started.`,
+      );
+
+      scheduleNextFrame();
     } catch (err) {
-      console.error("Start tracking error:", err);
+      console.error(
+        "Start tracking error:",
+        err,
+      );
+
       isActiveRef.current = false;
+      processingFrameRef.current = false;
+
       setIsActive(false);
+
+      if (frameTimerRef.current) {
+        clearTimeout(frameTimerRef.current);
+        frameTimerRef.current = null;
+      }
+
       if (streamRef.current) {
-        streamRef.current.getTracks().forEach((t) => t.stop());
+        streamRef.current
+          .getTracks()
+          .forEach((track) => track.stop());
+
         streamRef.current = null;
       }
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
+      }
+
       if (err?.response) {
         setServerOnline(false);
-        toast.error("Python pose service is offline.");
+        toast.error(
+          "Python pose service is offline.",
+        );
       } else {
-        toast.error("Could not access camera in browser.");
+        toast.error(
+          "Could not access camera in browser.",
+        );
       }
     }
   };
 
   const handleStop = async () => {
     isActiveRef.current = false;
+    processingFrameRef.current = false;
+
     if (frameTimerRef.current) {
       clearTimeout(frameTimerRef.current);
       frameTimerRef.current = null;
     }
+
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current
+        .getTracks()
+        .forEach((track) => track.stop());
+
       streamRef.current = null;
     }
+
     if (videoRef.current) {
       videoRef.current.srcObject = null;
     }
+
     setProcessedImage(null);
+
     window.speechSynthesis.cancel();
 
     try {
-      await axios.post(`${POSE_API_URL}/stop`, {
-        session_id: sessionIdRef.current,
-      });
+      await axios.post(
+        `${POSE_API_URL}/stop`,
+        {
+          session_id: sessionIdRef.current,
+        },
+      );
     } catch (_) {}
 
     setIsActive(false);
     setFeedback("Session stopped");
     setWarning("");
     setDirection("none");
+    setPersonDetected(false);
 
     toast.info("Session stopped.");
   };
 
   const handleReset = async () => {
     try {
-      await axios.post(`${POSE_API_URL}/reset`, {
-        session_id: sessionIdRef.current,
-      });
+      await axios.post(
+        `${POSE_API_URL}/reset`,
+        {
+          session_id: sessionIdRef.current,
+        },
+      );
 
       setReps(0);
       setAngle(0.0);
+      setFeedback("Ready to start");
+      setWarning("");
+      setDirection("none");
+      setPersonDetected(false);
 
       toast.success("Counter reset.");
     } catch {
@@ -310,7 +470,11 @@ export default function WorkoutSession() {
   };
 
   const absAngle = Math.abs(angle);
-  const percentage = Math.min(100, Math.round((absAngle / 90) * 100));
+
+  const percentage = Math.min(
+    100,
+    Math.round((absAngle / 90) * 100),
+  );
 
   if (!hasPermission) {
     return (
@@ -343,7 +507,9 @@ export default function WorkoutSession() {
             </button>
 
             <button
-              onClick={() => navigate("/posture-detection")}
+              onClick={() =>
+                navigate("/posture-detection")
+              }
               className="mt-4 text-xs font-semibold text-gray-400 transition-colors hover:text-brand-dark"
             >
               Back to exercises
@@ -358,11 +524,12 @@ export default function WorkoutSession() {
     <UserLayout>
       <div className="min-h-screen bg-transparent p-4 font-sans sm:p-6 md:p-8">
         <div className="space-y-6">
-
           <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <button
-                onClick={() => navigate("/user/workout")}
+                onClick={() =>
+                  navigate("/user/workout")
+                }
                 className="rounded-btn p-2 text-gray-400 transition-all hover:bg-brand-light/25 hover:text-gray-800"
               >
                 <ArrowLeft size={20} />
@@ -398,9 +565,15 @@ export default function WorkoutSession() {
                     : "border-brand-light bg-brand-light/30 text-brand-dark"
                 }`}
               >
-                {isMuted ? <VolumeX size={15} /> : <Volume2 size={15} />}
+                {isMuted ? (
+                  <VolumeX size={15} />
+                ) : (
+                  <Volume2 size={15} />
+                )}
 
-                <span>{isMuted ? "Muted" : "Voice On"}</span>
+                <span>
+                  {isMuted ? "Muted" : "Voice On"}
+                </span>
               </button>
 
               <span
@@ -412,11 +585,15 @@ export default function WorkoutSession() {
               >
                 <span
                   className={`h-2 w-2 rounded-full ${
-                    serverOnline ? "bg-brand" : "bg-rose-500"
+                    serverOnline
+                      ? "bg-brand"
+                      : "bg-rose-500"
                   }`}
                 />
 
-                {serverOnline ? "AI Online" : "AI Offline"}
+                {serverOnline
+                  ? "AI Online"
+                  : "AI Offline"}
               </span>
             </div>
           </div>
@@ -436,19 +613,23 @@ export default function WorkoutSession() {
           )}
 
           <div className="mx-auto grid max-w-6xl grid-cols-1 items-stretch gap-6 lg:grid-cols-12">
-
             <div className="relative flex min-h-[460px] flex-col justify-center overflow-hidden rounded-card border border-brand-light/50 bg-surface/70 shadow-card backdrop-blur-xl lg:col-span-8 md:min-h-[520px]">
-
               <video
                 ref={videoRef}
                 playsInline
                 muted
                 autoPlay
                 className={`aspect-video h-full w-full object-cover ${
-                  isActive && !processedImage ? "block" : "hidden"
+                  isActive && !processedImage
+                    ? "block"
+                    : "hidden"
                 }`}
               />
-              <canvas ref={canvasRef} className="hidden" />
+
+              <canvas
+                ref={canvasRef}
+                className="hidden"
+              />
 
               {isActive ? (
                 <>
@@ -495,7 +676,6 @@ export default function WorkoutSession() {
             </div>
 
             <div className="flex flex-col justify-between gap-4 lg:col-span-4">
-
               <div className="rounded-card border border-brand-light/50 bg-surface/80 p-6 text-center shadow-card backdrop-blur-xl">
                 <span className="text-[10px] font-extrabold uppercase tracking-widest text-brand-dark">
                   {exerciseId === "plank"
@@ -539,13 +719,16 @@ export default function WorkoutSession() {
                         warning
                           ? "#ef4444"
                           : direction !== "none"
-                          ? "#53b889"
-                          : "#16845b"
+                            ? "#53b889"
+                            : "#16845b"
                       }
                       strokeWidth="8"
                       fill="transparent"
                       strokeDasharray={251.2}
-                      strokeDashoffset={251.2 - (251.2 * percentage) / 100}
+                      strokeDashoffset={
+                        251.2 -
+                        (251.2 * percentage) / 100
+                      }
                       strokeLinecap="round"
                       className="transition-all duration-300"
                     />
@@ -557,7 +740,9 @@ export default function WorkoutSession() {
                     </span>
 
                     <span className="text-[9px] font-bold uppercase text-gray-400">
-                      {direction !== "none" ? direction : "tilt"}
+                      {direction !== "none"
+                        ? direction
+                        : "tilt"}
                     </span>
                   </div>
                 </div>
@@ -568,10 +753,13 @@ export default function WorkoutSession() {
                       <AlertTriangle size={15} />
                       <span>{warning}</span>
                     </div>
-                  ) : isActive && !personDetected ? (
+                  ) : isActive &&
+                    !personDetected ? (
                     <div className="flex items-center justify-center gap-2 rounded-btn border border-accent-orange bg-accent-orange/40 p-3 text-xs font-bold text-accent-orange-dark">
                       <AlertTriangle size={15} />
-                      <span>Position yourself in front of camera</span>
+                      <span>
+                        Position yourself in front of camera
+                      </span>
                     </div>
                   ) : direction !== "none" ? (
                     <div className="flex items-center justify-center gap-2 rounded-btn border border-brand-light bg-brand-light/30 p-3 text-xs font-bold text-brand-dark">
@@ -621,3 +809,4 @@ export default function WorkoutSession() {
     </UserLayout>
   );
 }
+              

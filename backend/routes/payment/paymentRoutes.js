@@ -14,6 +14,7 @@ const {
   createConnectOnboardingSession,
   getConnectStatus,
   getConnectDashboardLink,
+  cancelPayment,
   verifySession,
 } = require("../../controllers/payment/paymentController");
 
@@ -25,6 +26,7 @@ router.get("/stripe-connect/status/:userId", authMiddleware, adminMiddleware, ge
 router.post("/stripe-connect/dashboard-link", authMiddleware, getConnectDashboardLink);
 
 router.post("/create", authMiddleware, createPayment);
+router.post("/cancel", authMiddleware, cancelPayment);
 router.get("/verify-session", authMiddleware, verifySession);
 router.get("/booked-slots/:id", authMiddleware, getProfessionalBookedSlots);
 router.get("/my-payments", authMiddleware, getUserPayments);

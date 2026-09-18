@@ -367,6 +367,25 @@ const createPayment = async (req, res) => {
       (totalAmount * 0.8).toFixed(2),
     );
 
+    const existingPendingPayment =
+      await PaymentModel.findOne({
+        user: userId,
+        professional: professionalId,
+        appointmentDate: parsedAppointmentDate,
+        appointmentSlot: normalizedSlot,
+        status: "pending",
+        professionalDeleted: false,
+      }).sort({
+        createdAt: -1,
+      });
+
+    if (existingPendingPayment) {
+      existingPendingPayment.status = "failed";
+      existingPendingPayment.payoutStatus = "failed";
+
+      await existingPendingPayment.save();
+    }
+
     try {
       reservedPayment =
         await PaymentModel.create({
@@ -390,7 +409,6 @@ const createPayment = async (req, res) => {
           professionalDeleted: false,
         });
     } catch (reservationError) {
-
       if (reservationError.code === 11000) {
         return res.status(409).json({
           success: false,
@@ -453,13 +471,21 @@ const createPayment = async (req, res) => {
         await stripe.checkout.sessions.create({
           mode: "payment",
 
+          expires_at:
+            Math.floor(Date.now() / 1000) +
+            30 * 60,
+
           line_items: [
             {
               price_data: {
                 currency: "pkr",
 
                 product_data: {
-                  name: `PoseFit Session with ${professional.firstName} ${professional.lastName}${slotInfo}`,
+                  name:
+                    `PoseFit Session with ` +
+                    `${professional.firstName} ` +
+                    `${professional.lastName}` +
+                    `${slotInfo}`,
 
                   description:
                     `Appointment: ${appointmentDay} ${normalizedSlot}`,
@@ -497,7 +523,7 @@ const createPayment = async (req, res) => {
 
           cancel_url:
             `${frontendUrl}/user/professionals/${professionalId}` +
-            `?booking_cancelled=true`,
+            `?booking_cancelled=true&payment_id=${reservedPayment._id.toString()}`,
         });
     } catch (stripeError) {
       console.error(
@@ -538,6 +564,12 @@ const createPayment = async (req, res) => {
 
       checkoutUrl:
         session.url,
+
+      paymentId:
+        reservedPayment._id.toString(),
+
+      sessionId:
+        session.id,
 
       appointment: {
         day:
@@ -1316,7 +1348,35 @@ const stripeWebhook = async (req, res) => {
         );
       }
     }
+    
+    if (event.type === "checkout.session.expired") {
+      const session = event.data.object;
 
+      let payment = null;
+
+      if (session.id) {
+        payment = await PaymentModel.findOne({
+          stripeSessionId: session.id,
+        });
+      }
+
+      if (!payment && session.metadata?.paymentId) {
+        payment = await PaymentModel.findById(
+          session.metadata.paymentId
+        );
+      }
+
+      if (payment && payment.status === "pending") {
+        payment.status = "failed";
+        payment.payoutStatus = "failed";
+
+        await payment.save();
+
+        console.log(
+          `Expired Checkout session ${session.id}: payment ${payment._id} marked as failed and slot released.`
+        );
+      }
+    }
     if (event.type === "payment_intent.succeeded") {
       const paymentIntent = event.data.object;
 
@@ -1461,6 +1521,76 @@ const stripeWebhook = async (req, res) => {
   }
 };
 
+
+const cancelPayment = async (req, res) => {
+  try {
+    const { paymentId } = req.body;
+
+    if (!paymentId) {
+      return res.status(400).json({
+        success: false,
+        message: "paymentId is required",
+      });
+    }
+
+    const userId = (
+      req.user?.userId ||
+      req.user?._id ||
+      req.user?.id ||
+      ""
+    ).toString();
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "User authentication required",
+      });
+    }
+
+    const payment = await PaymentModel.findById(paymentId);
+
+    if (!payment) {
+      return res.status(404).json({
+        success: false,
+        message: "Payment not found",
+      });
+    }
+
+    if (payment.user.toString() !== userId) {
+      return res.status(403).json({
+        success: false,
+        message: "You are not authorized to cancel this payment",
+      });
+    }
+
+    if (payment.status === "completed") {
+      return res.status(400).json({
+        success: false,
+        message: "Completed payment cannot be cancelled.",
+      });
+    }
+
+    if (payment.status === "pending") {
+      payment.status = "failed";
+      payment.payoutStatus = "failed";
+
+      await payment.save();
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Payment attempt cancelled and appointment slot released.",
+      status: payment.status,
+    });
+  } catch (error) {
+    console.error("Cancel payment error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to cancel payment",
+    });
+  }
+};
 const verifySession = async (req, res) => {
   try {
     const { session_id } = req.query;
@@ -1539,5 +1669,6 @@ module.exports = {
   getConnectStatus,
   getConnectDashboardLink,
   stripeWebhook,
+  cancelPayment,
   verifySession,
 };
