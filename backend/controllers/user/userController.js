@@ -1,5 +1,5 @@
 const UserModel = require("../../models/userModel");
-const PaymentModel = require("../../models/paymentModel");
+const PaymentModel = require("../../models/PaymentModel");
 
 // Get all approved professionals
 const getPublicProfessionals = async (req, res) => {
@@ -8,7 +8,7 @@ const getPublicProfessionals = async (req, res) => {
       role: "PROFESSIONAL",
       professionalStatus: { $in: ["approved", "APPROVED"] },
     }).select(
-      "firstName lastName email profilePhoto bio specialization experience professionalType sessionFee availability rating professionalStatus isVerified"
+      "firstName lastName email profilePhoto bio specialization experience professionalType sessionFee availability rating professionalStatus isVerified",
     );
 
     return res.status(200).json({
@@ -36,7 +36,7 @@ const getPublicProfessionalById = async (req, res) => {
       role: "PROFESSIONAL",
       professionalStatus: { $in: ["approved", "APPROVED"] },
     }).select(
-      "firstName lastName email profilePhoto bio specialization experience professionalType sessionFee availability rating professionalStatus isVerified"
+      "firstName lastName email profilePhoto bio specialization experience professionalType sessionFee availability rating professionalStatus isVerified",
     );
 
     if (!professional) {

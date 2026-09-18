@@ -3,6 +3,7 @@ import mediapipe as mp
 import numpy as np
 import math
 import time
+import os
 import json
 import base64
 import threading
@@ -553,4 +554,8 @@ def video_feed():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5002, threaded=True)
+    app.run(
+    host='0.0.0.0',
+    port=int(os.environ.get('PORT', 5002)),
+    threaded=True
+)

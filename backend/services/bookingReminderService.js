@@ -1,5 +1,5 @@
 const cron = require("node-cron");
-const PaymentModel = require("../models/paymentModel");
+const PaymentModel = require("../models/PaymentModel");
 const { sendBookingReminderEmails } = require("./emailService");
 
 const TIMEZONE = "Asia/Karachi";
@@ -20,9 +20,7 @@ const parseAppointmentStart = (appointmentDate, appointmentSlot) => {
     .split(/\s*-\s*/)
     .map((value) => value.trim())[0];
 
-  const match = firstSlot.match(
-    /^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i
-  );
+  const match = firstSlot.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
 
   if (!match) {
     return null;
@@ -51,17 +49,11 @@ const parseAppointmentStart = (appointmentDate, appointmentSlot) => {
     day: "2-digit",
   }).formatToParts(originalDate);
 
-  const year = Number(
-    dateParts.find((part) => part.type === "year")?.value
-  );
+  const year = Number(dateParts.find((part) => part.type === "year")?.value);
 
-  const month = Number(
-    dateParts.find((part) => part.type === "month")?.value
-  );
+  const month = Number(dateParts.find((part) => part.type === "month")?.value);
 
-  const day = Number(
-    dateParts.find((part) => part.type === "day")?.value
-  );
+  const day = Number(dateParts.find((part) => part.type === "day")?.value);
 
   if (!year || !month || !day) {
     return null;
@@ -70,15 +62,7 @@ const parseAppointmentStart = (appointmentDate, appointmentSlot) => {
   const pakistanTimeOffset = 5 * 60 * 60 * 1000;
 
   return new Date(
-    Date.UTC(
-      year,
-      month - 1,
-      day,
-      hours,
-      minutes,
-      0,
-      0
-    ) - pakistanTimeOffset
+    Date.UTC(year, month - 1, day, hours, minutes, 0, 0) - pakistanTimeOffset,
   );
 };
 
@@ -109,19 +93,18 @@ const processBookingReminders = async () => {
       try {
         const appointmentStart = parseAppointmentStart(
           payment.appointmentDate,
-          payment.appointmentSlot
+          payment.appointmentSlot,
         );
 
         if (!appointmentStart) {
           console.error(
-            `Unable to parse appointment time for payment ${payment._id}`
+            `Unable to parse appointment time for payment ${payment._id}`,
           );
           continue;
         }
 
         const reminderTime = new Date(
-          appointmentStart.getTime() -
-            REMINDER_MINUTES * 60 * 1000
+          appointmentStart.getTime() - REMINDER_MINUTES * 60 * 1000,
         );
 
         if (now >= appointmentStart) {
@@ -138,7 +121,7 @@ const processBookingReminders = async () => {
           !payment.meetingLink
         ) {
           console.error(
-            `Missing reminder email data for payment ${payment._id}`
+            `Missing reminder email data for payment ${payment._id}`,
           );
           continue;
         }
@@ -153,55 +136,48 @@ const processBookingReminders = async () => {
             meetingLink: payment.meetingLink,
           });
 
-          const updatedPayment =
-            await PaymentModel.findOneAndUpdate(
-              {
-                _id: payment._id,
-                status: "completed",
-                meetingReminderSent: false,
+          const updatedPayment = await PaymentModel.findOneAndUpdate(
+            {
+              _id: payment._id,
+              status: "completed",
+              meetingReminderSent: false,
+            },
+            {
+              $set: {
+                meetingReminderSent: true,
               },
-              {
-                $set: {
-                  meetingReminderSent: true,
-                },
-              },
-              {
-                returnDocument: "after",
-              }
-            );
+            },
+            {
+              returnDocument: "after",
+            },
+          );
 
           if (updatedPayment) {
             console.log(
-              `Meeting reminder emails sent for payment ${payment._id}`
+              `Meeting reminder emails sent for payment ${payment._id}`,
             );
           }
         } catch (emailError) {
           console.error(
             `Meeting reminder email failed for payment ${payment._id}:`,
-            emailError
+            emailError,
           );
         }
       } catch (bookingError) {
         console.error(
           `Error processing reminder for payment ${payment._id}:`,
-          bookingError
+          bookingError,
         );
       }
     }
   } catch (error) {
-    console.error(
-      "Booking reminder scheduler error:",
-      error
-    );
+    console.error("Booking reminder scheduler error:", error);
   }
 };
 
 const startBookingReminderScheduler = () => {
   processBookingReminders().catch((error) => {
-    console.error(
-      "Initial booking reminder check failed:",
-      error
-    );
+    console.error("Initial booking reminder check failed:", error);
   });
 
   cron.schedule(
@@ -211,12 +187,10 @@ const startBookingReminderScheduler = () => {
     },
     {
       timezone: TIMEZONE,
-    }
+    },
   );
 
-  console.log(
-    "Booking reminder scheduler started."
-  );
+  console.log("Booking reminder scheduler started.");
 };
 
 module.exports = {
