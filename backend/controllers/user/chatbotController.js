@@ -642,7 +642,7 @@ const generateChatbotResponse = async ({
       model: GROQ_MODEL,
       messages,
       temperature: 0.25,
-      max_completion_tokens: 700,
+      max_completion_tokens: 500,
     },
     {
       headers: {
