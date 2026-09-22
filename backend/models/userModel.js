@@ -45,7 +45,7 @@ const UserSchema = new Schema({
 
   professionalType: {
     type: String,
-    enum: ["Trainer", "Nutritionist", "TRAINER", "NUTRITIONIST", "OTHER"],
+    enum: ["Trainer", "Nutritionist", "TRAINER", "NUTRITIONIST"],
     required: function () {
       return this.role === "PROFESSIONAL";
     },
