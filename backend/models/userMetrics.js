@@ -1,9 +1,5 @@
 const mongoose = require("mongoose");
 
-// ============================================
-// MACROS SCHEMA
-// ============================================
-
 const macrosSchema = new mongoose.Schema(
   {
     carbs: {
@@ -26,25 +22,18 @@ const macrosSchema = new mongoose.Schema(
   },
 );
 
-// ============================================
-// WATER INTAKE SCHEMA
-// ============================================
-
 const waterIntakeSchema = new mongoose.Schema(
   {
-    // Daily water in milliliters
     ml: {
       type: Number,
       required: true,
     },
 
-    // Daily water in liters
     liters: {
       type: Number,
       required: true,
     },
 
-    // Approximate 250ml glasses
     glasses: {
       type: Number,
       required: true,
@@ -55,16 +44,8 @@ const waterIntakeSchema = new mongoose.Schema(
   },
 );
 
-// ============================================
-// USER METRICS SCHEMA
-// ============================================
-
 const UserMetricsSchema = new mongoose.Schema(
   {
-    // ------------------------------------------
-    // USER
-    // ------------------------------------------
-
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,
@@ -72,17 +53,12 @@ const UserMetricsSchema = new mongoose.Schema(
       ref: "User",
     },
 
-    // ------------------------------------------
-    // BASIC HEALTH INFORMATION
-    // ------------------------------------------
-
     weight: {
       type: Number,
       required: true,
       min: 1,
     },
 
-    // Height is stored in CENTIMETERS
     height: {
       type: Number,
       required: true,
@@ -101,10 +77,6 @@ const UserMetricsSchema = new mongoose.Schema(
       enum: ["male", "female"],
     },
 
-    // ------------------------------------------
-    // FITNESS INFORMATION
-    // ------------------------------------------
-
     goal: {
       type: String,
       required: true,
@@ -116,31 +88,6 @@ const UserMetricsSchema = new mongoose.Schema(
       required: true,
       enum: ["sedentary", "light", "moderate", "active", "very active"],
     },
-
-    // ------------------------------------------
-    // DIET PREFERENCES (OPTIONAL / LEGACY)
-    // ------------------------------------------
-
-    dietPref: {
-      type: String,
-      required: false,
-      enum: ["veg", "non-veg"],
-      default: "non-veg",
-    },
-
-    diabetes: {
-      type: Boolean,
-      default: false,
-    },
-
-    allergiesNuts: {
-      type: Boolean,
-      default: false,
-    },
-
-    // ------------------------------------------
-    // BACKEND CALCULATED VALUES
-    // ------------------------------------------
 
     bmi: {
       type: Number,
