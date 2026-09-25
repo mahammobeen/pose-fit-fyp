@@ -13,23 +13,20 @@ import {
   AlertTriangle,
   CheckCircle,
   Building2,
+  Lock,
 } from "lucide-react";
 
 export default function ProfessionalProfileSettings() {
   const [profile, setProfile] = useState(null);
 
   const [loading, setLoading] = useState(true);
-
   const [saving, setSaving] = useState(false);
-
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
-
   const [uploadingDoc, setUploadingDoc] = useState(false);
-
   const [actionLoading, setActionLoading] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
 
   const [photoPreview, setPhotoPreview] = useState("");
-
   const [newDocTitle, setNewDocTitle] = useState("");
 
   const [form, setForm] = useState({
@@ -43,11 +40,16 @@ export default function ProfessionalProfileSettings() {
     credentialDocs: [],
   });
 
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+
   const [toast, setToast] = useState(null);
 
   const showToast = (msg, type = "success") => {
     setToast({ msg, type });
-
     setTimeout(() => setToast(null), 3500);
   };
 
@@ -56,7 +58,6 @@ export default function ProfessionalProfileSettings() {
       setLoading(true);
 
       const res = await httpClient.get("/professional/profile");
-
       const p = res.data?.professional;
 
       setProfile(p);
@@ -66,8 +67,14 @@ export default function ProfessionalProfileSettings() {
           firstName: p.firstName || "",
           lastName: p.lastName || "",
           specialization: p.specialization || "",
-          experience: p.experience !== undefined && p.experience !== null ? p.experience : "",
-          sessionFee: p.sessionFee !== undefined ? p.sessionFee : "",
+          experience:
+            p.experience !== undefined && p.experience !== null
+              ? p.experience
+              : "",
+          sessionFee:
+            p.sessionFee !== undefined && p.sessionFee !== null
+              ? p.sessionFee
+              : "",
           bio: p.bio || "",
           profilePhoto: p.profilePhoto || "",
           credentialDocs: p.credentialDocs || [],
@@ -107,10 +114,13 @@ export default function ProfessionalProfileSettings() {
 
     if (
       !["image/jpeg", "image/jpg", "image/png", "image/webp"].includes(
-        file.type,
+        file.type
       )
     ) {
-      showToast("Please select a valid image file (PNG, JPG, WEBP).", "error");
+      showToast(
+        "Please select a valid image file (PNG, JPG, WEBP).",
+        "error"
+      );
       return;
     }
 
@@ -122,18 +132,18 @@ export default function ProfessionalProfileSettings() {
     const reader = new FileReader();
 
     reader.onload = () => setPhotoPreview(reader.result);
-
     reader.readAsDataURL(file);
 
     setUploadingPhoto(true);
 
     const formData = new FormData();
-
     formData.append("photo", file);
 
     try {
       const res = await httpClient.post("/upload/photo", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
       });
 
       setForm((p) => ({
@@ -145,7 +155,7 @@ export default function ProfessionalProfileSettings() {
     } catch (err) {
       showToast(
         err?.response?.data?.message || "Failed to upload photo.",
-        "error",
+        "error"
       );
     } finally {
       setUploadingPhoto(false);
@@ -175,7 +185,10 @@ export default function ProfessionalProfileSettings() {
     ];
 
     if (!allowed.includes(file.type)) {
-      showToast("Please select a valid document (PDF, PNG, JPG).", "error");
+      showToast(
+        "Please select a valid document (PDF, PNG, JPG).",
+        "error"
+      );
       return;
     }
 
@@ -191,12 +204,13 @@ export default function ProfessionalProfileSettings() {
     setUploadingDoc(true);
 
     const formData = new FormData();
-
     formData.append("document", file);
 
     try {
       const res = await httpClient.post("/upload/document", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
       });
 
       setForm((prev) => ({
@@ -218,7 +232,7 @@ export default function ProfessionalProfileSettings() {
     } catch (err) {
       showToast(
         err?.response?.data?.message || "Failed to upload document.",
-        "error",
+        "error"
       );
     } finally {
       setUploadingDoc(false);
@@ -229,7 +243,9 @@ export default function ProfessionalProfileSettings() {
   const handleRemoveDoc = (index) => {
     setForm((prev) => ({
       ...prev,
-      credentialDocs: prev.credentialDocs.filter((_, i) => i !== index),
+      credentialDocs: prev.credentialDocs.filter(
+        (_, i) => i !== index
+      ),
     }));
   };
 
@@ -237,7 +253,9 @@ export default function ProfessionalProfileSettings() {
     setActionLoading(true);
 
     try {
-      const res = await httpClient.post("/payment/stripe-connect/onboard");
+      const res = await httpClient.post(
+        "/payment/stripe-connect/onboard"
+      );
 
       if (res.data?.url) {
         window.location.href = res.data.url;
@@ -246,7 +264,7 @@ export default function ProfessionalProfileSettings() {
       showToast(
         err?.response?.data?.message ||
           "Failed to initiate Stripe Connect setup.",
-        "error",
+        "error"
       );
     } finally {
       setActionLoading(false);
@@ -258,7 +276,7 @@ export default function ProfessionalProfileSettings() {
 
     try {
       const res = await httpClient.post(
-        "/payment/stripe-connect/dashboard-link",
+        "/payment/stripe-connect/dashboard-link"
       );
 
       if (res.data?.url) {
@@ -266,8 +284,9 @@ export default function ProfessionalProfileSettings() {
       }
     } catch (err) {
       showToast(
-        err?.response?.data?.message || "Failed to open Stripe Dashboard.",
-        "error",
+        err?.response?.data?.message ||
+          "Failed to open Stripe Dashboard.",
+        "error"
       );
     } finally {
       setActionLoading(false);
@@ -280,7 +299,10 @@ export default function ProfessionalProfileSettings() {
     setSaving(true);
 
     try {
-      const res = await httpClient.put("/professional/profile", form);
+      const res = await httpClient.put(
+        "/professional/profile",
+        form
+      );
 
       showToast("Profile details updated successfully!");
 
@@ -289,18 +311,89 @@ export default function ProfessionalProfileSettings() {
       }
     } catch (err) {
       showToast(
-        err?.response?.data?.message || "Failed to update profile.",
-        "error",
+        err?.response?.data?.message ||
+          "Failed to update profile.",
+        "error"
       );
     } finally {
       setSaving(false);
     }
   };
 
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+
+    if (
+      !passwordForm.currentPassword ||
+      !passwordForm.newPassword ||
+      !passwordForm.confirmPassword
+    ) {
+      showToast("Please fill in all password fields.", "error");
+      return;
+    }
+
+    if (
+      passwordForm.newPassword !==
+      passwordForm.confirmPassword
+    ) {
+      showToast(
+        "New password and confirm password do not match.",
+        "error"
+      );
+      return;
+    }
+
+    if (passwordForm.newPassword.length < 6) {
+      showToast(
+        "New password must be at least 6 characters long.",
+        "error"
+      );
+      return;
+    }
+
+    if (
+      passwordForm.currentPassword ===
+      passwordForm.newPassword
+    ) {
+      showToast(
+        "New password must be different from the current password.",
+        "error"
+      );
+      return;
+    }
+
+    setChangingPassword(true);
+
+    try {
+      const res = await httpClient.put(
+        "/professional/change-password",
+        passwordForm
+      );
+
+      showToast(
+        res.data?.message ||
+          "Password updated successfully!"
+      );
+
+      setPasswordForm({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+    } catch (err) {
+      showToast(
+        err?.response?.data?.message ||
+          "Failed to change password.",
+        "error"
+      );
+    } finally {
+      setChangingPassword(false);
+    }
+  };
+
   return (
     <ProfessionalLayout>
       <div className="min-h-screen bg-transparent pb-16 font-sans">
-
         {toast && (
           <div
             className={`fixed right-5 top-5 z-50 rounded-card border px-5 py-3 text-sm font-bold text-white shadow-card-hover ${
@@ -323,8 +416,8 @@ export default function ProfessionalProfileSettings() {
           </h1>
 
           <p className="mt-1 max-w-2xl text-sm font-medium text-gray-500">
-            Manage your professional profile, credentials, session pricing, and
-            payment connection.
+            Manage your professional profile, credentials,
+            session pricing, and payment connection.
           </p>
         </div>
 
@@ -334,7 +427,6 @@ export default function ProfessionalProfileSettings() {
           </div>
         ) : (
           <div className="max-w-5xl space-y-5 px-4 sm:px-6 lg:px-8">
-
             <section className="overflow-hidden rounded-card border border-brand-light/60 bg-surface/90 shadow-card">
               <div className="p-6">
                 <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
@@ -348,7 +440,8 @@ export default function ProfessionalProfileSettings() {
                         />
                       ) : (
                         <span className="text-xl font-black text-brand-dark">
-                          {profile?.firstName?.[0]?.toUpperCase() || "P"}
+                          {profile?.firstName?.[0]?.toUpperCase() ||
+                            "P"}
                         </span>
                       )}
                     </div>
@@ -356,11 +449,15 @@ export default function ProfessionalProfileSettings() {
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
                         <h2 className="truncate text-xl font-extrabold tracking-tight text-gray-800">
-                          {profile?.firstName} {profile?.lastName}
+                          {profile?.firstName}{" "}
+                          {profile?.lastName}
                         </h2>
 
                         <StatusBadge
-                          status={profile?.professionalStatus || "invited"}
+                          status={
+                            profile?.professionalStatus ||
+                            "invited"
+                          }
                         />
                       </div>
 
@@ -369,7 +466,8 @@ export default function ProfessionalProfileSettings() {
                       </p>
 
                       <p className="mt-1 text-xs font-medium text-gray-400">
-                        {profile?.professionalType || "Professional"}
+                        {profile?.professionalType ||
+                          "Professional"}
                       </p>
                     </div>
                   </div>
@@ -411,7 +509,9 @@ export default function ProfessionalProfileSettings() {
                       {profile?.payoutsEnabled ? (
                         <button
                           type="button"
-                          onClick={handleOpenStripeDashboard}
+                          onClick={
+                            handleOpenStripeDashboard
+                          }
                           disabled={actionLoading}
                           className="w-full rounded-btn border border-sky-200 bg-white px-4 py-2.5 text-xs font-bold text-sky-800 transition-all hover:bg-sky-50 disabled:cursor-not-allowed disabled:opacity-60"
                         >
@@ -435,7 +535,8 @@ export default function ProfessionalProfileSettings() {
                   </div>
                 </div>
 
-                {profile?.professionalStatus === "rejected" && (
+                {profile?.professionalStatus ===
+                  "rejected" && (
                   <div className="mt-5 flex items-start gap-3 rounded-card border border-rose-200 bg-rose-50 p-4">
                     <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-rose-600" />
 
@@ -457,19 +558,18 @@ export default function ProfessionalProfileSettings() {
               onSubmit={handleSubmit}
               className="overflow-hidden rounded-card border border-brand-light/60 bg-surface/90 shadow-card"
             >
-
               <div className="border-b border-brand-light/40 px-7 py-5">
                 <h2 className="text-lg font-extrabold tracking-tight text-gray-800">
                   Professional Information
                 </h2>
 
                 <p className="mt-1 text-xs font-medium text-gray-400">
-                  Keep your public professional profile accurate and up to date.
+                  Keep your public professional profile
+                  accurate and up to date.
                 </p>
               </div>
 
               <div className="space-y-7 p-7">
-
                 <div>
                   <div className="mb-3 flex items-center justify-between">
                     <div>
@@ -507,7 +607,9 @@ export default function ProfessionalProfileSettings() {
                     <div>
                       <div className="flex flex-wrap gap-2">
                         <label className="inline-flex cursor-pointer items-center rounded-btn border border-brand-light bg-brand-light/40 px-4 py-2 text-xs font-bold text-brand-dark transition-colors hover:bg-brand-light/60">
-                          {photoPreview ? "Change Photo" : "Upload Photo"}
+                          {photoPreview
+                            ? "Change Photo"
+                            : "Upload Photo"}
 
                           <input
                             type="file"
@@ -595,7 +697,10 @@ export default function ProfessionalProfileSettings() {
                       </label>
 
                       <div className="flex items-center justify-between rounded-btn border border-gray-200 bg-gray-100 px-4 py-3 text-sm font-bold text-gray-700">
-                        <span>{profile?.professionalType || "Trainer"}</span>
+                        <span>
+                          {profile?.professionalType ||
+                            "Trainer"}
+                        </span>
 
                         <span className="rounded-full bg-gray-200 px-2 py-1 text-[9px] font-extrabold uppercase text-gray-600">
                           Admin Set
@@ -692,8 +797,8 @@ export default function ProfessionalProfileSettings() {
                       </h3>
 
                       <p className="mt-1 text-[11px] text-gray-400">
-                        Upload certificates that support your professional
-                        qualifications.
+                        Upload certificates that support your
+                        professional qualifications.
                       </p>
                     </div>
                   </div>
@@ -704,13 +809,17 @@ export default function ProfessionalProfileSettings() {
                         type="text"
                         placeholder="Certificate title e.g. NASM CPT"
                         value={newDocTitle}
-                        onChange={(e) => setNewDocTitle(e.target.value)}
+                        onChange={(e) =>
+                          setNewDocTitle(e.target.value)
+                        }
                         className="flex-1 rounded-btn border border-gray-200 bg-white/80 px-4 py-2.5 text-xs font-medium text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand-light/60"
                       />
 
                       <label
                         className={`inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-btn border border-brand-light bg-brand-light/40 px-4 py-2.5 text-xs font-bold text-brand-dark transition-colors hover:bg-brand-light/60 ${
-                          uploadingDoc ? "pointer-events-none opacity-60" : ""
+                          uploadingDoc
+                            ? "pointer-events-none opacity-60"
+                            : ""
                         }`}
                       >
                         <Plus className="h-3.5 w-3.5" />
@@ -743,37 +852,42 @@ export default function ProfessionalProfileSettings() {
                       </div>
                     ) : (
                       <div className="mt-3 space-y-2">
-                        {form.credentialDocs.map((doc, idx) => (
-                          <div
-                            key={idx}
-                            className="flex items-center justify-between gap-3 rounded-btn border border-brand-light/40 bg-white/80 p-3 transition-colors hover:bg-brand-light/10"
-                          >
-                            <div className="flex min-w-0 items-center gap-3">
-                              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-brand-light bg-brand-light/40 text-brand-dark">
-                                <CheckCircle className="h-4 w-4" />
-                              </div>
-
-                              <div className="min-w-0">
-                                <p className="truncate text-xs font-bold text-gray-800">
-                                  {doc.title}
-                                </p>
-
-                                <p className="mt-0.5 truncate text-[10px] text-gray-400">
-                                  {doc.fileName || "Uploaded Document"}
-                                </p>
-                              </div>
-                            </div>
-
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveDoc(idx)}
-                              className="shrink-0 rounded-xl p-2 text-rose-700 transition-colors hover:bg-rose-50"
-                              title="Remove certificate"
+                        {form.credentialDocs.map(
+                          (doc, idx) => (
+                            <div
+                              key={idx}
+                              className="flex items-center justify-between gap-3 rounded-btn border border-brand-light/40 bg-white/80 p-3 transition-colors hover:bg-brand-light/10"
                             >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        ))}
+                              <div className="flex min-w-0 items-center gap-3">
+                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-brand-light bg-brand-light/40 text-brand-dark">
+                                  <CheckCircle className="h-4 w-4" />
+                                </div>
+
+                                <div className="min-w-0">
+                                  <p className="truncate text-xs font-bold text-gray-800">
+                                    {doc.title}
+                                  </p>
+
+                                  <p className="mt-0.5 truncate text-[10px] text-gray-400">
+                                    {doc.fileName ||
+                                      "Uploaded Document"}
+                                  </p>
+                                </div>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleRemoveDoc(idx)
+                                }
+                                className="shrink-0 rounded-xl p-2 text-rose-700 transition-colors hover:bg-rose-50"
+                                title="Remove certificate"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          )
+                        )}
                       </div>
                     )}
                   </div>
@@ -781,7 +895,8 @@ export default function ProfessionalProfileSettings() {
 
                 <div className="flex flex-col gap-4 border-t border-brand-light/40 pt-6 sm:flex-row sm:items-center sm:justify-between">
                   <p className="text-[11px] font-medium text-gray-400">
-                    Changes will be saved to your professional profile.
+                    Changes will be saved to your professional
+                    profile.
                   </p>
 
                   <button
@@ -792,12 +907,122 @@ export default function ProfessionalProfileSettings() {
                     <Save className="h-4 w-4" />
 
                     <span>
-                      {saving ? "Saving Changes..." : "Save Profile Details"}
+                      {saving
+                        ? "Saving Changes..."
+                        : "Save Profile Details"}
                     </span>
                   </button>
                 </div>
               </div>
             </form>
+
+            <section className="overflow-hidden rounded-card border border-brand-light/60 bg-surface/90 shadow-card">
+              <div className="border-b border-brand-light/40 px-7 py-5">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-brand-light bg-brand-light/40 text-brand-dark">
+                    <Lock className="h-4 w-4" />
+                  </div>
+
+                  <div>
+                    <h2 className="text-lg font-extrabold tracking-tight text-gray-800">
+                      Security
+                    </h2>
+
+                    <p className="mt-1 text-xs font-medium text-gray-400">
+                      Update your account password securely.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <form
+                onSubmit={handleChangePassword}
+                className="space-y-5 p-7"
+              >
+                <div>
+                  <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-600">
+                    Current Password
+                  </label>
+
+                  <input
+                    type="password"
+                    value={passwordForm.currentPassword}
+                    onChange={(e) =>
+                      setPasswordForm((p) => ({
+                        ...p,
+                        currentPassword: e.target.value,
+                      }))
+                    }
+                    placeholder="Enter current password"
+                    autoComplete="current-password"
+                    className="w-full rounded-btn border border-gray-200 bg-white/70 px-4 py-3 text-sm font-medium text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand-light/60"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-600">
+                      New Password
+                    </label>
+
+                    <input
+                      type="password"
+                      value={passwordForm.newPassword}
+                      onChange={(e) =>
+                        setPasswordForm((p) => ({
+                          ...p,
+                          newPassword: e.target.value,
+                        }))
+                      }
+                      placeholder="Enter new password"
+                      autoComplete="new-password"
+                      className="w-full rounded-btn border border-gray-200 bg-white/70 px-4 py-3 text-sm font-medium text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand-light/60"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-600">
+                      Confirm New Password
+                    </label>
+
+                    <input
+                      type="password"
+                      value={passwordForm.confirmPassword}
+                      onChange={(e) =>
+                        setPasswordForm((p) => ({
+                          ...p,
+                          confirmPassword: e.target.value,
+                        }))
+                      }
+                      placeholder="Confirm new password"
+                      autoComplete="new-password"
+                      className="w-full rounded-btn border border-gray-200 bg-white/70 px-4 py-3 text-sm font-medium text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand-light/60"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-4 border-t border-brand-light/40 pt-5 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-[11px] font-medium text-gray-400">
+                    Your new password must be at least 6
+                    characters long.
+                  </p>
+
+                  <button
+                    type="submit"
+                    disabled={changingPassword}
+                    className="inline-flex items-center justify-center gap-2 rounded-btn bg-gray-800 px-7 py-3 text-sm font-bold text-white shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:bg-gray-700 hover:shadow-card-hover disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+                  >
+                    <Lock className="h-4 w-4" />
+
+                    <span>
+                      {changingPassword
+                        ? "Updating Password..."
+                        : "Change Password"}
+                    </span>
+                  </button>
+                </div>
+              </form>
+            </section>
           </div>
         )}
       </div>

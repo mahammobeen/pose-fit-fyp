@@ -7,6 +7,7 @@ const {
   getProfessionalDashboard,
   getProfessionalProfile,
   updateProfessionalProfile,
+  changeProfessionalPassword,
   getProfessionalBookings,
   getProfessionalBookingById,
   getAvailability,
@@ -23,6 +24,7 @@ router.get("/dashboard", getProfessionalDashboard);
 
 router.get("/profile", getProfessionalProfile);
 router.put("/profile", updateProfessionalProfile);
+router.put("/change-password",authMiddleware,changeProfessionalPassword);
 
 router.get("/bookings", getProfessionalBookings);
 router.get("/bookings/:id", getProfessionalBookingById);

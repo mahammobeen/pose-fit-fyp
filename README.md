@@ -1,12 +1,6 @@
 # PoseFit
 
-PoseFit is an AI-powered fitness and wellness web application designed to support users in achieving their health, nutrition, and exercise goals. It provides real-time computer vision pose estimation for guided workouts, an AI-driven personalized diet recommendation microservice, and a full-featured booking and consultation marketplace with certified fitness trainers and nutritionists. Through PoseFit, users can track health metrics, generate tailored diet plans, correct exercise posture with real-time rep counting, and schedule video consultations powered by Stripe payments and Google Meet.
-
----
-
-## 1. Project Overview
-
-PoseFit integrates real-time machine learning, computer vision, and modern web technologies to create a complete personal wellness platform. Users can calculate key metabolic metrics, receive automated multi-day meal plans based on Pakistani culinary datasets, and perform guided home workouts with interactive posture feedback and rep counting. Certified trainers and nutritionists can offer consultative sessions, manage availability calendars, and receive secure payouts. The platform automates payment verification with Stripe webhooks, generates Google Meet appointment links, and dispatches automated email reminders.
+PoseFit is an AI-powered fitness and wellness computer vision, and modern web technologies to create a complete personal wellness platform. Users can calculate key metabolic metrics, receive automated multi-day meal plans based on Pakistani culinary datasets, and perform guided home workouts with interactive posture feedback and rep counting. Certified trainers and nutritionists can offer consultative sessions, manage availability calendars, and receive secure payouts. The platform automates payment verification with Stripe webhooks, generates Google Meet appointment links, and dispatches automated email reminders.
 
 ---
 
@@ -43,7 +37,13 @@ PoseFit integrates real-time machine learning, computer vision, and modern web t
 * **Payment Processor:** Stripe Checkout (Session-based flow in PKR test mode)
 * **Payouts:** Stripe Connect Express Onboarding for professional payouts
 * **Fulfillment:** Stripe Webhooks (`POST /api/payment/webhook`) as single source of truth
+ web application designed to support users in achieving their health, nutrition, and exercise goals. It provides real-time computer vision pose estimation for guided workouts, an AI-driven personalized diet recommendation microservice, and a full-featured booking and consultation marketplace with certified fitness trainers and nutritionists. Through PoseFit, users can track health metrics, generate tailored diet plans, correct exercise posture with real-time rep counting, and schedule video consultations powered by Stripe payments and Google Meet.
 
+---
+
+## 1. Project Overview
+
+PoseFit integrates real-time machine learning,
 ### Authentication
 * **Method:** JWT token-based authentication with Bearer header
 * **Verification:** 6-digit numeric OTP email verification and password reset flow

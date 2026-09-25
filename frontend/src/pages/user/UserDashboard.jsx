@@ -339,13 +339,13 @@ export default function UserDashboard() {
             </p>
           </div>
 
-          <div className="bg-surface/80 backdrop-blur-sm px-4 py-2.5 rounded-btn border border-brand-light/60 flex items-center gap-2 w-fit shadow-card">
-            <div className="h-2 w-2 rounded-full bg-brand animate-pulse" />
+          <div className="flex items-center gap-2">
+  <div className="h-2 w-2 rounded-full bg-brand animate-pulse" />
 
-            <span className="text-sm font-bold text-gray-600">
-              Metrics Available
-            </span>
-          </div>
+  <span className="text-sm font-medium text-gray-600">
+    Metrics Available
+  </span>
+</div>
         </section>
 
         <section className="grid grid-cols-1 md:grid-cols-3 gap-6">

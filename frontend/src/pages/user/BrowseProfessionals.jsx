@@ -120,29 +120,32 @@ export default function PublicProfessionals() {
     <UserLayout>
       <div className="min-h-full bg-transparent font-sans">
 
-        <section className="border-b border-brand-light/50 bg-surface/75 backdrop-blur-xl">
-          <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
-            <div className="max-w-3xl">
-              <div className="mb-4 flex items-center gap-2">
-                <ShieldCheck className="h-5 w-5 text-brand-dark" />
+  
+<section className="border-b border-gray-200 bg-surface/75 backdrop-blur-xl">
+  <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 sm:py-7 lg:px-8">
+    <div className="max-w-3xl">
+      <div className="mb-2 flex items-center gap-2">
+        <ShieldCheck className="h-4 w-4 text-gray-800" />
 
-                <span className="text-sm font-bold uppercase tracking-wide text-brand-dark">
-                  Certified Professionals
-                </span>
-              </div>
+        <span className="text-xs font-bold uppercase tracking-wide text-gray-800">
+          Certified Professionals
+        </span>
+      </div>
 
-              <h1 className="text-3xl font-black tracking-tight text-gray-800 sm:text-4xl md:text-5xl">
-                Find Your Perfect{" "}
-                <span className="text-brand-dark">Fitness Professional</span>
-              </h1>
+      <h1 className="text-2xl font-black tracking-tight text-gray-800 sm:text-3xl md:text-4xl">
+        Find Your Perfect{" "}
+        <span className="text-gray-800">Fitness Professional</span>
+      </h1>
 
-              <p className="mt-4 text-base text-gray-500 sm:text-lg">
-                Connect with certified trainers and fitness professionals who
-                can help you achieve your goals.
-              </p>
-            </div>
-          </div>
-        </section>
+      <p className="mt-2 max-w-2xl text-sm text-gray-500 sm:text-base">
+        Connect with certified trainers and fitness professionals who
+        can help you achieve your goals.
+      </p>
+    </div>
+  </div>
+</section>
+
+
 
         <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
 

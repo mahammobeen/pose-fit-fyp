@@ -402,7 +402,7 @@ const getPendingProfessionals = async (req, res) => {
       },
     })
       .select(
-        "firstName lastName email role professionalType specialization experience bio profilePhoto sessionFee credentialDocs bankDetails availability professionalStatus rejectionReason appliedAt verificationNotes",
+        "firstName lastName email role professionalType specialization experience bio profilePhoto sessionFee credentialDocs bankDetails availability professionalStatus rejectionReason appliedAt ",
       )
       .sort({ updatedAt: -1 });
 
@@ -422,7 +422,7 @@ const getPendingProfessionals = async (req, res) => {
 
 const updateProfessionalStatus = async (req, res) => {
   try {
-    const { status, rejectionReason, verificationNotes } = req.body;
+    const { status, rejectionReason } = req.body;
 
     const normalizedStatus = (status || "").toLowerCase();
 
@@ -452,13 +452,12 @@ const updateProfessionalStatus = async (req, res) => {
       professional.professionalStatus = "rejected";
       professional.rejectionReason =
         rejectionReason ||
-        verificationNotes ||
-        "Application requirements not met.";
+        "Application rejected by Admin.";
     }
 
-    if (verificationNotes) {
-      professional.verificationNotes = verificationNotes;
-    }
+    // if (verificationNotes) {
+    //   professional.verificationNotes = verificationNotes;
+    // }
 
     await professional.save();
 

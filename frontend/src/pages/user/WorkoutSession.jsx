@@ -55,6 +55,10 @@ const POSE_API_URL = (import.meta.env.VITE_POSE_API_URL || "").replace(
   "",
 );
 
+const SAME_MESSAGE_COOLDOWN = 3000;
+const DIFFERENT_MESSAGE_COOLDOWN = 1500;
+const MIN_MESSAGE_LENGTH = 3;
+
 export default function WorkoutSession() {
   const { exerciseId } = useParams();
   const navigate = useNavigate();
@@ -101,6 +105,8 @@ export default function WorkoutSession() {
     time: 0,
   });
 
+  const speechTimerRef = useRef(null);
+
   useEffect(() => {
     axios
       .get(
@@ -122,33 +128,89 @@ export default function WorkoutSession() {
   useEffect(() => {
     if (isMuted) return;
 
-    const msg = warning || feedback;
+    const msg = (warning || feedback || "").trim();
 
     if (BLOCKED_VOICE_MESSAGES.has(msg)) return;
 
-    const now = Date.now();
+    if (msg.length < MIN_MESSAGE_LENGTH) return;
 
-    if (
-      msg === lastSpokenRef.current.text &&
-      now - lastSpokenRef.current.time < 3000
-    ) {
+    if (!isActiveRef.current) return;
+
+    const now = Date.now();
+    const lastSpoken = lastSpokenRef.current;
+
+    const isSameMessage = msg === lastSpoken.text;
+    const timeSinceLastSpeech = now - lastSpoken.time;
+
+    const requiredCooldown = isSameMessage
+      ? SAME_MESSAGE_COOLDOWN
+      : DIFFERENT_MESSAGE_COOLDOWN;
+
+    if (timeSinceLastSpeech < requiredCooldown) {
       return;
+    }
+
+    if (speechTimerRef.current) {
+      clearTimeout(speechTimerRef.current);
+      speechTimerRef.current = null;
+    }
+
+    const speakMessage = () => {
+      if (isMuted || !isActiveRef.current) return;
+
+      const currentTime = Date.now();
+
+      if (
+        msg === lastSpokenRef.current.text &&
+        currentTime - lastSpokenRef.current.time <
+          SAME_MESSAGE_COOLDOWN
+      ) {
+        return;
+      }
+
+      window.speechSynthesis.cancel();
+
+      const utterance = new SpeechSynthesisUtterance(msg);
+
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+      utterance.volume = 1.0;
+      utterance.lang = "en-US";
+
+      window.speechSynthesis.speak(utterance);
+
+      lastSpokenRef.current = {
+        text: msg,
+        time: currentTime,
+      };
+    };
+
+    speechTimerRef.current = setTimeout(
+      speakMessage,
+      150,
+    );
+
+    return () => {
+      if (speechTimerRef.current) {
+        clearTimeout(speechTimerRef.current);
+        speechTimerRef.current = null;
+      }
+    };
+  }, [feedback, warning, isMuted]);
+
+  const stopSpeech = () => {
+    if (speechTimerRef.current) {
+      clearTimeout(speechTimerRef.current);
+      speechTimerRef.current = null;
     }
 
     window.speechSynthesis.cancel();
 
-    const utterance = new SpeechSynthesisUtterance(msg);
-
-    utterance.rate = 1.0;
-    utterance.lang = "en-US";
-
-    window.speechSynthesis.speak(utterance);
-
     lastSpokenRef.current = {
-      text: msg,
-      time: now,
+      text: "",
+      time: 0,
     };
-  }, [feedback, warning, isMuted]);
+  };
 
   const scheduleNextFrame = () => {
     if (!isActiveRef.current) return;
@@ -220,6 +282,7 @@ export default function WorkoutSession() {
         setFeedback(res.data.feedback || "Ready");
         setWarning(res.data.warning || "");
         setDirection(res.data.direction || "none");
+
         setPersonDetected(
           res.data.person_detected ?? false,
         );
@@ -234,6 +297,7 @@ export default function WorkoutSession() {
       if (err?.response?.status === 409) {
         isActiveRef.current = false;
         setIsActive(false);
+        stopSpeech();
       } else {
         console.error(
           "Frame processing error:",
@@ -257,6 +321,8 @@ export default function WorkoutSession() {
       clearTimeout(frameTimerRef.current);
       frameTimerRef.current = null;
     }
+
+    stopSpeech();
 
     if (streamRef.current) {
       streamRef.current
@@ -358,6 +424,11 @@ export default function WorkoutSession() {
       setWarning("");
       setDirection("none");
 
+      lastSpokenRef.current = {
+        text: "",
+        time: 0,
+      };
+
       toast.success(
         `${currentEx.name} tracking started.`,
       );
@@ -373,6 +444,8 @@ export default function WorkoutSession() {
       processingFrameRef.current = false;
 
       setIsActive(false);
+
+      stopSpeech();
 
       if (frameTimerRef.current) {
         clearTimeout(frameTimerRef.current);
@@ -413,6 +486,8 @@ export default function WorkoutSession() {
       frameTimerRef.current = null;
     }
 
+    stopSpeech();
+
     if (streamRef.current) {
       streamRef.current
         .getTracks()
@@ -426,8 +501,6 @@ export default function WorkoutSession() {
     }
 
     setProcessedImage(null);
-
-    window.speechSynthesis.cancel();
 
     try {
       await axios.post(
@@ -455,6 +528,8 @@ export default function WorkoutSession() {
           session_id: sessionIdRef.current,
         },
       );
+
+      stopSpeech();
 
       setReps(0);
       setAngle(0.0);
@@ -556,7 +631,7 @@ export default function WorkoutSession() {
                   setIsMuted(next);
 
                   if (next) {
-                    window.speechSynthesis.cancel();
+                    stopSpeech();
                   }
                 }}
                 className={`flex items-center gap-2 rounded-btn border px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all ${
@@ -809,4 +884,4 @@ export default function WorkoutSession() {
     </UserLayout>
   );
 }
-              
+

@@ -1,6 +1,7 @@
 const dotenv = require("dotenv");
 dotenv.config();
 const Stripe = require("stripe");
+const bcrypt = require("bcryptjs");
 const UserModel = require("../../models/userModel");
 const PaymentModel = require("../../models/paymentModel");
 
@@ -299,6 +300,82 @@ const updateProfessionalProfile = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Internal server error while updating profile",
+      error: error.message,
+    });
+  }
+};
+
+const changeProfessionalPassword = async (req, res) => {
+  try {
+    const professionalId = req.user.userId;
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Current password, new password, and confirm password are required",
+      });
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "New password and confirm password do not match",
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: "New password must be at least 6 characters long",
+      });
+    }
+
+    if (currentPassword === newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "New password must be different from the current password",
+      });
+    }
+
+    const professional = await UserModel.findOne({
+      _id: professionalId,
+      role: "PROFESSIONAL",
+    });
+
+    if (!professional) {
+      return res.status(404).json({
+        success: false,
+        message: "Professional not found",
+      });
+    }
+
+    const isPasswordValid = await bcrypt.compare(
+      currentPassword,
+      professional.password
+    );
+
+    if (!isPasswordValid) {
+      return res.status(400).json({
+        success: false,
+        message: "Current password is incorrect",
+      });
+    }
+
+    professional.password = await bcrypt.hash(newPassword, 10);
+
+    await professional.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Password updated successfully",
+    });
+  } catch (error) {
+    console.error("Change professional password error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error while changing password",
       error: error.message,
     });
   }
@@ -723,6 +800,7 @@ module.exports = {
   getProfessionalDashboard,
   getProfessionalProfile,
   updateProfessionalProfile,
+  changeProfessionalPassword,
   getProfessionalBookings,
   getProfessionalBookingById,
   getAvailability,
