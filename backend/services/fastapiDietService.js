@@ -3,14 +3,7 @@ const axios = require("axios");
 const FASTAPI_BASE_URL =
   process.env.FASTAPI_DIET_URL || "http://127.0.0.1:8000";
 
-/**
- * Service to communicate with the Python/FastAPI Diet Recommendation Microservice.
- * Strictly consumes the existing /generate-diet-plan and /health endpoints.
- */
 const fastapiDietService = {
-  /**
-   * Health check for the FastAPI microservice
-   */
   checkHealth: async () => {
     try {
       const response = await axios.get(`${FASTAPI_BASE_URL}/health`, {
@@ -81,10 +74,13 @@ const fastapiDietService = {
         {
           headers: { "Content-Type": "application/json" },
           timeout: 15000,
-        }
+        },
       );
     } catch (err) {
-      console.error("FastAPI Request Error:", err.response?.data || err.message);
+      console.error(
+        "FastAPI Request Error:",
+        err.response?.data || err.message,
+      );
       const detail =
         err.response?.data?.detail ||
         err.response?.data?.message ||
@@ -101,13 +97,13 @@ const fastapiDietService = {
     // Validate FastAPI response structure
     if (!data || data.status !== "success" || !Array.isArray(data.plan_days)) {
       throw new Error(
-        "Invalid response received from the Diet Plan Recommendation Service."
+        "Invalid response received from the Diet Plan Recommendation Service.",
       );
     }
 
     if (data.plan_days.length !== days) {
       throw new Error(
-        `Expected ${days} days in diet plan, but received ${data.plan_days.length}.`
+        `Expected ${days} days in diet plan, but received ${data.plan_days.length}.`,
       );
     }
 
@@ -116,22 +112,26 @@ const fastapiDietService = {
     for (const day of data.plan_days) {
       if (!day.meals || typeof day.meals !== "object") {
         throw new Error(
-          `Day ${day.day} is missing meal slot definitions from recommendation service.`
+          `Day ${day.day} is missing meal slot definitions from recommendation service.`,
         );
       }
 
       for (const slot of requiredSlots) {
         const slotData = day.meals[slot];
-        if (!slotData || !Array.isArray(slotData.items) || slotData.items.length === 0) {
+        if (
+          !slotData ||
+          !Array.isArray(slotData.items) ||
+          slotData.items.length === 0
+        ) {
           throw new Error(
-            `Day ${day.day} slot '${slot}' is missing recommended items.`
+            `Day ${day.day} slot '${slot}' is missing recommended items.`,
           );
         }
 
         for (const item of slotData.items) {
           if (!item.dish_name || item.portion_grams === undefined) {
             throw new Error(
-              `Item in Day ${day.day} slot '${slot}' is missing required dish or portion details.`
+              `Item in Day ${day.day} slot '${slot}' is missing required dish or portion details.`,
             );
           }
         }

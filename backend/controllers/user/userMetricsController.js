@@ -13,34 +13,14 @@ const {
 const DietPlan = require("../../models/DietPlan");
 
 const UserMetricsController = {
-  // =========================================================
-  // SAVE / UPDATE USER METRICS
-  // =========================================================
   save: async (req, res) => {
     try {
       const { userId } = req.params;
 
-      const {
-        weight,
-        height,
-        age,
-        gender,
-        goal,
-        activityLevel,
-        dietPref,
-        diabetes,
-        allergiesNuts,
-      } = req.body;
+      const { weight, height, age, gender, goal, activityLevel } = req.body;
 
-      console.log("---------");
-      console.log("USER METRICS SAVE API");
       console.log("USER ID:", userId);
       console.log("BODY:", req.body);
-      console.log("---------");
-
-      // =====================================================
-      // VALIDATE USER ID
-      // =====================================================
 
       if (!userId) {
         return res.status(400).json({
@@ -56,10 +36,6 @@ const UserMetricsController = {
         });
       }
 
-      // =====================================================
-      // VALIDATION
-      // =====================================================
-
       const validGenders = ["male", "female"];
 
       const validActivityLevels = [
@@ -74,7 +50,6 @@ const UserMetricsController = {
 
       const errors = {};
 
-      // AGE
       if (age === undefined || age === null || age === "") {
         errors.age = "Age is required";
       } else {
@@ -86,7 +61,6 @@ const UserMetricsController = {
         }
       }
 
-      // HEIGHT
       if (height === undefined || height === null || height === "") {
         errors.height = "Height is required";
       } else {
@@ -97,7 +71,6 @@ const UserMetricsController = {
         }
       }
 
-      // WEIGHT
       if (weight === undefined || weight === null || weight === "") {
         errors.weight = "Weight is required";
       } else {
@@ -108,7 +81,6 @@ const UserMetricsController = {
         }
       }
 
-      // GENDER
       const normalizedGender = String(gender || "")
         .trim()
         .toLowerCase();
@@ -117,7 +89,6 @@ const UserMetricsController = {
         errors.gender = "Gender must be either 'male' or 'female'";
       }
 
-      // ACTIVITY LEVEL
       const normalizedActivity = String(activityLevel || "")
         .trim()
         .toLowerCase();
@@ -128,7 +99,6 @@ const UserMetricsController = {
         )}`;
       }
 
-      // GOAL
       const normalizedGoal = String(goal || "")
         .trim()
         .toLowerCase();
@@ -137,7 +107,6 @@ const UserMetricsController = {
         errors.goal = `Goal must be one of: ${validGoals.join(", ")}`;
       }
 
-      // RETURN VALIDATION ERRORS
       if (Object.keys(errors).length > 0) {
         return res.status(400).json({
           success: false,
@@ -146,20 +115,14 @@ const UserMetricsController = {
         });
       }
 
-      // =====================================================
-      // BACKEND CALCULATIONS
-      // =====================================================
-
       const numericWeight = Number(weight);
       const numericHeight = Number(height);
       const numericAge = Number(age);
 
-      // BMI
       const bmi = calculateBMI(numericWeight, numericHeight);
 
       const bmiCategory = getBMICategory(bmi);
 
-      // BMR
       const bmr = calculateBMR(
         numericWeight,
         numericHeight,
@@ -167,26 +130,17 @@ const UserMetricsController = {
         normalizedGender,
       );
 
-      // TDEE
       const tdee = calculateTDEE(bmr, normalizedActivity);
 
-      // GOAL CALORIES
       const goalCalories = calculateGoalCalories(tdee, normalizedGoal);
 
-      // MACROS
       const macros = calculateMacros(goalCalories, normalizedGoal);
 
-      // WATER
       const waterIntake = calculateWaterIntake(
         numericWeight,
         normalizedActivity,
       );
 
-      // =====================================================
-      // LOG CALCULATIONS
-      // =====================================================
-
-      console.log("---------");
       console.log("CALCULATED VALUES");
       console.log("BMI:", bmi, `(${bmiCategory})`);
       console.log("BMR:", bmr);
@@ -194,11 +148,6 @@ const UserMetricsController = {
       console.log("GOAL CALORIES:", goalCalories);
       console.log("MACROS:", macros);
       console.log("WATER INTAKE:", waterIntake);
-      console.log("---------");
-
-      // =====================================================
-      // SAVE / UPDATE USER METRICS
-      // =====================================================
 
       const savedMetrics = await UserMetrics.findOneAndUpdate(
         {
@@ -207,39 +156,21 @@ const UserMetricsController = {
         {
           $set: {
             userId,
-
             weight: numericWeight,
             height: numericHeight,
             age: numericAge,
-
             gender: normalizedGender,
             goal: normalizedGoal,
             activityLevel: normalizedActivity,
-
-            dietPref: dietPref || "non-veg",
-
-            diabetes: Boolean(diabetes),
-
-            allergiesNuts: Boolean(allergiesNuts),
-
-            // CALCULATED VALUES
-            bmi,
             bmiValue: bmi,
             bmiCategory,
-
             bmr,
             tdee,
-
-            goalCalories,
             targetCalories: goalCalories,
-
             protein: macros.protein,
             carbs: macros.carbs,
             fats: macros.fat,
-
             macros,
-
-            // WATER
             waterIntake,
           },
         },
@@ -250,41 +181,15 @@ const UserMetricsController = {
         },
       );
 
-      console.log("---------");
       console.log("SAVED METRICS:");
       console.log(savedMetrics);
-      console.log("---------");
-
-      // =====================================================
-      // DELETE OLD DIET PLAN
-      // =====================================================
-      //
-      // Every time health metrics are recalculated,
-      // the previous diet plan becomes invalid.
-      //
-      // The new metrics may produce different:
-      // - calories
-      // - macros
-      // - BMI
-      // - BMR
-      // - TDEE
-      // - fitness goal
-      //
-      // Therefore the old diet plan must be removed.
-      // =====================================================
 
       const deletedDietPlan = await DietPlan.deleteOne({
         userId,
       });
 
-      console.log("---------");
       console.log("OLD DIET PLAN CLEANUP");
       console.log("Deleted diet plans:", deletedDietPlan.deletedCount);
-      console.log("---------");
-
-      // =====================================================
-      // RESPONSE
-      // =====================================================
 
       return res.status(200).json({
         success: true,
@@ -294,10 +199,8 @@ const UserMetricsController = {
         dietPlanDeleted: deletedDietPlan.deletedCount > 0,
       });
     } catch (error) {
-      console.error("---------");
       console.error("USER METRICS SAVE ERROR");
       console.error(error);
-      console.error("---------");
 
       return res.status(500).json({
         success: false,
@@ -307,9 +210,6 @@ const UserMetricsController = {
     }
   },
 
-  // =========================================================
-  // GET USER METRICS
-  // =========================================================
   get: async (req, res) => {
     try {
       const { userId } = req.params;

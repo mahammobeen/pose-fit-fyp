@@ -3,13 +3,6 @@ const UserMetrics = require("../../models/userMetrics");
 const DietPlan = require("../../models/DietPlan");
 const fastapiDietService = require("../../services/fastapiDietService");
 
-/**
- * Calculates days elapsed and expiry status based on generatedAt timestamp.
- * Day 1: daysElapsed = 0
- * Day 2: daysElapsed = 1
- * Day 3: daysElapsed = 2
- * Expired: daysElapsed >= 3
- */
 function calculateDayExpiry(generatedAt) {
   const genDate = new Date(generatedAt || Date.now());
   const today = new Date();
@@ -17,19 +10,16 @@ function calculateDayExpiry(generatedAt) {
   const startOfGen = new Date(
     genDate.getFullYear(),
     genDate.getMonth(),
-    genDate.getDate()
+    genDate.getDate(),
   );
   const startOfToday = new Date(
     today.getFullYear(),
     today.getMonth(),
-    today.getDate()
+    today.getDate(),
   );
 
   const diffTime = startOfToday.getTime() - startOfGen.getTime();
-  const daysElapsed = Math.max(
-    0,
-    Math.floor(diffTime / (1000 * 60 * 60 * 24))
-  );
+  const daysElapsed = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
 
   const isExpired = daysElapsed >= 3;
   const currentDay = isExpired ? null : daysElapsed + 1;
@@ -41,9 +31,6 @@ function calculateDayExpiry(generatedAt) {
   };
 }
 
-/**
- * Helper to collect all food IDs from a plan's 3 days
- */
 function extractFoodIds(planDays) {
   const ids = new Set();
   if (!Array.isArray(planDays)) return [];
@@ -65,9 +52,6 @@ function extractFoodIds(planDays) {
   return Array.from(ids);
 }
 
-/**
- * Checks if two sets of food IDs are too similar (> 80% overlap or exact match)
- */
 function arePlansDuplicate(ids1, ids2) {
   if (!ids1.length || !ids2.length) return false;
   const set1 = new Set(ids1);
@@ -78,7 +62,6 @@ function arePlansDuplicate(ids1, ids2) {
 }
 
 const dietPlanController = {
-  // GENERATE / REGENERATE DIET PLAN
   generatePlan: async (req, res) => {
     try {
       const { userId } = req.params;
@@ -90,7 +73,6 @@ const dietPlanController = {
         });
       }
 
-      // 1. Check saved Health Metrics
       const metrics = await UserMetrics.findOne({ userId });
 
       if (!metrics) {
@@ -101,14 +83,10 @@ const dietPlanController = {
         });
       }
 
-      const targetCalories =
-        metrics.targetCalories || metrics.goalCalories;
-      const protein_g =
-        metrics.protein || metrics.macros?.protein;
-      const carbs_g =
-        metrics.carbs || metrics.macros?.carbs;
-      const fats_g =
-        metrics.fats || metrics.macros?.fat;
+      const targetCalories = metrics.targetCalories || metrics.goalCalories;
+      const protein_g = metrics.protein || metrics.macros?.protein;
+      const carbs_g = metrics.carbs || metrics.macros?.carbs;
+      const fats_g = metrics.fats || metrics.macros?.fat;
       const fitnessGoal = metrics.goal || "maintain weight";
 
       if (!targetCalories || !protein_g || !carbs_g || !fats_g) {
@@ -119,7 +97,6 @@ const dietPlanController = {
         });
       }
 
-      // 2. Check for existing plan to guarantee non-duplicate regeneration
       const existingPlan = await DietPlan.findOne({ userId });
       const previousFoodIds = existingPlan
         ? extractFoodIds(existingPlan.planDays)
@@ -133,7 +110,6 @@ const dietPlanController = {
       }
       console.log("-------");
 
-      // 3. Request plan from FastAPI
       let newPlanData = await fastapiDietService.generateDietPlan({
         targetCalories,
         protein_g,
@@ -145,19 +121,16 @@ const dietPlanController = {
         randomSeed: null,
       });
 
-      // 4. Guaranteed Non-Duplicate Check
-      // If a previous plan exists and the new plan is too similar, retry with exclusion
       if (previousFoodIds.length > 0) {
         let newFoodIds = extractFoodIds(newPlanData.plan_days);
         if (arePlansDuplicate(previousFoodIds, newFoodIds)) {
           console.log(
-            "Plan similarity high on initial generation. Retrying with excluded previous dishes to guarantee fresh variation..."
+            "Plan similarity high on initial generation. Retrying with excluded previous dishes to guarantee fresh variation...",
           );
           try {
-            // Exclude half of the previous dishes to force new combinations while preserving catalog feasibility
             const excludeSubset = previousFoodIds.slice(
               0,
-              Math.min(15, previousFoodIds.length)
+              Math.min(15, previousFoodIds.length),
             );
             const retriedPlan = await fastapiDietService.generateDietPlan({
               targetCalories,
@@ -173,20 +146,17 @@ const dietPlanController = {
             const retriedIds = extractFoodIds(retriedPlan.plan_days);
             if (!arePlansDuplicate(previousFoodIds, retriedIds)) {
               newPlanData = retriedPlan;
-              console.log(
-                "Fresh varied plan generated successfully on retry."
-              );
+              console.log("Fresh varied plan generated successfully on retry.");
             }
           } catch (retryErr) {
             console.warn(
               "Exclusion retry warning, falling back to initial valid plan:",
-              retryErr.message
+              retryErr.message,
             );
           }
         }
       }
 
-      // 5. Build snapshot of metrics
       const metricsSnapshot = {
         age: metrics.age,
         height: metrics.height,
@@ -204,7 +174,6 @@ const dietPlanController = {
         fats: fats_g,
       };
 
-      // 6. Save/Replace the user's single DietPlan document
       const now = new Date();
       const savedDietPlan = await DietPlan.findOneAndUpdate(
         { userId },
@@ -227,7 +196,7 @@ const dietPlanController = {
           new: true,
           upsert: true,
           runValidators: true,
-        }
+        },
       );
 
       console.log("---------");
@@ -259,7 +228,6 @@ const dietPlanController = {
     }
   },
 
-  // GET CURRENT 3-DAY PLAN (WITH EXPIRY STATUS)
   getCurrentPlan: async (req, res) => {
     try {
       const { userId } = req.params;
@@ -301,7 +269,6 @@ const dietPlanController = {
     }
   },
 
-  // GET TODAY'S MEALS SPECIFICALLY FOR DASHBOARD CARD
   getTodayPlan: async (req, res) => {
     try {
       const { userId } = req.params;
@@ -328,7 +295,8 @@ const dietPlanController = {
         return res.status(200).json({
           success: true,
           isExpired: true,
-          message: "Your 3-day diet plan has expired. Please regenerate a new plan.",
+          message:
+            "Your 3-day diet plan has expired. Please regenerate a new plan.",
           daysElapsed: dayExpiry.daysElapsed,
           currentDay: null,
           meals: null,
@@ -337,7 +305,7 @@ const dietPlanController = {
 
       const currentDayNumber = dayExpiry.currentDay;
       const todayDayPlan = plan.planDays.find(
-        (d) => d.day === currentDayNumber
+        (d) => d.day === currentDayNumber,
       );
 
       if (!todayDayPlan) {

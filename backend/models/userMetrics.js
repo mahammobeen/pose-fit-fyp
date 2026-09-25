@@ -134,10 +134,6 @@ const UserMetricsSchema = new mongoose.Schema(
       type: macrosSchema,
     },
 
-    // ------------------------------------------
-    // DAILY WATER INTAKE
-    // ------------------------------------------
-
     waterIntake: {
       type: waterIntakeSchema,
     },
