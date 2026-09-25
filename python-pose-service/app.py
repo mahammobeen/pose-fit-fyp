@@ -211,9 +211,7 @@ MSG_ARMS = "Keep your shoulders, hips and elbows fully in the camera view"
 MSG_PLANK = "Turn sideways to the camera so your full body is visible"
 
 
-# =====================================================================
-# Geometry helpers
-# =====================================================================
+
 def calculate_joint_angle(a, b, c):
     """Angle at point b between a-b and c-b. Works for 2D and 3D points."""
     a = np.array(a, dtype=float)
@@ -347,14 +345,9 @@ def empty_snapshot():
     }
 
 
-# =====================================================================
-# Workout session
-# =====================================================================
 class WorkoutSession:
     def __init__(self, exercise="side_bend"):
-        # lock: protects the published snapshot and jpeg (read by streams)
-        # proc_lock: protects the Pose object and all rep state
-        #            (MediaPipe Pose is not thread safe)
+       
         self.lock = threading.Lock()
         self.proc_lock = threading.Lock()
 
@@ -558,8 +551,6 @@ class WorkoutSession:
 
             h, w = frame.shape[:2]
 
-            # Inference on the original (not mirrored) frame so that
-            # LEFT/RIGHT landmarks match the user's real left and right.
             rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             results = self.pose.process(rgb)
 
@@ -623,6 +614,7 @@ class WorkoutSession:
             return snapshot, jpeg_bytes
 
     # ---------------- side bend ----------------
+    def _side_bend(self, results, frame, w, h, now, out):
         lms = results.pose_landmarks.landmark
 
         l_sh, v_l_sh = lm_point(lms, PL.LEFT_SHOULDER.value, w, h)
@@ -654,11 +646,10 @@ class WorkoutSession:
         abs_angle = abs(signed)
 
         out["angle"] = signed
-        # Shoulders to the image right means the user's own left side,
-        # because the frame is not mirrored before inference.
+       
         out["direction"] = "left" if signed > 0 else "right"
 
-        # Twist check against the user's own neutral baseline.
+        
         shoulder_w = distance(l_sh, r_sh)
         hip_w = distance(l_hip, r_hip)
         ratio = shoulder_w / max(hip_w, 1.0)
@@ -677,9 +668,6 @@ class WorkoutSession:
             )
             twisting = twist_pct > SB_TWIST_LIMIT
 
-        # Perfect form = bend inside the target zone, without twisting.
-        # The rep counts after REP_HOLD_SECONDS of perfect form, then the
-        # user must come back to the center before the next rep.
         perfect = SB_TARGET <= abs_angle <= SB_NORMAL_MAX and not twisting
         at_rest = abs_angle <= SB_RETURN
 
@@ -756,7 +744,7 @@ class WorkoutSession:
                 continue
 
             if world is not None:
-                # 3D angle: works from the front and from the side
+                
                 angle = calculate_joint_angle(
                     world_xyz(world, hip_id.value),
                     world_xyz(world, knee_id.value),
@@ -781,9 +769,6 @@ class WorkoutSession:
         out["angle"] = angle
         out["direction"] = self._track_direction(angle)
 
-        # Perfect form = knee angle inside the depth zone. The rep counts
-        # after REP_HOLD_SECONDS at that depth, then the user must stand
-        # back up before the next rep.
         perfect = SQ_MAX_NORMAL <= angle <= SQ_REP_DEPTH
         at_rest = angle >= SQ_RETURN
 
@@ -867,8 +852,7 @@ class WorkoutSession:
         tilt = math.degrees(math.atan2(abs(dy), abs(dx)))
         horizontal = tilt <= PLANK_MAX_TILT
 
-        # Signed hip offset from the shoulder-ankle line (image y is down):
-        # positive = hips below the line (sag), negative = above (pike)
+      
         offset = 0.0
 
         if abs(dx) > 1e-6:
@@ -876,7 +860,7 @@ class WorkoutSession:
             line_y = sh[1] + dy * t
             offset = (hip[1] - line_y) / max(length, 1.0)
 
-        # Time based hold: only good form time is counted
+      
         dt = 0.0
 
         if self.last_frame_time is not None:
@@ -955,9 +939,7 @@ class WorkoutSession:
         at_rest = left <= AR_RETURN and right <= AR_RETURN
         uneven = abs(left - right) > AR_SYMMETRY
 
-        # Perfect form = both arms at or above the target height and even.
-        # The rep counts after REP_HOLD_SECONDS, then both arms must come
-        # back down before the next rep.
+        
         perfect = both_raised and not uneven
 
         event = self._advance_rep(now, perfect, at_rest)
@@ -1006,9 +988,6 @@ class WorkoutSession:
         draw_points(frame, points, radius=8)
 
 
-# =====================================================================
-# Session registry
-# =====================================================================
 sessions = {}
 sessions_lock = threading.Lock()
 
@@ -1127,3 +1106,172 @@ def start_session():
 
     session = get_or_create_session(session_id, exercise)
     session.start(exercise)
+
+    return jsonify({
+        "status": "started",
+        "session_id": session_id,
+        "message": f"{exercise} session initialized.",
+    })
+
+
+@app.route("/stop", methods=["POST"])
+def stop_session():
+    data = request.get_json(silent=True) or {}
+
+    session_id = data.get("session_id") or request.args.get("session_id")
+
+    session = None
+
+    if session_id:
+        with sessions_lock:
+            session = sessions.get(session_id)
+
+    if session:
+        session.close()
+
+        return jsonify({
+            "status": "stopped",
+            "message": "Session terminated.",
+        })
+
+    return jsonify({
+        "status": "already_stopped",
+        "message": "Session inactive.",
+    })
+
+
+@app.route("/reset", methods=["POST"])
+def reset_workout():
+    data = request.get_json(silent=True) or {}
+
+    session_id = data.get("session_id") or request.args.get("session_id")
+
+    if not session_id:
+        return json_error("session_id is required", 400)
+
+    session = get_or_create_session(session_id, create=False)
+
+    if session is None:
+        return json_error("Session not found", 404)
+
+    session.reset()
+
+    return jsonify({
+        "status": "reset",
+        "message": "Session metrics reset successfully.",
+    })
+
+
+@app.route("/status", methods=["GET"])
+def get_status():
+    session_id = request.args.get("session_id")
+
+    session = None
+
+    if session_id:
+        with sessions_lock:
+            session = sessions.get(session_id)
+
+    if session is None:
+        return jsonify({
+            "is_active": False,
+            "known_session": False,
+            "exercise": None,
+            "online": True,
+        })
+
+    return jsonify({
+        "is_active": session.is_active,
+        "known_session": True,
+        "exercise": session.exercise,
+        "online": True,
+    })
+
+
+@app.route("/config", methods=["GET"])
+def get_config():
+    """Thresholds with basis and source, for the thesis table."""
+    return jsonify({
+        "thresholds": threshold_report(),
+        "references": REFERENCES,
+    })
+
+
+@app.route("/metrics")
+def metrics():
+    session_id = request.args.get("session_id")
+
+    if not session_id:
+        return json_error("session_id is required", 400)
+
+    session = get_or_create_session(session_id, create=False)
+
+    if session is None:
+        return json_error("Session not found", 404)
+
+    def event_stream():
+        while True:
+            data, active = session.read_snapshot()
+
+            yield f"data: {json.dumps(data)}\n\n"
+
+            idle = time.time() - session.last_updated > STREAM_IDLE_SECONDS
+
+            if not active or idle:
+                break
+
+            time.sleep(0.15)
+
+    return Response(event_stream(), mimetype="text/event-stream")
+
+
+@app.route("/video_feed")
+def video_feed():
+    session_id = request.args.get("session_id")
+
+    if not session_id:
+        return json_error("session_id is required", 400)
+
+    session = get_or_create_session(session_id, create=False)
+
+    if session is None:
+        return json_error("Session not found", 404)
+
+    def gen():
+        last_seq = -1
+
+        while True:
+            with session.lock:
+                frame_bytes = session.latest_jpeg
+                seq = session.frame_seq
+
+            active = session.is_active
+
+            if frame_bytes and seq != last_seq:
+                last_seq = seq
+
+                yield (
+                    b"--frame\r\n"
+                    b"Content-Type: image/jpeg\r\n\r\n"
+                    + frame_bytes
+                    + b"\r\n"
+                )
+
+            idle = time.time() - session.last_updated > STREAM_IDLE_SECONDS
+
+            if not active or idle:
+                break
+
+            time.sleep(0.04)
+
+    return Response(
+        gen(),
+        mimetype="multipart/x-mixed-replace; boundary=frame",
+    )
+
+
+if __name__ == "__main__":
+    port = int(os.getenv("PORT", 5002))
+
+    
+    app.run(host="0.0.0.0", port=port, threaded=True)
