@@ -63,7 +63,7 @@ const isNonEnglish = (text) => {
     .filter(Boolean);
 
   const romanUrduMatches = words.filter((word) =>
-    ROMAN_URDU_WORDS.includes(word)
+    ROMAN_URDU_WORDS.includes(word),
   );
 
   return hasNonAscii || romanUrduMatches.length >= 2;
@@ -244,7 +244,7 @@ abnormal health value:
 - Do not provide RICE-style instructions such as rest, ice, compression, or
   elevation as treatment.
 - Do not provide symptom-management techniques such as icing, heating,
-  compression, elevation, positioning, or similar interventions.
+  compression, elevation, positioning, massage, or similar interventions.
 - Do not recommend specific rehabilitation exercises, stretches, therapeutic
   movements, or recovery programs.
 - Do not create condition-specific exercise programs.
@@ -253,6 +253,7 @@ abnormal health value:
   symptom, or abnormal health value affects the user's ability to exercise.
 - Do not suggest lighter exercises, alternative exercises, modified workouts,
   or exercise substitutions as a response to a medical condition or injury.
+- Do not suggest "rest" or "rest the area" as treatment.
 - Do not assume the cause of a symptom.
 - Do not assume that two health conditions or symptoms are related simply
   because they appear in the same message.
@@ -268,9 +269,9 @@ alternative exercise plan.
 Do not tell the user to push through pain, weakness, dizziness, unusual
 heartbeat, or other concerning symptoms.
 
-If exercise is causing a concerning symptom, advise the user to stop or pause
-the activity causing the symptom when appropriate, without providing a
-treatment or rehabilitation plan.
+If exercise is causing a concerning symptom, it may be appropriate to tell
+the user to stop or pause the activity causing the symptom. Do not add
+"rest" or other treatment instructions.
 
 If symptoms are severe, worsening, persistent, or concerning, recommend
 appropriate professional medical evaluation.
@@ -294,9 +295,6 @@ Keep medical-context responses concise.
 
 
 EXERCISE-RELATED PAIN OR SYMPTOMS
-When telling the user to stop or pause an activity, do not additionally tell
-them to rest, recover, ice, heat, compress, elevate, massage, stretch, or
-otherwise treat the affected area.
 
 If exercise appears to be causing pain or another concerning symptom:
 
@@ -304,8 +302,9 @@ If exercise appears to be causing pain or another concerning symptom:
 - Do not automatically assume the cause.
 - It may be appropriate to stop or pause the activity that triggers the
   symptom.
-- Do not recommend rest, ice, compression, elevation, heating, positioning,
-  or other symptom-management techniques as treatment.
+- Do not tell the user to rest or "rest the area" as treatment.
+- Do not recommend ice, heat, compression, elevation, positioning, massage,
+  or other symptom-management techniques.
 - Do not recommend specific stretches, exercises, rehabilitation movements,
   or recovery programs for the painful area.
 - Do not provide a modified workout or alternative exercise plan to manage
@@ -317,26 +316,6 @@ If exercise appears to be causing pain or another concerning symptom:
 - Do not turn the response into a detailed medical explanation.
 
 Keep the response practical, concise, and focused on immediate safe guidance.
-
-MEDICAL EMERGENCIES
-
-If the complete user message indicates a potentially serious or immediate
-medical emergency:
-
-- Advise the user to call emergency rescue service: Rescue 1122.
-- Do not mention 911 or U.S. emergency services.
-- Prioritize the user's immediate safety.
-- If the user is in immediate danger, tell them to move to a safe place if possible.
-- Encourage urgent medical care or contacting Rescue 1122.
-- Keep the response short, clear, and urgent.
-- Do not diagnose the condition.
-- Do not provide treatment instructions.
-- Do not continue with normal fitness or wellness advice.
-- Do not rely only on a fixed list of emergency keywords.
-- Determine whether it is an emergency from the meaning and seriousness of the
-  complete user message, including context.
-
-After addressing immediate safety, do not provide a long medical explanation.
 
 PERSONALIZED DIET PLANS
 
@@ -620,10 +599,7 @@ Be friendly, concise, practical, safe, semantic, and context-aware.
 `;
 };
 
-const generateChatbotResponse = async ({
-  message,
-  history,
-}) => {
+const generateChatbotResponse = async ({ message, history }) => {
   const messages = [
     {
       role: "system",
@@ -650,7 +626,7 @@ const generateChatbotResponse = async ({
         "Content-Type": "application/json",
       },
       timeout: 60000,
-    }
+    },
   );
 
   const content = response.data?.choices?.[0]?.message?.content;
@@ -691,9 +667,7 @@ const handleChatbot = async (req, res) => {
     }
 
     const sessionId =
-      req.headers["x-session-id"] ||
-      req.body.sessionId ||
-      randomUUID();
+      req.headers["x-session-id"] || req.body.sessionId || randomUUID();
 
     const history = getSessionHistory(sessionId);
 
@@ -711,10 +685,7 @@ const handleChatbot = async (req, res) => {
       response,
     });
   } catch (error) {
-    console.error(
-      "Chatbot error:",
-      error.response?.data || error.message
-    );
+    console.error("Chatbot error:", error.response?.data || error.message);
 
     return res.status(500).json({
       success: false,

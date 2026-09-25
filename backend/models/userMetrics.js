@@ -11,9 +11,23 @@ const macrosSchema = new mongoose.Schema(
 
 const waterIntakeSchema = new mongoose.Schema(
   {
-    ml: { type: Number, required: true },
-    liters: { type: Number, required: true },
-    glasses: { type: Number, required: true },
+    ml: {
+      type: Number,
+      required: true,
+    },
+
+    liters: {
+      type: Number,
+      required: true,
+    },
+
+    glasses: {
+      type: Number,
+      required: true,
+    },
+  },
+  {
+    _id: false,
   },
   { _id: false },
 );
@@ -27,9 +41,23 @@ const UserMetricsSchema = new mongoose.Schema(
       ref: "User",
     },
 
-    weight: { type: Number, required: true, min: 1 },
-    height: { type: Number, required: true, min: 1 },
-    age: { type: Number, required: true, min: 1 },
+    weight: {
+      type: Number,
+      required: true,
+      min: 1,
+    },
+
+    height: {
+      type: Number,
+      required: true,
+      min: 1,
+    },
+
+    age: {
+      type: Number,
+      required: true,
+      min: 1,
+    },
 
     gender: {
       type: String,
@@ -49,18 +77,9 @@ const UserMetricsSchema = new mongoose.Schema(
       enum: ["sedentary", "light", "moderate", "active", "very active"],
     },
 
-    dietPref: {
-      type: String,
-      required: false,
-      enum: ["veg", "non-veg"],
-      default: "non-veg",
+    bmiValue: {
+      type: Number,
     },
-
-    diabetes: { type: Boolean, default: false },
-    allergiesNuts: { type: Boolean, default: false },
-
-    bmi: { type: Number },
-    bmiValue: { type: Number },
 
     bmiCategory: {
       type: String,
@@ -76,8 +95,37 @@ const UserMetricsSchema = new mongoose.Schema(
     carbs: { type: Number },
     fats: { type: Number },
 
-    macros: { type: macrosSchema },
-    waterIntake: { type: waterIntakeSchema },
+    goalCalories: {
+      type: Number,
+    },
+
+    targetCalories: {
+      type: Number,
+    },
+
+    protein: {
+      type: Number,
+    },
+
+    carbs: {
+      type: Number,
+    },
+
+    fats: {
+      type: Number,
+    },
+
+    macros: {
+      type: macrosSchema,
+    },
+
+    waterIntake: {
+      type: waterIntakeSchema,
+    },
+  },
+
+  {
+    timestamps: true,
   },
   { timestamps: true },
 );

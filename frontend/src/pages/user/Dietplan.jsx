@@ -641,7 +641,6 @@ export default function DietPlan() {
             </div>
 
             <div className="grid grid-cols-2 gap-2.5 sm:gap-3 md:gap-4">
-
               <div className="min-w-0 bg-brand-light/15 rounded-btn p-3 sm:p-4 border border-brand-light/30">
                 <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-400">
                   BMI

@@ -1,4 +1,3 @@
-
 function calculateBMI(weight, heightCm) {
   const heightM = heightCm / 100;
 
@@ -50,7 +49,9 @@ function calculateGoalCalories(tdee, goal) {
 }
 
 function calculateMacros(calories, goal = "") {
-  const normalizedGoal = String(goal || "").trim().toLowerCase();
+  const normalizedGoal = String(goal || "")
+    .trim()
+    .toLowerCase();
 
   let proteinRatio = 0.3;
   let carbsRatio = 0.4;

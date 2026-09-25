@@ -10,19 +10,16 @@ function calculateDayExpiry(generatedAt) {
   const startOfGen = new Date(
     genDate.getFullYear(),
     genDate.getMonth(),
-    genDate.getDate()
+    genDate.getDate(),
   );
   const startOfToday = new Date(
     today.getFullYear(),
     today.getMonth(),
-    today.getDate()
+    today.getDate(),
   );
 
   const diffTime = startOfToday.getTime() - startOfGen.getTime();
-  const daysElapsed = Math.max(
-    0,
-    Math.floor(diffTime / (1000 * 60 * 60 * 24))
-  );
+  const daysElapsed = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
 
   const isExpired = daysElapsed >= 3;
   const currentDay = isExpired ? null : daysElapsed + 1;
@@ -65,7 +62,6 @@ function arePlansDuplicate(ids1, ids2) {
 }
 
 const dietPlanController = {
-
   generatePlan: async (req, res) => {
     try {
       const { userId } = req.params;
@@ -87,14 +83,10 @@ const dietPlanController = {
         });
       }
 
-      const targetCalories =
-        metrics.targetCalories || metrics.goalCalories;
-      const protein_g =
-        metrics.protein || metrics.macros?.protein;
-      const carbs_g =
-        metrics.carbs || metrics.macros?.carbs;
-      const fats_g =
-        metrics.fats || metrics.macros?.fat;
+      const targetCalories = metrics.targetCalories || metrics.goalCalories;
+      const protein_g = metrics.protein || metrics.macros?.protein;
+      const carbs_g = metrics.carbs || metrics.macros?.carbs;
+      const fats_g = metrics.fats || metrics.macros?.fat;
       const fitnessGoal = metrics.goal || "maintain weight";
 
       if (!targetCalories || !protein_g || !carbs_g || !fats_g) {
@@ -110,13 +102,11 @@ const dietPlanController = {
         ? extractFoodIds(existingPlan.planDays)
         : [];
 
-      console.log("------");
       console.log(`GENERATING DIET PLAN FOR USER: ${userId}`);
       console.log(`Existing plan found: ${Boolean(existingPlan)}`);
       if (previousFoodIds.length) {
         console.log(`Previous food IDs count: ${previousFoodIds.length}`);
       }
-      console.log("-------");
 
       let newPlanData = await fastapiDietService.generateDietPlan({
         targetCalories,
@@ -133,13 +123,12 @@ const dietPlanController = {
         let newFoodIds = extractFoodIds(newPlanData.plan_days);
         if (arePlansDuplicate(previousFoodIds, newFoodIds)) {
           console.log(
-            "Plan similarity high on initial generation. Retrying with excluded previous dishes to guarantee fresh variation..."
+            "Plan similarity high on initial generation. Retrying with excluded previous dishes to guarantee fresh variation...",
           );
           try {
-
             const excludeSubset = previousFoodIds.slice(
               0,
-              Math.min(15, previousFoodIds.length)
+              Math.min(15, previousFoodIds.length),
             );
             const retriedPlan = await fastapiDietService.generateDietPlan({
               targetCalories,
@@ -155,14 +144,12 @@ const dietPlanController = {
             const retriedIds = extractFoodIds(retriedPlan.plan_days);
             if (!arePlansDuplicate(previousFoodIds, retriedIds)) {
               newPlanData = retriedPlan;
-              console.log(
-                "Fresh varied plan generated successfully on retry."
-              );
+              console.log("Fresh varied plan generated successfully on retry.");
             }
           } catch (retryErr) {
             console.warn(
               "Exclusion retry warning, falling back to initial valid plan:",
-              retryErr.message
+              retryErr.message,
             );
           }
         }
@@ -207,13 +194,11 @@ const dietPlanController = {
           new: true,
           upsert: true,
           runValidators: true,
-        }
+        },
       );
 
-      console.log("---------");
       console.log("DIET PLAN SAVED SUCCESSFULLY IN MONGODB");
       console.log("Generated At:", now);
-      console.log("---------");
 
       const dayExpiry = calculateDayExpiry(now);
 
@@ -306,7 +291,8 @@ const dietPlanController = {
         return res.status(200).json({
           success: true,
           isExpired: true,
-          message: "Your 3-day diet plan has expired. Please regenerate a new plan.",
+          message:
+            "Your 3-day diet plan has expired. Please regenerate a new plan.",
           daysElapsed: dayExpiry.daysElapsed,
           currentDay: null,
           meals: null,
@@ -315,7 +301,7 @@ const dietPlanController = {
 
       const currentDayNumber = dayExpiry.currentDay;
       const todayDayPlan = plan.planDays.find(
-        (d) => d.day === currentDayNumber
+        (d) => d.day === currentDayNumber,
       );
 
       if (!todayDayPlan) {
