@@ -166,6 +166,7 @@ const UserMetricsController = {
             bmiCategory,
             bmr,
             tdee,
+            goalCalories,
             targetCalories: goalCalories,
             protein: macros.protein,
             carbs: macros.carbs,

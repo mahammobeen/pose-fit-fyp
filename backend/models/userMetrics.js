@@ -89,10 +89,6 @@ const UserMetricsSchema = new mongoose.Schema(
       enum: ["sedentary", "light", "moderate", "active", "very active"],
     },
 
-    bmi: {
-      type: Number,
-    },
-
     bmiValue: {
       type: Number,
     },

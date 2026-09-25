@@ -102,13 +102,11 @@ const dietPlanController = {
         ? extractFoodIds(existingPlan.planDays)
         : [];
 
-      console.log("------");
       console.log(`GENERATING DIET PLAN FOR USER: ${userId}`);
       console.log(`Existing plan found: ${Boolean(existingPlan)}`);
       if (previousFoodIds.length) {
         console.log(`Previous food IDs count: ${previousFoodIds.length}`);
       }
-      console.log("-------");
 
       let newPlanData = await fastapiDietService.generateDietPlan({
         targetCalories,
@@ -199,10 +197,8 @@ const dietPlanController = {
         },
       );
 
-      console.log("---------");
       console.log("DIET PLAN SAVED SUCCESSFULLY IN MONGODB");
       console.log("Generated At:", now);
-      console.log("---------");
 
       const dayExpiry = calculateDayExpiry(now);
 
