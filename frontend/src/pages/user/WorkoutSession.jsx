@@ -55,6 +55,15 @@ const POSE_API_URL = (import.meta.env.VITE_POSE_API_URL || "").replace(
   "",
 );
 
+const SAME_MESSAGE_COOLDOWN = 4000;
+const DIFFERENT_MESSAGE_COOLDOWN = 2500;
+const MIN_MESSAGE_LENGTH = 3;
+
+// The on-screen feedback text is also throttled (separately from voice),
+// so it does not flicker every ~50-90ms as raw frames arrive. A message
+// containing "counted" (a rep just completed) always shows immediately.
+const FEEDBACK_DISPLAY_MIN_GAP = 900;
+
 export default function WorkoutSession() {
   const { exerciseId } = useParams();
   const navigate = useNavigate();
@@ -65,13 +74,21 @@ export default function WorkoutSession() {
   };
 
   const sessionIdRef = useRef(
-    "session_" + Math.random().toString(36).substring(2, 11) + "_" + Date.now()
+    "session_" +
+      // eslint-disable-next-line react-hooks/purity
+      Math.random().toString(36).substring(2, 11) +
+      "_" +
+      // eslint-disable-next-line react-hooks/purity
+      Date.now(),
   );
+
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
+
   const isActiveRef = useRef(false);
   const frameTimerRef = useRef(null);
+  const processingFrameRef = useRef(false);
 
   const [hasPermission, setHasPermission] = useState(() => {
     return localStorage.getItem("posefit_cam_permission") === "granted";
@@ -81,116 +98,298 @@ export default function WorkoutSession() {
   const [processedImage, setProcessedImage] = useState(null);
   const [reps, setReps] = useState(0);
   const [angle, setAngle] = useState(0.0);
+  const [progress, setProgress] = useState(0);
   const [feedback, setFeedback] = useState("Ready to start");
   const [warning, setWarning] = useState("");
+
+  // Debounced copies of feedback/warning, used only for the on-screen text
+  // box, so the message the user reads doesn't change every frame.
+  const [displayFeedback, setDisplayFeedback] = useState("Ready to start");
+  const [displayWarning, setDisplayWarning] = useState("");
+  const feedbackDisplayRef = useRef({
+    text: "Ready to start",
+    time: 0,
+    timer: null,
+  });
+  const warningDisplayRef = useRef({ text: "", time: 0, timer: null });
   const [direction, setDirection] = useState("none");
   const [serverOnline, setServerOnline] = useState(true);
   const [isMuted, setIsMuted] = useState(false);
   const [personDetected, setPersonDetected] = useState(false);
 
-  const lastSpokenRef = useRef({ text: "", time: 0 });
+  const lastSpokenRef = useRef({
+    text: "",
+    time: 0,
+  });
 
-  // Initial status check
+  const speechTimerRef = useRef(null);
+
   useEffect(() => {
     axios
       .get(`${POSE_API_URL}/status?session_id=${sessionIdRef.current}`)
       .then(() => {
         setServerOnline(true);
       })
-      .catch(() => setServerOnline(false));
+      .catch(() => {
+        setServerOnline(false);
+      });
 
+    // eslint-disable-next-line react-hooks/immutability
     return () => cleanupSession();
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Voice Feedback
   useEffect(() => {
     if (isMuted) return;
 
-    const msg = warning || feedback;
+    // Warning and feedback are never both meaningful at once (the backend
+    // only fills "warning" when it's not already covered by "feedback"),
+    // so speaking just one of them at a time keeps voice guidance calm.
+    const msg = (warning || feedback || "").trim();
 
     if (BLOCKED_VOICE_MESSAGES.has(msg)) return;
 
-    const now = Date.now();
+    if (msg.length < MIN_MESSAGE_LENGTH) return;
 
-    if (
-      msg === lastSpokenRef.current.text &&
-      now - lastSpokenRef.current.time < 3000
-    ) {
+    if (!isActiveRef.current) return;
+
+    const now = Date.now();
+    const lastSpoken = lastSpokenRef.current;
+
+    const isSameMessage = msg === lastSpoken.text;
+    const timeSinceLastSpeech = now - lastSpoken.time;
+
+    const requiredCooldown = isSameMessage
+      ? SAME_MESSAGE_COOLDOWN
+      : DIFFERENT_MESSAGE_COOLDOWN;
+
+    if (timeSinceLastSpeech < requiredCooldown) {
       return;
+    }
+
+    if (speechTimerRef.current) {
+      clearTimeout(speechTimerRef.current);
+      speechTimerRef.current = null;
+    }
+
+    const speakMessage = () => {
+      if (isMuted || !isActiveRef.current) return;
+
+      const currentTime = Date.now();
+
+      if (
+        msg === lastSpokenRef.current.text &&
+        currentTime - lastSpokenRef.current.time < SAME_MESSAGE_COOLDOWN
+      ) {
+        return;
+      }
+
+      window.speechSynthesis.cancel();
+
+      const utterance = new SpeechSynthesisUtterance(msg);
+
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+      utterance.volume = 1.0;
+      utterance.lang = "en-US";
+
+      window.speechSynthesis.speak(utterance);
+
+      lastSpokenRef.current = {
+        text: msg,
+        time: currentTime,
+      };
+    };
+
+    speechTimerRef.current = setTimeout(speakMessage, 150);
+
+    return () => {
+      if (speechTimerRef.current) {
+        clearTimeout(speechTimerRef.current);
+        speechTimerRef.current = null;
+      }
+    };
+  }, [feedback, warning, isMuted]);
+
+  const stopSpeech = () => {
+    if (speechTimerRef.current) {
+      clearTimeout(speechTimerRef.current);
+      speechTimerRef.current = null;
     }
 
     window.speechSynthesis.cancel();
 
-    const utterance = new SpeechSynthesisUtterance(msg);
-    utterance.rate = 1.0;
-    utterance.lang = "en-US";
-
-    window.speechSynthesis.speak(utterance);
-
     lastSpokenRef.current = {
-      text: msg,
-      time: now,
+      text: "",
+      time: 0,
     };
-  }, [feedback, warning, isMuted]);
+  };
 
-  // Frame processing loop from browser webcam to Python pose service
+  // Applies a new feedback/warning text to the on-screen box, but never
+  // sooner than FEEDBACK_DISPLAY_MIN_GAP after the last change - unless
+  // `isPriority` is set (used for "Rep counted!" so it always shows right
+  // away). This is what keeps the visible text calm even though the
+  // backend can send a new message every frame.
+  const scheduleDisplayUpdate = (ref, setter, newText, isPriority) => {
+    if (newText === ref.current.text) return;
+
+    const now = Date.now();
+    const elapsed = now - ref.current.time;
+
+    if (ref.current.timer) {
+      clearTimeout(ref.current.timer);
+      ref.current.timer = null;
+    }
+
+    if (isPriority || elapsed >= FEEDBACK_DISPLAY_MIN_GAP) {
+      ref.current.text = newText;
+      ref.current.time = now;
+      setter(newText);
+      return;
+    }
+
+    const wait = FEEDBACK_DISPLAY_MIN_GAP - elapsed;
+
+    ref.current.timer = setTimeout(() => {
+      ref.current.text = newText;
+      ref.current.time = Date.now();
+      ref.current.timer = null;
+      setter(newText);
+    }, wait);
+  };
+
+  const scheduleNextFrame = () => {
+    if (!isActiveRef.current) return;
+
+    if (frameTimerRef.current) {
+      clearTimeout(frameTimerRef.current);
+    }
+
+    frameTimerRef.current = setTimeout(() => {
+      sendNextFrame();
+    }, 50);
+  };
+
   const sendNextFrame = async () => {
     if (!isActiveRef.current) return;
+
+    if (processingFrameRef.current) return;
 
     const video = videoRef.current;
     const canvas = canvasRef.current;
 
-    if (video && canvas && video.readyState >= 2) {
-      try {
-        const width = video.videoWidth || 640;
-        const height = video.videoHeight || 480;
-        canvas.width = width;
-        canvas.height = height;
-
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(video, 0, 0, width, height);
-
-        const base64Image = canvas.toDataURL("image/jpeg", 0.6);
-
-        const res = await axios.post(`${POSE_API_URL}/process_frame`, {
-          session_id: sessionIdRef.current,
-          exercise: exerciseId,
-          image: base64Image,
-        });
-
-        if (isActiveRef.current && res.data) {
-          setReps(res.data.reps ?? 0);
-          setAngle(res.data.angle ?? 0.0);
-          setFeedback(res.data.feedback || "Ready");
-          setWarning(res.data.warning || "");
-          setDirection(res.data.direction || "none");
-          setPersonDetected(res.data.person_detected ?? false);
-          if (res.data.image) {
-            setProcessedImage(res.data.image);
-          }
-          setServerOnline(true);
-        }
-      } catch (err) {
-        console.error("Frame processing error:", err);
-      }
+    if (!video || !canvas || video.readyState < 2) {
+      scheduleNextFrame();
+      return;
     }
 
-    if (isActiveRef.current) {
-      frameTimerRef.current = setTimeout(sendNextFrame, 30);
+    processingFrameRef.current = true;
+
+    try {
+      const width = video.videoWidth || 640;
+      const height = video.videoHeight || 480;
+
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx = canvas.getContext("2d");
+
+      if (!ctx) {
+        processingFrameRef.current = false;
+        scheduleNextFrame();
+        return;
+      }
+
+      ctx.drawImage(video, 0, 0, width, height);
+
+      const base64Image = canvas.toDataURL("image/jpeg", 0.6);
+
+      const res = await axios.post(`${POSE_API_URL}/process_frame`, {
+        session_id: sessionIdRef.current,
+        exercise: exerciseId,
+        image: base64Image,
+      });
+
+      if (isActiveRef.current && res.data) {
+        const newFeedback = res.data.feedback || "Ready";
+        const newWarning = res.data.warning || "";
+        const isRepEvent = newFeedback.toLowerCase().includes("counted");
+
+        // Prefer the backend's exercise-aware progress_percent. Only if
+        // it's genuinely missing (older backend not yet redeployed) do we
+        // fall back to a rough angle-based guess, so the ring still shows
+        // *something* instead of staying invisible at 0%.
+        const backendProgress = res.data.progress_percent;
+        const fallbackProgress = Math.min(
+          100,
+          Math.round((Math.abs(res.data.angle ?? 0) / 90) * 100),
+        );
+
+        setReps(res.data.reps ?? 0);
+        setAngle(res.data.angle ?? 0.0);
+        setProgress(
+          backendProgress !== undefined ? backendProgress : fallbackProgress,
+        );
+        setFeedback(newFeedback);
+        setWarning(newWarning);
+        setDirection(res.data.direction || "none");
+
+        scheduleDisplayUpdate(
+          feedbackDisplayRef,
+          setDisplayFeedback,
+          newFeedback,
+          isRepEvent,
+        );
+        scheduleDisplayUpdate(
+          warningDisplayRef,
+          setDisplayWarning,
+          newWarning,
+          isRepEvent,
+        );
+
+        setPersonDetected(res.data.person_detected ?? false);
+
+        if (res.data.image) {
+          setProcessedImage(res.data.image);
+        }
+
+        setServerOnline(true);
+      }
+    } catch (err) {
+      if (err?.response?.status === 409) {
+        isActiveRef.current = false;
+        setIsActive(false);
+        stopSpeech();
+      } else {
+        console.error("Frame processing error:", err);
+      }
+    } finally {
+      processingFrameRef.current = false;
+
+      if (isActiveRef.current) {
+        scheduleNextFrame();
+      }
     }
   };
 
   const cleanupSession = async () => {
     isActiveRef.current = false;
+    processingFrameRef.current = false;
+
     if (frameTimerRef.current) {
       clearTimeout(frameTimerRef.current);
       frameTimerRef.current = null;
     }
+
+    stopSpeech();
+
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current.getTracks().forEach((track) => track.stop());
+
       streamRef.current = null;
     }
+
     if (videoRef.current) {
       videoRef.current.srcObject = null;
     }
@@ -202,14 +401,16 @@ export default function WorkoutSession() {
     } catch (_) {}
   };
 
-  // Permission Request
   const requestCamera = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 640, height: 480 },
+        video: {
+          width: 640,
+          height: 480,
+        },
       });
 
-      stream.getTracks().forEach((t) => t.stop());
+      stream.getTracks().forEach((track) => track.stop());
 
       setHasPermission(true);
 
@@ -221,21 +422,27 @@ export default function WorkoutSession() {
     }
   };
 
-  // Session Controls
   const handleStart = async () => {
     if (!hasPermission) {
       await requestCamera();
       return;
     }
 
+    if (isActiveRef.current) return;
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 640, height: 480 },
+        video: {
+          width: 640,
+          height: 480,
+        },
       });
 
       streamRef.current = stream;
+
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+
         await videoRef.current.play();
       }
 
@@ -244,22 +451,69 @@ export default function WorkoutSession() {
         exercise: exerciseId,
       });
 
+      processingFrameRef.current = false;
       isActiveRef.current = true;
+
       setIsActive(true);
       setPersonDetected(false);
+      setProcessedImage(null);
       setServerOnline(true);
+
+      setReps(0);
+      setAngle(0.0);
+      setProgress(0);
+      setFeedback("Position yourself in front of the camera");
+      setWarning("");
+      setDirection("none");
+
+      if (feedbackDisplayRef.current.timer) {
+        clearTimeout(feedbackDisplayRef.current.timer);
+      }
+      if (warningDisplayRef.current.timer) {
+        clearTimeout(warningDisplayRef.current.timer);
+      }
+      feedbackDisplayRef.current = {
+        text: "Position yourself in front of the camera",
+        time: Date.now(),
+        timer: null,
+      };
+      warningDisplayRef.current = { text: "", time: Date.now(), timer: null };
+      setDisplayFeedback("Position yourself in front of the camera");
+      setDisplayWarning("");
+
+      lastSpokenRef.current = {
+        text: "",
+        time: 0,
+      };
 
       toast.success(`${currentEx.name} tracking started.`);
 
-      sendNextFrame();
+      scheduleNextFrame();
     } catch (err) {
       console.error("Start tracking error:", err);
+
       isActiveRef.current = false;
+      processingFrameRef.current = false;
+
       setIsActive(false);
+
+      stopSpeech();
+
+      if (frameTimerRef.current) {
+        clearTimeout(frameTimerRef.current);
+        frameTimerRef.current = null;
+      }
+
       if (streamRef.current) {
-        streamRef.current.getTracks().forEach((t) => t.stop());
+        streamRef.current.getTracks().forEach((track) => track.stop());
+
         streamRef.current = null;
       }
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
+      }
+
       if (err?.response) {
         setServerOnline(false);
         toast.error("Python pose service is offline.");
@@ -271,19 +525,26 @@ export default function WorkoutSession() {
 
   const handleStop = async () => {
     isActiveRef.current = false;
+    processingFrameRef.current = false;
+
     if (frameTimerRef.current) {
       clearTimeout(frameTimerRef.current);
       frameTimerRef.current = null;
     }
+
+    stopSpeech();
+
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current.getTracks().forEach((track) => track.stop());
+
       streamRef.current = null;
     }
+
     if (videoRef.current) {
       videoRef.current.srcObject = null;
     }
+
     setProcessedImage(null);
-    window.speechSynthesis.cancel();
 
     try {
       await axios.post(`${POSE_API_URL}/stop`, {
@@ -292,9 +553,26 @@ export default function WorkoutSession() {
     } catch (_) {}
 
     setIsActive(false);
+    setProgress(0);
     setFeedback("Session stopped");
     setWarning("");
     setDirection("none");
+    setPersonDetected(false);
+
+    if (feedbackDisplayRef.current.timer) {
+      clearTimeout(feedbackDisplayRef.current.timer);
+    }
+    if (warningDisplayRef.current.timer) {
+      clearTimeout(warningDisplayRef.current.timer);
+    }
+    feedbackDisplayRef.current = {
+      text: "Session stopped",
+      time: Date.now(),
+      timer: null,
+    };
+    warningDisplayRef.current = { text: "", time: Date.now(), timer: null };
+    setDisplayFeedback("Session stopped");
+    setDisplayWarning("");
 
     toast.info("Session stopped.");
   };
@@ -305,8 +583,30 @@ export default function WorkoutSession() {
         session_id: sessionIdRef.current,
       });
 
+      stopSpeech();
+
       setReps(0);
       setAngle(0.0);
+      setProgress(0);
+      setFeedback("Ready to start");
+      setWarning("");
+      setDirection("none");
+      setPersonDetected(false);
+
+      if (feedbackDisplayRef.current.timer) {
+        clearTimeout(feedbackDisplayRef.current.timer);
+      }
+      if (warningDisplayRef.current.timer) {
+        clearTimeout(warningDisplayRef.current.timer);
+      }
+      feedbackDisplayRef.current = {
+        text: "Ready to start",
+        time: Date.now(),
+        timer: null,
+      };
+      warningDisplayRef.current = { text: "", time: Date.now(), timer: null };
+      setDisplayFeedback("Ready to start");
+      setDisplayWarning("");
 
       toast.success("Counter reset.");
     } catch {
@@ -314,11 +614,15 @@ export default function WorkoutSession() {
     }
   };
 
-  // Calculations
   const absAngle = Math.abs(angle);
-  const percentage = Math.min(100, Math.round((absAngle / 90) * 100));
 
-  // Permission Prompt Screen
+  // Progress now comes straight from the backend (progress_percent), which
+  // already knows the correct target angle for each exercise (20° for side
+  // bend, etc). This is what makes the ring fill to 100% at the right spot
+  // instead of the old fixed "/90" guess.
+  const percentage = Math.min(100, Math.max(0, Math.round(progress)));
+  const isPerfect = percentage >= 100 && !warning;
+
   if (!hasPermission) {
     return (
       <UserLayout>
@@ -365,7 +669,6 @@ export default function WorkoutSession() {
     <UserLayout>
       <div className="min-h-screen bg-transparent p-4 font-sans sm:p-6 md:p-8">
         <div className="space-y-6">
-          {/* Header */}
           <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <button
@@ -388,7 +691,6 @@ export default function WorkoutSession() {
               </div>
             </div>
 
-            {/* Action Badges */}
             <div className="flex flex-wrap items-center gap-3">
               <button
                 onClick={() => {
@@ -397,7 +699,7 @@ export default function WorkoutSession() {
                   setIsMuted(next);
 
                   if (next) {
-                    window.speechSynthesis.cancel();
+                    stopSpeech();
                   }
                 }}
                 className={`flex items-center gap-2 rounded-btn border px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all ${
@@ -429,7 +731,6 @@ export default function WorkoutSession() {
             </div>
           </div>
 
-          {/* Offline Alert */}
           {!serverOnline && (
             <div className="mx-auto flex max-w-6xl items-center gap-3 rounded-card border border-rose-200 bg-rose-50 p-4 text-xs text-rose-700">
               <ShieldAlert size={20} />
@@ -444,11 +745,8 @@ export default function WorkoutSession() {
             </div>
           )}
 
-          {/* Main Grid */}
           <div className="mx-auto grid max-w-6xl grid-cols-1 items-stretch gap-6 lg:grid-cols-12">
-            {/* Large Camera Feed */}
             <div className="relative flex min-h-[460px] flex-col justify-center overflow-hidden rounded-card border border-brand-light/50 bg-surface/70 shadow-card backdrop-blur-xl lg:col-span-8 md:min-h-[520px]">
-              {/* Browser camera elements */}
               <video
                 ref={videoRef}
                 playsInline
@@ -458,6 +756,7 @@ export default function WorkoutSession() {
                   isActive && !processedImage ? "block" : "hidden"
                 }`}
               />
+
               <canvas ref={canvasRef} className="hidden" />
 
               {isActive ? (
@@ -504,9 +803,7 @@ export default function WorkoutSession() {
               )}
             </div>
 
-            {/* Stats Column */}
             <div className="flex flex-col justify-between gap-4 lg:col-span-4">
-              {/* Rep Count */}
               <div className="rounded-card border border-brand-light/50 bg-surface/80 p-6 text-center shadow-card backdrop-blur-xl">
                 <span className="text-[10px] font-extrabold uppercase tracking-widest text-brand-dark">
                   {exerciseId === "plank"
@@ -523,7 +820,6 @@ export default function WorkoutSession() {
                 </span>
               </div>
 
-              {/* Posture Gauge */}
               <div className="flex flex-col items-center space-y-4 rounded-card border border-brand-light/50 bg-surface/80 p-6 shadow-card backdrop-blur-xl">
                 <span className="text-[10px] font-extrabold uppercase tracking-widest text-brand-dark">
                   Form & Angle
@@ -547,13 +843,7 @@ export default function WorkoutSession() {
                       cx="50"
                       cy="50"
                       r="40"
-                      stroke={
-                        warning
-                          ? "#ef4444"
-                          : direction !== "none"
-                          ? "#53b889"
-                          : "#16845b"
-                      }
+                      stroke={warning ? "#ef4444" : "#16845b"}
                       strokeWidth="8"
                       fill="transparent"
                       strokeDasharray={251.2}
@@ -568,38 +858,44 @@ export default function WorkoutSession() {
                       {absAngle}°
                     </span>
 
-                    <span className="text-[9px] font-bold uppercase text-gray-400">
-                      {direction !== "none" ? direction : "tilt"}
+                    <span
+                      className={`text-[9px] font-bold uppercase ${
+                        isPerfect ? "text-brand-dark" : "text-gray-400"
+                      }`}
+                    >
+                      {isPerfect
+                        ? "Perfect!"
+                        : direction !== "none"
+                        ? direction
+                        : "tilt"}
                     </span>
                   </div>
                 </div>
 
-                {/* Feedback Banner */}
                 <div className="w-full text-center">
-                  {warning ? (
+                  {displayWarning ? (
                     <div className="flex items-center justify-center gap-2 rounded-btn border border-rose-200 bg-rose-50 p-3 text-xs font-bold text-rose-600">
                       <AlertTriangle size={15} />
-                      <span>{warning}</span>
+                      <span>{displayWarning}</span>
                     </div>
                   ) : isActive && !personDetected ? (
                     <div className="flex items-center justify-center gap-2 rounded-btn border border-accent-orange bg-accent-orange/40 p-3 text-xs font-bold text-accent-orange-dark">
                       <AlertTriangle size={15} />
                       <span>Position yourself in front of camera</span>
                     </div>
-                  ) : direction !== "none" ? (
+                  ) : direction !== "none" || isPerfect ? (
                     <div className="flex items-center justify-center gap-2 rounded-btn border border-brand-light bg-brand-light/30 p-3 text-xs font-bold text-brand-dark">
                       <CheckCircle2 size={15} />
-                      <span>{feedback}</span>
+                      <span>{displayFeedback}</span>
                     </div>
                   ) : (
                     <div className="rounded-btn border border-gray-200 bg-white/60 p-3 text-xs font-bold text-gray-600">
-                      {feedback}
+                      {displayFeedback}
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* Action Buttons */}
               <div className="flex gap-3 rounded-card border border-brand-light/50 bg-surface/80 p-4 shadow-card backdrop-blur-xl">
                 {isActive ? (
                   <button

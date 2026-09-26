@@ -18,7 +18,6 @@ const signup = async (req, res) => {
   try {
     const { firstName, lastName, email, password, role } = req.body;
 
-    // BLOCK PUBLIC PROFESSIONAL SIGNUP
     if (role && role.toUpperCase() === "PROFESSIONAL") {
       return res.status(403).json({
         success: false,

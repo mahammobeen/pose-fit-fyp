@@ -12,7 +12,6 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// 1. Get total user count
 const getAllUsers = async (req, res) => {
   try {
     const totalUsers = await UserModel.countDocuments({
@@ -33,7 +32,6 @@ const getAllUsers = async (req, res) => {
   }
 };
 
-// 2. Get list of all users
 const userDetails = async (req, res) => {
   try {
     const users = await UserModel.find({ role: "USER" }).select(
@@ -54,7 +52,6 @@ const userDetails = async (req, res) => {
   }
 };
 
-// 3. Delete user by ID
 const deleteUser = async (req, res) => {
   try {
     const userId = req.params.id;
@@ -82,7 +79,6 @@ const deleteUser = async (req, res) => {
   }
 };
 
-// 4. Update user details
 const updateUser = async (req, res) => {
   try {
     const userId = req.params.id;
@@ -120,7 +116,6 @@ const updateUser = async (req, res) => {
   }
 };
 
-// 5. Get dashboard stats
 const getStats = async (req, res) => {
   try {
     const totalUsers = await UserModel.countDocuments({
@@ -173,7 +168,6 @@ const getStats = async (req, res) => {
   }
 };
 
-// 6. Get all professionals for admin
 const getProfessionals = async (req, res) => {
   try {
     const professionals = await UserModel.find({
@@ -195,7 +189,6 @@ const getProfessionals = async (req, res) => {
   }
 };
 
-// 9. Admin invites / adds a new professional
 const addProfessional = async (req, res) => {
   try {
     const {
@@ -532,7 +525,6 @@ PoseFit Team`;
   }
 };
 
-// 14. Change admin password
 const changeAdminPassword = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
