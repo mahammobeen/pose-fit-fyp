@@ -1494,7 +1494,7 @@ export default function ProfessionalDetails() {
               <div>
                 <h3 className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-gray-400">
                   <Star className="h-4 w-4 text-amber-400" />
-                  Client Ratings & Reviews
+                  Client Ratings
                 </h3>
 
                 <p className="mt-1 text-xl font-black text-gray-800">
@@ -1506,15 +1506,13 @@ export default function ProfessionalDetails() {
                 </p>
               </div>
 
-              <div className="flex items-center gap-3">
-                <div className="rounded-btn border border-brand-light/40 bg-brand-light/10 px-4 py-2 text-center">
-                  <p className="text-xs font-extrabold text-gray-800">
-                    {pro.rating?.count || 0} Total{" "}
-                    {pro.rating?.count === 1
-                      ? "Rating"
-                      : "Ratings"}
-                  </p>
-                </div>
+                            <div className="flex items-center gap-3">
+                <p className="text-xs font-bold text-gray-500">
+                  {pro.rating?.count || 0} Total{" "}
+                  {pro.rating?.count === 1
+                    ? "Rating"
+                    : "Ratings"}
+                </p>
 
                 {myRating ? (
                   <span className="inline-flex items-center gap-1 rounded-btn border border-brand-light bg-brand-light/25 px-3.5 py-2 text-xs font-bold text-brand-dark">
@@ -1573,25 +1571,11 @@ export default function ProfessionalDetails() {
                             "U"}
                         </div>
 
-                        <div>
+                                                <div>
                           <p className="text-xs font-bold text-gray-800">
                             {review.user
                               ? `${review.user.firstName} ${review.user.lastName}`
                               : "PoseFit User"}
-                          </p>
-
-                          <p className="text-[11px] text-gray-400">
-                            Verified Client Session •{" "}
-                            {new Date(
-                              review.createdAt,
-                            ).toLocaleDateString(
-                              "en-US",
-                              {
-                                month: "short",
-                                day: "numeric",
-                                year: "numeric",
-                              },
-                            )}
                           </p>
                         </div>
                       </div>
