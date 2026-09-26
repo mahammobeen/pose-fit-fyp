@@ -62,16 +62,18 @@ STREAM_IDLE_SECONDS = 30
 SB_NEUTRAL_MAX = 7.0
 SB_RETURN = 10.0
 SB_START = 12.0
-SB_TARGET = 20.0
+SB_TARGET = 25.0
 SB_NORMAL_MAX = 35.0
 SB_TWIST_LIMIT = 15.0     # percent change of shoulder/hip width ratio
 SB_CALIB_FRAMES = 15
 
 # Squat (interior hip-knee-ankle angle, degrees; 180 = straight leg)
 SQ_RETURN = 150.0
-SQ_REP_DEPTH = 100.0
-SQ_GOOD_DEPTH = 80.0
+SQ_TARGET_ANGLE = 90.0     # front-squat bottom/parallel position, thighs level
+SQ_TARGET_TOLERANCE = 10.0 # +/- band around the target counted as "perfect"
 SQ_MAX_NORMAL = 45.0
+SQ_VALGUS_RATIO = 0.65    # knee-width / ankle-width; below this = knees caving in
+SQ_TORSO_LEAN_MAX = 45.0  # trunk forward lean from vertical, degrees
 
 # Arm raise (elbow-shoulder-hip angle, degrees; 0 = arm along torso)
 AR_RETURN = 35.0
@@ -125,14 +127,16 @@ THRESHOLD_META = {
     "SB_START": ("tuned", "Movement start band, pilot based."),
     "SB_TARGET": (
         "literature",
-        "About 57 to 80 percent of normal thoracolumbar lateral flexion "
-        "(25 to 35 degrees, R1; 35 degrees, R2), so healthy users can "
-        "reach it.",
+        "Lower bound of normal lumbar-only lateral flexion, about 25 "
+        "degrees (R1, R2). A rep must cover at least the documented "
+        "normal range, not an arbitrary fraction of it.",
     ),
     "SB_NORMAL_MAX": (
         "literature",
-        "Upper end of normal thoracolumbar lateral flexion, 35 degrees "
-        "(R2, R1).",
+        "Upper end of normal thoracolumbar (T+L combined) lateral "
+        "flexion, 35 degrees (R2, R1). The app measures the "
+        "shoulder-midpoint to hip-midpoint line, i.e. the combined "
+        "thoracolumbar tilt, so this is the correct ceiling to use.",
     ),
     "SB_TWIST_LIMIT": (
         "tuned",
@@ -145,20 +149,36 @@ THRESHOLD_META = {
         "Knee flexion up to 30 degrees counts as standing again (0 degrees "
         "is full extension, R2), with tolerance for landmark noise.",
     ),
-    "SQ_REP_DEPTH": (
-        "tuned",
-        "About 80 degrees of knee flexion, between half squat and "
-        "parallel (R3). Justify with pilot data.",
-    ),
-    "SQ_GOOD_DEPTH": (
+    "SQ_TARGET_ANGLE": (
         "literature",
-        "Thighs about parallel to floor, roughly 100 degrees of knee "
-        "flexion, varies with body proportions (R3).",
+        "Front-squat bottom position: thighs parallel to the floor, "
+        "interior knee angle of about 90 degrees (R3). Confirmed against "
+        "reference front-squat bottom-position images.",
+    ),
+    "SQ_TARGET_TOLERANCE": (
+        "tuned",
+        "Allowed band around SQ_TARGET_ANGLE to absorb landmark noise and "
+        "body-proportion differences. Justify with pilot data.",
     ),
     "SQ_MAX_NORMAL": (
         "literature",
         "Normal knee flexion is 0 to 135 degrees (R2), which is an interior "
         "angle of 45 degrees.",
+    ),
+    "SQ_VALGUS_RATIO": (
+        "tuned",
+        "Knee-to-knee width divided by ankle-to-ankle width, measured only "
+        "while the knees are bent. Below this ratio the knees have moved "
+        "visibly inward of the ankles (valgus / knee cave-in), a common "
+        "squat fault. Frontal-camera view assumed; must be confirmed with "
+        "pilot data since it depends on stance width and camera angle.",
+    ),
+    "SQ_TORSO_LEAN_MAX": (
+        "tuned",
+        "Maximum forward lean of the shoulder-hip line from vertical. Past "
+        "this the trunk is leaning far enough forward that spinal rounding "
+        "becomes likely; this is a 2D proxy, not a direct spine-angle "
+        "measurement, so it should be validated against pilot video.",
     ),
     "AR_RETURN": (
         "tuned",
@@ -292,6 +312,13 @@ def draw_points(frame, points, radius=7):
         cv2.circle(frame, to_int(p), radius + 1, (255, 255, 255), 1)
 
 
+def clamp_percent(value):
+    """Clip a 0-100 progress value and guard against NaN/inf."""
+    if value is None or math.isnan(value) or math.isinf(value):
+        return 0.0
+    return float(max(0.0, min(100.0, value)))
+
+
 class Ema:
     """Time based exponential smoothing (alpha depends on frame gap)."""
 
@@ -326,6 +353,7 @@ def blank_result():
         "left_arm": 0.0,
         "right_arm": 0.0,
         "arm": 0.0,
+        "progress": 0.0,
         "debug": {},
     }
 
@@ -341,6 +369,7 @@ def empty_snapshot():
         "left_arm_angle": 0.0,
         "right_arm_angle": 0.0,
         "arm_angle": 0.0,
+        "progress_percent": 0.0,
         "debug": {},
     }
 
@@ -594,6 +623,7 @@ class WorkoutSession:
                 "left_arm_angle": round(left_arm, 1),
                 "right_arm_angle": round(right_arm, 1),
                 "arm_angle": round(out["arm"], 1),
+                "progress_percent": round(clamp_percent(out.get("progress", 0.0)), 1),
                 "debug": out["debug"],
             }
 
@@ -646,10 +676,16 @@ class WorkoutSession:
         abs_angle = abs(signed)
 
         out["angle"] = signed
-       
+
         out["direction"] = "left" if signed > 0 else "right"
 
-        
+        # Progress for the UI circle: 0% at rest, 100% once the perfect
+        # zone (SB_TARGET) is reached. This is what should drive the
+        # "circle fills up and turns green" behaviour on the frontend.
+        out["progress"] = clamp_percent(
+            (abs_angle - SB_RETURN) / (SB_TARGET - SB_RETURN) * 100
+        )
+
         shoulder_w = distance(l_sh, r_sh)
         hip_w = distance(l_hip, r_hip)
         ratio = shoulder_w / max(hip_w, 1.0)
@@ -668,7 +704,15 @@ class WorkoutSession:
             )
             twisting = twist_pct > SB_TWIST_LIMIT
 
-        perfect = SB_TARGET <= abs_angle <= SB_NORMAL_MAX and not twisting
+        # Twisting is reported to the user (feedback/warning below) but no
+        # longer blocks the rep count itself. Camera perspective naturally
+        # makes the shoulder/hip width ratio shift a bit more on one side
+        # than the other during a real side bend, which was tripping the
+        # twist check on that side only and silently stopping reps from
+        # counting on that direction - with no clear signal to the user
+        # about why. Now both left and right bends count equally whenever
+        # the angle is in the perfect zone.
+        perfect = SB_TARGET <= abs_angle <= SB_NORMAL_MAX
         at_rest = abs_angle <= SB_RETURN
 
         event = self._advance_rep(now, perfect, at_rest)
@@ -686,29 +730,30 @@ class WorkoutSession:
         if at_rest:
             out["direction"] = "none"
 
+        # ---- ONE message at a time, picked by priority (rep state first,
+        # then safety, then coaching). "warning" only carries messages that
+        # are not already said in "feedback", so the UI never has to show
+        # two competing lines for the same moment. ----
+        out["warning"] = ""
+
+        # Only 5 distinct messages total for this exercise: ready, moving,
+        # perfect/holding, rep counted, and a safety warning. States that
+        # differ only slightly (holding vs steady, restart vs ready) share
+        # the same text so the user isn't reading a new sentence every
+        # frame.
         if event in ("counted", "return"):
-            out["feedback"] = "Rep counted! Now return to the center and repeat."
-        elif event == "restart":
-            out["feedback"] = "Ready. Bend sideways again."
-        elif event == "holding":
-            out["feedback"] = "Perfect! Hold this position."
-        elif event == "steady":
-            out["feedback"] = "Almost there. Keep the same position."
-        elif twisting and abs_angle >= SB_START:
-            out["feedback"] = "Keep your chest facing forward."
+            out["feedback"] = "Rep counted! Return to the center, then bend again."
         elif abs_angle > SB_NORMAL_MAX:
-            out["feedback"] = "Come back slightly and keep the movement controlled."
-        elif abs_angle >= SB_START:
-            out["feedback"] = "Bend a little further sideways."
-        elif at_rest:
+            out["feedback"] = "Come back slightly, you've gone past the normal range."
+            out["warning"] = "Beyond normal range."
+        elif event in ("holding", "steady"):
+            out["feedback"] = "Perfect! Hold this position."
+        elif twisting and abs_angle >= SB_START:
+            out["feedback"] = "Keep your chest facing forward, don't twist."
+        elif at_rest or event in ("ready", "restart"):
             out["feedback"] = "Ready. Bend sideways slowly."
         else:
             out["feedback"] = "Bend sideways slowly."
-
-        if abs_angle > SB_NORMAL_MAX:
-            out["warning"] = "Bending beyond the normal range. Come back slightly."
-        elif twisting and abs_angle >= SB_START:
-            out["warning"] = "Don't twist! Keep your chest facing forward."
 
         draw_lines(
             frame,
@@ -727,15 +772,21 @@ class WorkoutSession:
             world = results.pose_world_landmarks.landmark
 
         sides = [
-            (PL.LEFT_HIP, PL.LEFT_KNEE, PL.LEFT_ANKLE),
-            (PL.RIGHT_HIP, PL.RIGHT_KNEE, PL.RIGHT_ANKLE),
+            (PL.LEFT_SHOULDER, PL.LEFT_HIP, PL.LEFT_KNEE, PL.LEFT_ANKLE),
+            (PL.RIGHT_SHOULDER, PL.RIGHT_HIP, PL.RIGHT_KNEE, PL.RIGHT_ANKLE),
         ]
 
         angles = []
         pairs = []
         points = []
 
-        for hip_id, knee_id, ankle_id in sides:
+        knee_xs = []
+        ankle_xs = []
+        shoulders = []
+        hips = []
+
+        for sh_id, hip_id, knee_id, ankle_id in sides:
+            sh, v_sh = lm_point(lms, sh_id.value, w, h)
             hip, v_h = lm_point(lms, hip_id.value, w, h)
             knee, v_k = lm_point(lms, knee_id.value, w, h)
             ankle, v_a = lm_point(lms, ankle_id.value, w, h)
@@ -757,6 +808,14 @@ class WorkoutSession:
             pairs += [(hip, knee), (knee, ankle)]
             points += [hip, knee, ankle]
 
+            # Used for the knee-valgus (knees caving in) check below
+            knee_xs.append(knee[0])
+            ankle_xs.append(ankle[0])
+
+            if v_sh >= VIS_THRESHOLD:
+                shoulders.append(sh)
+                hips.append(hip)
+
         detected = len(angles) > 0
         out["detected"] = detected
 
@@ -769,7 +828,48 @@ class WorkoutSession:
         out["angle"] = angle
         out["direction"] = self._track_direction(angle)
 
-        perfect = SQ_MAX_NORMAL <= angle <= SQ_REP_DEPTH
+        depth_low = SQ_TARGET_ANGLE - SQ_TARGET_TOLERANCE
+        depth_high = SQ_TARGET_ANGLE + SQ_TARGET_TOLERANCE
+
+        # Progress for the UI circle: 0% standing, 100% once the target
+        # depth (SQ_TARGET_ANGLE, front-squat parallel) is reached.
+        out["progress"] = clamp_percent(
+            (SQ_RETURN - angle) / (SQ_RETURN - SQ_TARGET_ANGLE) * 100
+        )
+
+        # ---- knee valgus check: knees moving inward of the ankles ----
+        # Needs both legs visible and is only meaningful once the person
+        # has actually started bending the knees (avoids false positives
+        # while standing, where the ratio is naturally noisier).
+        valgus = False
+        valgus_ratio = None
+
+        if len(knee_xs) == 2 and len(ankle_xs) == 2:
+            knee_width = abs(knee_xs[0] - knee_xs[1])
+            ankle_width = abs(ankle_xs[0] - ankle_xs[1])
+
+            if ankle_width > 1e-3 and angle <= SQ_RETURN:
+                valgus_ratio = knee_width / ankle_width
+                valgus = valgus_ratio < SQ_VALGUS_RATIO
+
+        # ---- torso lean check: 2D proxy for excessive forward lean /
+        # back rounding, using the shoulder-hip line angle from vertical ----
+        torso_lean = None
+
+        if len(shoulders) == 2 and len(hips) == 2:
+            shoulder_mid = midpoint(shoulders[0], shoulders[1])
+            hip_mid = midpoint(hips[0], hips[1])
+            torso_lean = abs(calculate_vertical_angle(shoulder_mid, hip_mid))
+
+        leaning_too_far = (
+            torso_lean is not None and torso_lean > SQ_TORSO_LEAN_MAX
+        )
+
+        good_form = not valgus and not leaning_too_far
+
+        # A rep only counts when depth AND form are both good, so bad-form
+        # reps at the right depth do not get credited.
+        perfect = depth_low <= angle <= depth_high and good_form
         at_rest = angle >= SQ_RETURN
 
         event = self._advance_rep(now, perfect, at_rest)
@@ -778,36 +878,52 @@ class WorkoutSession:
             now,
             event,
             {
-                "perfect_zone": [SQ_MAX_NORMAL, SQ_REP_DEPTH],
+                "target_angle": SQ_TARGET_ANGLE,
+                "perfect_zone": [depth_low, depth_high],
                 "stand_above": SQ_RETURN,
-                "parallel_reached": bool(angle <= SQ_GOOD_DEPTH),
                 "legs_used": len(angles),
                 "used_3d": world is not None,
+                "knee_valgus": bool(valgus),
+                "knee_ankle_ratio": (
+                    round(valgus_ratio, 2) if valgus_ratio is not None else None
+                ),
+                "torso_lean_deg": (
+                    round(torso_lean, 1) if torso_lean is not None else None
+                ),
             },
         )
 
+        out["warning"] = ""
+
+        # Same merged-message style as the other exercises: fewer, clearer
+        # states instead of a new sentence every frame.
         if event in ("counted", "return"):
-            out["feedback"] = "Rep counted! Now stand back up and repeat."
-        elif event == "restart":
-            out["feedback"] = "Ready. Go down slowly."
-        elif event == "holding":
-            out["feedback"] = "Perfect depth! Hold this position."
-        elif event == "steady":
-            out["feedback"] = "Almost there. Keep this depth."
+            out["feedback"] = "Rep counted! Stand back up, then squat again."
         elif angle < SQ_MAX_NORMAL:
-            out["warning"] = "Beyond the normal knee range. Come up slightly."
-            out["feedback"] = "Control the movement and come up."
-        elif at_rest:
+            out["feedback"] = "Come up slightly, you've gone past the normal knee range."
+            out["warning"] = "Beyond normal range."
+        elif valgus:
+            out["feedback"] = "Push your knees outward, in line with your toes."
+            out["warning"] = "Knees caving in."
+        elif leaning_too_far:
+            out["feedback"] = "Keep your chest up, don't lean too far forward."
+            out["warning"] = "Excessive forward lean."
+        elif event in ("holding", "steady"):
+            out["feedback"] = "Perfect depth and form! Hold this position."
+        elif at_rest or event in ("ready", "restart"):
             out["feedback"] = "Stand straight. Now go down slowly."
-        elif self.move_dir == "up":
-            out["feedback"] = "Go a little lower before coming up."
+        elif angle > depth_high:
+            out["feedback"] = "Going down. Keep going until thighs are parallel."
         else:
-            out["feedback"] = "Going down. Keep going a bit lower."
+            out["feedback"] = "A little too deep, come up slightly to the target depth."
 
         if len(angles) == 2:
             pairs.append((points[0], points[3]))
 
-        draw_lines(frame, pairs, (0, 255, 0))
+        # Green while form is good, red as a visual cue when a fault is flagged
+        line_color = (0, 255, 0) if good_form else (0, 0, 255)
+
+        draw_lines(frame, pairs, line_color)
         draw_points(frame, points, radius=8)
 
     # ---------------- plank ----------------
@@ -844,6 +960,12 @@ class WorkoutSession:
         angle = self.angle_ema.update(calculate_joint_angle(sh, hip, ankle), now)
         out["angle"] = angle
 
+        # Progress for the UI circle: 0% at PLANK_BAD or below, 100% once
+        # PLANK_GOOD (a countable hold) is reached.
+        out["progress"] = clamp_percent(
+            (angle - PLANK_BAD) / (PLANK_GOOD - PLANK_BAD) * 100
+        )
+
         dx = ankle[0] - sh[0]
         dy = ankle[1] - sh[1]
         length = math.hypot(dx, dy)
@@ -876,26 +998,21 @@ class WorkoutSession:
 
         self.rep_count = int(self.plank_seconds)
 
+        out["warning"] = ""
+
+        # Merged perfect/good into one message - the exact degree doesn't
+        # need its own sentence, the ring/hold time already shows progress.
         if not horizontal:
-            out["warning"] = "Get into plank position with your side to the camera."
             out["feedback"] = "Lower into a plank and keep your body horizontal."
-
-        elif angle >= PLANK_PERFECT:
-            out["feedback"] = "Perfect plank! Keep holding."
-
+            out["warning"] = "Turn sideways so your side is visible."
         elif angle >= PLANK_GOOD:
-            out["feedback"] = "Good plank. Keep your hips steady."
-
+            out["feedback"] = "Good plank! Keep your hips steady and hold."
+        elif offset > PLANK_OFFSET_DEADBAND:
+            out["feedback"] = "Your hips are sagging. Lift them slightly."
+        elif offset < -PLANK_OFFSET_DEADBAND:
+            out["feedback"] = "Your hips are too high. Lower them slightly."
         else:
-            if offset > PLANK_OFFSET_DEADBAND:
-                out["feedback"] = "Your hips are sagging. Lift them slightly."
-            elif offset < -PLANK_OFFSET_DEADBAND:
-                out["feedback"] = "Your hips are too high. Lower them slightly."
-            else:
-                out["feedback"] = "Straighten your body and hold."
-
-            if angle < PLANK_BAD:
-                out["warning"] = "Body not aligned. Adjust your hips."
+            out["feedback"] = "Straighten your body and hold."
 
         draw_lines(frame, [(sh, hip), (hip, ankle)], (0, 255, 255))
         draw_points(frame, [sh, hip, ankle], radius=8)
@@ -935,6 +1052,12 @@ class WorkoutSession:
         out["angle"] = avg
         out["direction"] = self._track_direction(avg)
 
+        # Progress for the UI circle: 0% arms down, 100% once AR_TARGET
+        # (shoulder height) is reached, based on the weaker arm.
+        out["progress"] = clamp_percent(
+            (min(left, right) - AR_RETURN) / (AR_TARGET - AR_RETURN) * 100
+        )
+
         both_raised = left >= AR_TARGET and right >= AR_TARGET
         at_rest = left <= AR_RETURN and right <= AR_RETURN
         uneven = abs(left - right) > AR_SYMMETRY
@@ -955,23 +1078,20 @@ class WorkoutSession:
             },
         )
 
+        out["warning"] = ""
+
+        # Same idea: fewer, merged messages.
         if event in ("counted", "return"):
-            out["feedback"] = "Rep counted! Now lower your arms and repeat."
-        elif event == "restart":
-            out["feedback"] = "Ready. Raise both arms slowly."
-        elif event == "holding":
-            out["feedback"] = "Perfect! Hold your arms here."
-        elif event == "steady":
-            out["feedback"] = "Almost there. Keep both arms at the same height."
-        elif at_rest:
-            out["feedback"] = "Arms at your sides. Raise both arms slowly."
-        elif uneven:
+            out["feedback"] = "Rep counted! Lower your arms, then raise again."
+        elif uneven and not at_rest:
             out["feedback"] = "Raise both arms evenly."
+            out["warning"] = "Uneven arm height."
+        elif event in ("holding", "steady"):
+            out["feedback"] = "Perfect! Hold your arms here."
+        elif at_rest or event in ("ready", "restart"):
+            out["feedback"] = "Arms at your sides. Raise both arms slowly."
         else:
             out["feedback"] = "Keep raising both arms to shoulder height."
-
-        if uneven and not at_rest and event not in ("counted", "return"):
-            out["warning"] = "Keep both arms at the same height."
 
         pairs = [(l_sh, l_el), (r_sh, r_el)]
         points = [l_sh, l_el, r_sh, r_el]

@@ -55,9 +55,14 @@ const POSE_API_URL = (import.meta.env.VITE_POSE_API_URL || "").replace(
   "",
 );
 
-const SAME_MESSAGE_COOLDOWN = 3000;
-const DIFFERENT_MESSAGE_COOLDOWN = 1500;
+const SAME_MESSAGE_COOLDOWN = 4000;
+const DIFFERENT_MESSAGE_COOLDOWN = 2500;
 const MIN_MESSAGE_LENGTH = 3;
+
+// The on-screen feedback text is also throttled (separately from voice),
+// so it does not flicker every ~50-90ms as raw frames arrive. A message
+// containing "counted" (a rep just completed) always shows immediately.
+const FEEDBACK_DISPLAY_MIN_GAP = 900;
 
 export default function WorkoutSession() {
   const { exerciseId } = useParams();
@@ -93,8 +98,20 @@ export default function WorkoutSession() {
   const [processedImage, setProcessedImage] = useState(null);
   const [reps, setReps] = useState(0);
   const [angle, setAngle] = useState(0.0);
+  const [progress, setProgress] = useState(0);
   const [feedback, setFeedback] = useState("Ready to start");
   const [warning, setWarning] = useState("");
+
+  // Debounced copies of feedback/warning, used only for the on-screen text
+  // box, so the message the user reads doesn't change every frame.
+  const [displayFeedback, setDisplayFeedback] = useState("Ready to start");
+  const [displayWarning, setDisplayWarning] = useState("");
+  const feedbackDisplayRef = useRef({
+    text: "Ready to start",
+    time: 0,
+    timer: null,
+  });
+  const warningDisplayRef = useRef({ text: "", time: 0, timer: null });
   const [direction, setDirection] = useState("none");
   const [serverOnline, setServerOnline] = useState(true);
   const [isMuted, setIsMuted] = useState(false);
@@ -109,9 +126,7 @@ export default function WorkoutSession() {
 
   useEffect(() => {
     axios
-      .get(
-        `${POSE_API_URL}/status?session_id=${sessionIdRef.current}`,
-      )
+      .get(`${POSE_API_URL}/status?session_id=${sessionIdRef.current}`)
       .then(() => {
         setServerOnline(true);
       })
@@ -128,6 +143,9 @@ export default function WorkoutSession() {
   useEffect(() => {
     if (isMuted) return;
 
+    // Warning and feedback are never both meaningful at once (the backend
+    // only fills "warning" when it's not already covered by "feedback"),
+    // so speaking just one of them at a time keeps voice guidance calm.
     const msg = (warning || feedback || "").trim();
 
     if (BLOCKED_VOICE_MESSAGES.has(msg)) return;
@@ -162,8 +180,7 @@ export default function WorkoutSession() {
 
       if (
         msg === lastSpokenRef.current.text &&
-        currentTime - lastSpokenRef.current.time <
-          SAME_MESSAGE_COOLDOWN
+        currentTime - lastSpokenRef.current.time < SAME_MESSAGE_COOLDOWN
       ) {
         return;
       }
@@ -185,10 +202,7 @@ export default function WorkoutSession() {
       };
     };
 
-    speechTimerRef.current = setTimeout(
-      speakMessage,
-      150,
-    );
+    speechTimerRef.current = setTimeout(speakMessage, 150);
 
     return () => {
       if (speechTimerRef.current) {
@@ -210,6 +224,39 @@ export default function WorkoutSession() {
       text: "",
       time: 0,
     };
+  };
+
+  // Applies a new feedback/warning text to the on-screen box, but never
+  // sooner than FEEDBACK_DISPLAY_MIN_GAP after the last change - unless
+  // `isPriority` is set (used for "Rep counted!" so it always shows right
+  // away). This is what keeps the visible text calm even though the
+  // backend can send a new message every frame.
+  const scheduleDisplayUpdate = (ref, setter, newText, isPriority) => {
+    if (newText === ref.current.text) return;
+
+    const now = Date.now();
+    const elapsed = now - ref.current.time;
+
+    if (ref.current.timer) {
+      clearTimeout(ref.current.timer);
+      ref.current.timer = null;
+    }
+
+    if (isPriority || elapsed >= FEEDBACK_DISPLAY_MIN_GAP) {
+      ref.current.text = newText;
+      ref.current.time = now;
+      setter(newText);
+      return;
+    }
+
+    const wait = FEEDBACK_DISPLAY_MIN_GAP - elapsed;
+
+    ref.current.timer = setTimeout(() => {
+      ref.current.text = newText;
+      ref.current.time = Date.now();
+      ref.current.timer = null;
+      setter(newText);
+    }, wait);
   };
 
   const scheduleNextFrame = () => {
@@ -254,38 +301,54 @@ export default function WorkoutSession() {
         return;
       }
 
-      ctx.drawImage(
-        video,
-        0,
-        0,
-        width,
-        height,
-      );
+      ctx.drawImage(video, 0, 0, width, height);
 
-      const base64Image = canvas.toDataURL(
-        "image/jpeg",
-        0.6,
-      );
+      const base64Image = canvas.toDataURL("image/jpeg", 0.6);
 
-      const res = await axios.post(
-        `${POSE_API_URL}/process_frame`,
-        {
-          session_id: sessionIdRef.current,
-          exercise: exerciseId,
-          image: base64Image,
-        },
-      );
+      const res = await axios.post(`${POSE_API_URL}/process_frame`, {
+        session_id: sessionIdRef.current,
+        exercise: exerciseId,
+        image: base64Image,
+      });
 
       if (isActiveRef.current && res.data) {
+        const newFeedback = res.data.feedback || "Ready";
+        const newWarning = res.data.warning || "";
+        const isRepEvent = newFeedback.toLowerCase().includes("counted");
+
+        // Prefer the backend's exercise-aware progress_percent. Only if
+        // it's genuinely missing (older backend not yet redeployed) do we
+        // fall back to a rough angle-based guess, so the ring still shows
+        // *something* instead of staying invisible at 0%.
+        const backendProgress = res.data.progress_percent;
+        const fallbackProgress = Math.min(
+          100,
+          Math.round((Math.abs(res.data.angle ?? 0) / 90) * 100),
+        );
+
         setReps(res.data.reps ?? 0);
         setAngle(res.data.angle ?? 0.0);
-        setFeedback(res.data.feedback || "Ready");
-        setWarning(res.data.warning || "");
+        setProgress(
+          backendProgress !== undefined ? backendProgress : fallbackProgress,
+        );
+        setFeedback(newFeedback);
+        setWarning(newWarning);
         setDirection(res.data.direction || "none");
 
-        setPersonDetected(
-          res.data.person_detected ?? false,
+        scheduleDisplayUpdate(
+          feedbackDisplayRef,
+          setDisplayFeedback,
+          newFeedback,
+          isRepEvent,
         );
+        scheduleDisplayUpdate(
+          warningDisplayRef,
+          setDisplayWarning,
+          newWarning,
+          isRepEvent,
+        );
+
+        setPersonDetected(res.data.person_detected ?? false);
 
         if (res.data.image) {
           setProcessedImage(res.data.image);
@@ -299,10 +362,7 @@ export default function WorkoutSession() {
         setIsActive(false);
         stopSpeech();
       } else {
-        console.error(
-          "Frame processing error:",
-          err,
-        );
+        console.error("Frame processing error:", err);
       }
     } finally {
       processingFrameRef.current = false;
@@ -325,9 +385,7 @@ export default function WorkoutSession() {
     stopSpeech();
 
     if (streamRef.current) {
-      streamRef.current
-        .getTracks()
-        .forEach((track) => track.stop());
+      streamRef.current.getTracks().forEach((track) => track.stop());
 
       streamRef.current = null;
     }
@@ -337,41 +395,30 @@ export default function WorkoutSession() {
     }
 
     try {
-      await axios.post(
-        `${POSE_API_URL}/stop`,
-        {
-          session_id: sessionIdRef.current,
-        },
-      );
+      await axios.post(`${POSE_API_URL}/stop`, {
+        session_id: sessionIdRef.current,
+      });
     } catch (_) {}
   };
 
   const requestCamera = async () => {
     try {
-      const stream =
-        await navigator.mediaDevices.getUserMedia({
-          video: {
-            width: 640,
-            height: 480,
-          },
-        });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          width: 640,
+          height: 480,
+        },
+      });
 
-      stream
-        .getTracks()
-        .forEach((track) => track.stop());
+      stream.getTracks().forEach((track) => track.stop());
 
       setHasPermission(true);
 
-      localStorage.setItem(
-        "posefit_cam_permission",
-        "granted",
-      );
+      localStorage.setItem("posefit_cam_permission", "granted");
 
       toast.success("Camera permitted!");
     } catch {
-      toast.error(
-        "Camera permission denied in browser settings.",
-      );
+      toast.error("Camera permission denied in browser settings.");
     }
   };
 
@@ -384,13 +431,12 @@ export default function WorkoutSession() {
     if (isActiveRef.current) return;
 
     try {
-      const stream =
-        await navigator.mediaDevices.getUserMedia({
-          video: {
-            width: 640,
-            height: 480,
-          },
-        });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          width: 640,
+          height: 480,
+        },
+      });
 
       streamRef.current = stream;
 
@@ -400,13 +446,10 @@ export default function WorkoutSession() {
         await videoRef.current.play();
       }
 
-      await axios.post(
-        `${POSE_API_URL}/start`,
-        {
-          session_id: sessionIdRef.current,
-          exercise: exerciseId,
-        },
-      );
+      await axios.post(`${POSE_API_URL}/start`, {
+        session_id: sessionIdRef.current,
+        exercise: exerciseId,
+      });
 
       processingFrameRef.current = false;
       isActiveRef.current = true;
@@ -418,27 +461,36 @@ export default function WorkoutSession() {
 
       setReps(0);
       setAngle(0.0);
-      setFeedback(
-        "Position yourself in front of the camera",
-      );
+      setProgress(0);
+      setFeedback("Position yourself in front of the camera");
       setWarning("");
       setDirection("none");
+
+      if (feedbackDisplayRef.current.timer) {
+        clearTimeout(feedbackDisplayRef.current.timer);
+      }
+      if (warningDisplayRef.current.timer) {
+        clearTimeout(warningDisplayRef.current.timer);
+      }
+      feedbackDisplayRef.current = {
+        text: "Position yourself in front of the camera",
+        time: Date.now(),
+        timer: null,
+      };
+      warningDisplayRef.current = { text: "", time: Date.now(), timer: null };
+      setDisplayFeedback("Position yourself in front of the camera");
+      setDisplayWarning("");
 
       lastSpokenRef.current = {
         text: "",
         time: 0,
       };
 
-      toast.success(
-        `${currentEx.name} tracking started.`,
-      );
+      toast.success(`${currentEx.name} tracking started.`);
 
       scheduleNextFrame();
     } catch (err) {
-      console.error(
-        "Start tracking error:",
-        err,
-      );
+      console.error("Start tracking error:", err);
 
       isActiveRef.current = false;
       processingFrameRef.current = false;
@@ -453,9 +505,7 @@ export default function WorkoutSession() {
       }
 
       if (streamRef.current) {
-        streamRef.current
-          .getTracks()
-          .forEach((track) => track.stop());
+        streamRef.current.getTracks().forEach((track) => track.stop());
 
         streamRef.current = null;
       }
@@ -466,13 +516,9 @@ export default function WorkoutSession() {
 
       if (err?.response) {
         setServerOnline(false);
-        toast.error(
-          "Python pose service is offline.",
-        );
+        toast.error("Python pose service is offline.");
       } else {
-        toast.error(
-          "Could not access camera in browser.",
-        );
+        toast.error("Could not access camera in browser.");
       }
     }
   };
@@ -489,9 +535,7 @@ export default function WorkoutSession() {
     stopSpeech();
 
     if (streamRef.current) {
-      streamRef.current
-        .getTracks()
-        .forEach((track) => track.stop());
+      streamRef.current.getTracks().forEach((track) => track.stop());
 
       streamRef.current = null;
     }
@@ -503,40 +547,66 @@ export default function WorkoutSession() {
     setProcessedImage(null);
 
     try {
-      await axios.post(
-        `${POSE_API_URL}/stop`,
-        {
-          session_id: sessionIdRef.current,
-        },
-      );
+      await axios.post(`${POSE_API_URL}/stop`, {
+        session_id: sessionIdRef.current,
+      });
     } catch (_) {}
 
     setIsActive(false);
+    setProgress(0);
     setFeedback("Session stopped");
     setWarning("");
     setDirection("none");
     setPersonDetected(false);
+
+    if (feedbackDisplayRef.current.timer) {
+      clearTimeout(feedbackDisplayRef.current.timer);
+    }
+    if (warningDisplayRef.current.timer) {
+      clearTimeout(warningDisplayRef.current.timer);
+    }
+    feedbackDisplayRef.current = {
+      text: "Session stopped",
+      time: Date.now(),
+      timer: null,
+    };
+    warningDisplayRef.current = { text: "", time: Date.now(), timer: null };
+    setDisplayFeedback("Session stopped");
+    setDisplayWarning("");
 
     toast.info("Session stopped.");
   };
 
   const handleReset = async () => {
     try {
-      await axios.post(
-        `${POSE_API_URL}/reset`,
-        {
-          session_id: sessionIdRef.current,
-        },
-      );
+      await axios.post(`${POSE_API_URL}/reset`, {
+        session_id: sessionIdRef.current,
+      });
 
       stopSpeech();
 
       setReps(0);
       setAngle(0.0);
+      setProgress(0);
       setFeedback("Ready to start");
       setWarning("");
       setDirection("none");
       setPersonDetected(false);
+
+      if (feedbackDisplayRef.current.timer) {
+        clearTimeout(feedbackDisplayRef.current.timer);
+      }
+      if (warningDisplayRef.current.timer) {
+        clearTimeout(warningDisplayRef.current.timer);
+      }
+      feedbackDisplayRef.current = {
+        text: "Ready to start",
+        time: Date.now(),
+        timer: null,
+      };
+      warningDisplayRef.current = { text: "", time: Date.now(), timer: null };
+      setDisplayFeedback("Ready to start");
+      setDisplayWarning("");
 
       toast.success("Counter reset.");
     } catch {
@@ -546,10 +616,12 @@ export default function WorkoutSession() {
 
   const absAngle = Math.abs(angle);
 
-  const percentage = Math.min(
-    100,
-    Math.round((absAngle / 90) * 100),
-  );
+  // Progress now comes straight from the backend (progress_percent), which
+  // already knows the correct target angle for each exercise (20° for side
+  // bend, etc). This is what makes the ring fill to 100% at the right spot
+  // instead of the old fixed "/90" guess.
+  const percentage = Math.min(100, Math.max(0, Math.round(progress)));
+  const isPerfect = percentage >= 100 && !warning;
 
   if (!hasPermission) {
     return (
@@ -582,9 +654,7 @@ export default function WorkoutSession() {
             </button>
 
             <button
-              onClick={() =>
-                navigate("/posture-detection")
-              }
+              onClick={() => navigate("/posture-detection")}
               className="mt-4 text-xs font-semibold text-gray-400 transition-colors hover:text-brand-dark"
             >
               Back to exercises
@@ -602,9 +672,7 @@ export default function WorkoutSession() {
           <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <button
-                onClick={() =>
-                  navigate("/user/workout")
-                }
+                onClick={() => navigate("/user/workout")}
                 className="rounded-btn p-2 text-gray-400 transition-all hover:bg-brand-light/25 hover:text-gray-800"
               >
                 <ArrowLeft size={20} />
@@ -640,15 +708,9 @@ export default function WorkoutSession() {
                     : "border-brand-light bg-brand-light/30 text-brand-dark"
                 }`}
               >
-                {isMuted ? (
-                  <VolumeX size={15} />
-                ) : (
-                  <Volume2 size={15} />
-                )}
+                {isMuted ? <VolumeX size={15} /> : <Volume2 size={15} />}
 
-                <span>
-                  {isMuted ? "Muted" : "Voice On"}
-                </span>
+                <span>{isMuted ? "Muted" : "Voice On"}</span>
               </button>
 
               <span
@@ -660,15 +722,11 @@ export default function WorkoutSession() {
               >
                 <span
                   className={`h-2 w-2 rounded-full ${
-                    serverOnline
-                      ? "bg-brand"
-                      : "bg-rose-500"
+                    serverOnline ? "bg-brand" : "bg-rose-500"
                   }`}
                 />
 
-                {serverOnline
-                  ? "AI Online"
-                  : "AI Offline"}
+                {serverOnline ? "AI Online" : "AI Offline"}
               </span>
             </div>
           </div>
@@ -695,16 +753,11 @@ export default function WorkoutSession() {
                 muted
                 autoPlay
                 className={`aspect-video h-full w-full object-cover ${
-                  isActive && !processedImage
-                    ? "block"
-                    : "hidden"
+                  isActive && !processedImage ? "block" : "hidden"
                 }`}
               />
 
-              <canvas
-                ref={canvasRef}
-                className="hidden"
-              />
+              <canvas ref={canvasRef} className="hidden" />
 
               {isActive ? (
                 <>
@@ -790,20 +843,11 @@ export default function WorkoutSession() {
                       cx="50"
                       cy="50"
                       r="40"
-                      stroke={
-                        warning
-                          ? "#ef4444"
-                          : direction !== "none"
-                            ? "#53b889"
-                            : "#16845b"
-                      }
+                      stroke={warning ? "#ef4444" : "#16845b"}
                       strokeWidth="8"
                       fill="transparent"
                       strokeDasharray={251.2}
-                      strokeDashoffset={
-                        251.2 -
-                        (251.2 * percentage) / 100
-                      }
+                      strokeDashoffset={251.2 - (251.2 * percentage) / 100}
                       strokeLinecap="round"
                       className="transition-all duration-300"
                     />
@@ -814,8 +858,14 @@ export default function WorkoutSession() {
                       {absAngle}°
                     </span>
 
-                    <span className="text-[9px] font-bold uppercase text-gray-400">
-                      {direction !== "none"
+                    <span
+                      className={`text-[9px] font-bold uppercase ${
+                        isPerfect ? "text-brand-dark" : "text-gray-400"
+                      }`}
+                    >
+                      {isPerfect
+                        ? "Perfect!"
+                        : direction !== "none"
                         ? direction
                         : "tilt"}
                     </span>
@@ -823,27 +873,24 @@ export default function WorkoutSession() {
                 </div>
 
                 <div className="w-full text-center">
-                  {warning ? (
+                  {displayWarning ? (
                     <div className="flex items-center justify-center gap-2 rounded-btn border border-rose-200 bg-rose-50 p-3 text-xs font-bold text-rose-600">
                       <AlertTriangle size={15} />
-                      <span>{warning}</span>
+                      <span>{displayWarning}</span>
                     </div>
-                  ) : isActive &&
-                    !personDetected ? (
+                  ) : isActive && !personDetected ? (
                     <div className="flex items-center justify-center gap-2 rounded-btn border border-accent-orange bg-accent-orange/40 p-3 text-xs font-bold text-accent-orange-dark">
                       <AlertTriangle size={15} />
-                      <span>
-                        Position yourself in front of camera
-                      </span>
+                      <span>Position yourself in front of camera</span>
                     </div>
-                  ) : direction !== "none" ? (
+                  ) : direction !== "none" || isPerfect ? (
                     <div className="flex items-center justify-center gap-2 rounded-btn border border-brand-light bg-brand-light/30 p-3 text-xs font-bold text-brand-dark">
                       <CheckCircle2 size={15} />
-                      <span>{feedback}</span>
+                      <span>{displayFeedback}</span>
                     </div>
                   ) : (
                     <div className="rounded-btn border border-gray-200 bg-white/60 p-3 text-xs font-bold text-gray-600">
-                      {feedback}
+                      {displayFeedback}
                     </div>
                   )}
                 </div>
@@ -884,4 +931,3 @@ export default function WorkoutSession() {
     </UserLayout>
   );
 }
-
