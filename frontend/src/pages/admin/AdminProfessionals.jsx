@@ -452,9 +452,8 @@ export default function AdminProfessionals() {
                 >
                   <option value="Trainer">Trainer</option>
                   <option value="Nutritionist">Nutritionist</option>
-                  <option value="OTHER">Other</option>
                 </select>
-              </div>
+              </div> 
 
               <div>
                 <label className="block text-xs font-bold text-gray-600 mb-1.5 uppercase tracking-wider">

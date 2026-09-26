@@ -215,17 +215,14 @@ const createPayment = async (req, res) => {
       }
     }
 
-    const parsedSessionDuration =
+      const parsedSessionDuration =
       Number(sessionDuration) || 1;
 
-    if (
-      parsedSessionDuration < 1 ||
-      parsedSessionDuration > 3
-    ) {
+    if (parsedSessionDuration !== 1) {
       return res.status(400).json({
         success: false,
         message:
-          "Session duration must be between 1 and 3 hours",
+          "Session duration must be 1 hour",
       });
     }
 

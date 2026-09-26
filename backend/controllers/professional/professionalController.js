@@ -609,27 +609,12 @@ const updateAvailability = async (req, res) => {
           });
         }
 
-        const durationMinutes = end - start;
-        const durationHours = durationMinutes / 60;
+                const durationMinutes = end - start;
 
-        if (durationMinutes < 60) {
+        if (durationMinutes !== 60) {
           return res.status(400).json({
             success: false,
-            message: `Each session slot must be at least 1 hour long. Invalid slot on ${dayItem.day}: ${slot}`,
-          });
-        }
-
-        if (durationMinutes > 180) {
-          return res.status(400).json({
-            success: false,
-            message: `Each session slot cannot be longer than 3 hours. Invalid slot on ${dayItem.day}: ${slot}`,
-          });
-        }
-
-        if (!Number.isInteger(durationHours)) {
-          return res.status(400).json({
-            success: false,
-            message: `Session slots must be exactly 1, 2, or 3 hours long. Invalid slot on ${dayItem.day}: ${slot}`,
+            message: `Each session slot must be exactly 1 hour long. Invalid slot on ${dayItem.day}: ${slot}`,
           });
         }
 

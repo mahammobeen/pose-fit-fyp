@@ -469,7 +469,7 @@ const completeProfessionalProfile = async (req, res) => {
       experience,
       sessionFee,
       credentialDocs,
-      bankDetails,
+      // bankDetails,
       availability,
     } = req.body;
 
@@ -480,7 +480,7 @@ const completeProfessionalProfile = async (req, res) => {
 
     if (sessionFee !== undefined) professional.sessionFee = Number(sessionFee);
     if (credentialDocs) professional.credentialDocs = credentialDocs;
-    if (bankDetails) professional.bankDetails = bankDetails;
+    // if (bankDetails) professional.bankDetails = bankDetails;
     if (availability) professional.availability = availability;
 
     professional.professionalStatus = "pending_verification";
