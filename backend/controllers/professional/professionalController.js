@@ -1,6 +1,7 @@
 const dotenv = require("dotenv");
 dotenv.config();
 const Stripe = require("stripe");
+const bcrypt = require("bcryptjs");
 const UserModel = require("../../models/userModel");
 const PaymentModel = require("../../models/PaymentModel");
 
@@ -9,27 +10,17 @@ const getStripe = () => {
   return secretKey ? new Stripe(secretKey) : null;
 };
 
-// Helper: Checks if a session appointment date and slot end time has passed
 const isSessionPassed = (booking, now = new Date()) => {
   if (!booking?.appointmentDate) return true;
   const appDate = new Date(booking.appointmentDate);
   if (Number.isNaN(appDate.getTime())) return true;
 
-  const appDay = new Date(
-    appDate.getFullYear(),
-    appDate.getMonth(),
-    appDate.getDate(),
-  );
-  const startOfToday = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate(),
-  );
+  const appDay = new Date(appDate.getFullYear(), appDate.getMonth(), appDate.getDate());
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
   if (appDay < startOfToday) return true;
   if (appDay > startOfToday) return false;
 
-  // Same day: check appointmentSlot end time
   if (!booking.appointmentSlot) return false;
 
   const slotStr = String(booking.appointmentSlot).trim();
@@ -77,13 +68,12 @@ const isSessionPassed = (booking, now = new Date()) => {
     endHour,
     endMinute,
     0,
-    0,
+    0
   );
 
   return sessionEndTime <= now;
 };
 
-// 1. Professional Dashboard Metric Aggregation
 const getProfessionalDashboard = async (req, res) => {
   try {
     const professionalId = req.user.userId;
@@ -102,18 +92,12 @@ const getProfessionalDashboard = async (req, res) => {
 
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const startOfToday = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate(),
-    );
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     startOfToday.setHours(0, 0, 0, 0);
 
     const sevenDaysAgo = new Date(startOfToday);
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-    // Automatically update status to "completed" in the database for any payment record
-    // where appointmentDate is in the past and status is still "pending"
     await PaymentModel.updateMany(
       {
         professional: professionalId,
@@ -122,10 +106,9 @@ const getProfessionalDashboard = async (req, res) => {
       },
       {
         $set: { status: "completed" },
-      },
+      }
     );
 
-    // Fetch all bookings for this professional (including completed and pending)
     let payments = await PaymentModel.find({
       professional: professionalId,
       status: { $in: ["completed", "pending"] },
@@ -134,7 +117,6 @@ const getProfessionalDashboard = async (req, res) => {
       .populate("user", "firstName lastName email profilePhoto")
       .sort({ appointmentDate: -1, createdAt: -1 });
 
-    // Auto-update any booking that has already passed its slot time to status = "completed"
     for (const p of payments) {
       if (isSessionPassed(p, now) && p.status === "pending") {
         p.status = "completed";
@@ -144,14 +126,10 @@ const getProfessionalDashboard = async (req, res) => {
 
     const totalSessions = payments.length;
 
-    // Upcoming sessions: ONLY bookings whose session date & slot end time has NOT passed
     const upcomingBookings = payments.filter((p) => !isSessionPassed(p, now));
     const upcomingSessionsCount = upcomingBookings.length;
 
-    // Completed sessions: bookings that have already passed
-    const completedPayments = payments.filter(
-      (p) => isSessionPassed(p, now) || p.status === "completed",
-    );
+    const completedPayments = payments.filter((p) => isSessionPassed(p, now) || p.status === "completed");
     const completedSessions = completedPayments.length;
 
     const monthlyPayments = completedPayments.filter((p) => {
@@ -161,24 +139,21 @@ const getProfessionalDashboard = async (req, res) => {
 
     const monthlyEarnings = monthlyPayments.reduce(
       (sum, p) => sum + (p.professionalAmount || 0),
-      0,
+      0
     );
 
     const totalEarnings = completedPayments.reduce(
       (sum, p) => sum + (p.professionalAmount || 0),
-      0,
+      0
     );
 
-    // Recent Bookings: sessions completed in the last 7 days
     const recentBookings = payments
       .filter((p) => {
         if (!p.appointmentDate) return false;
         const appDate = new Date(p.appointmentDate);
         return isSessionPassed(p, now) && appDate >= sevenDaysAgo;
       })
-      .sort(
-        (a, b) => new Date(b.appointmentDate) - new Date(a.appointmentDate),
-      );
+      .sort((a, b) => new Date(b.appointmentDate) - new Date(a.appointmentDate));
 
     return res.status(200).json({
       success: true,
@@ -227,7 +202,6 @@ const getProfessionalDashboard = async (req, res) => {
   }
 };
 
-// 2. Get Professional Profile
 const getProfessionalProfile = async (req, res) => {
   try {
     const professionalId = req.user.userId;
@@ -259,7 +233,6 @@ const getProfessionalProfile = async (req, res) => {
   }
 };
 
-// 3. Update Professional Profile
 const updateProfessionalProfile = async (req, res) => {
   try {
     const professionalId = req.user.userId;
@@ -296,12 +269,10 @@ const updateProfessionalProfile = async (req, res) => {
     if (lastName) professional.lastName = lastName;
     if (profilePhoto !== undefined) professional.profilePhoto = profilePhoto;
     if (bio !== undefined) professional.bio = bio;
-    if (specialization !== undefined)
-      professional.specialization = specialization;
+    if (specialization !== undefined) professional.specialization = specialization;
     if (experience !== undefined) professional.experience = Number(experience);
     if (sessionFee !== undefined) professional.sessionFee = Number(sessionFee);
-    if (credentialDocs !== undefined)
-      professional.credentialDocs = credentialDocs;
+    if (credentialDocs !== undefined) professional.credentialDocs = credentialDocs;
 
     if (
       professional.professionalStatus === "rejected" ||
@@ -334,22 +305,91 @@ const updateProfessionalProfile = async (req, res) => {
   }
 };
 
-// 4. Get Professional Bookings
+const changeProfessionalPassword = async (req, res) => {
+  try {
+    const professionalId = req.user.userId;
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Current password, new password, and confirm password are required",
+      });
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "New password and confirm password do not match",
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: "New password must be at least 6 characters long",
+      });
+    }
+
+    if (currentPassword === newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "New password must be different from the current password",
+      });
+    }
+
+    const professional = await UserModel.findOne({
+      _id: professionalId,
+      role: "PROFESSIONAL",
+    });
+
+    if (!professional) {
+      return res.status(404).json({
+        success: false,
+        message: "Professional not found",
+      });
+    }
+
+    const isPasswordValid = await bcrypt.compare(
+      currentPassword,
+      professional.password
+    );
+
+    if (!isPasswordValid) {
+      return res.status(400).json({
+        success: false,
+        message: "Current password is incorrect",
+      });
+    }
+
+    professional.password = await bcrypt.hash(newPassword, 10);
+
+    await professional.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Password updated successfully",
+    });
+  } catch (error) {
+    console.error("Change professional password error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error while changing password",
+      error: error.message,
+    });
+  }
+};
+
 const getProfessionalBookings = async (req, res) => {
   try {
     const professionalId = req.user.userId;
     const { tab, status } = req.query;
 
     const now = new Date();
-    const startOfToday = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate(),
-    );
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     startOfToday.setHours(0, 0, 0, 0);
 
-    // Automatically update status to "completed" in the database for any payment record
-    // where appointmentDate is in the past and status is still "pending"
     await PaymentModel.updateMany(
       {
         professional: professionalId,
@@ -358,7 +398,7 @@ const getProfessionalBookings = async (req, res) => {
       },
       {
         $set: { status: "completed" },
-      },
+      }
     );
 
     const activeTab = (tab || status || "all").toLowerCase();
@@ -372,11 +412,11 @@ const getProfessionalBookings = async (req, res) => {
     let sortOrder = { appointmentDate: -1, createdAt: -1 };
 
     if (activeTab === "pending") {
-      // Pending = upcoming (future/today date)
+
       query.appointmentDate = { $gte: startOfToday };
       sortOrder = { appointmentDate: 1, createdAt: -1 };
     } else if (activeTab === "completed") {
-      // Completed = session date has already passed
+
       const endOfToday = new Date(startOfToday);
       endOfToday.setHours(23, 59, 59, 999);
       query.appointmentDate = { $lte: endOfToday };
@@ -410,7 +450,6 @@ const getProfessionalBookings = async (req, res) => {
   }
 };
 
-// 5. Get Booking by ID
 const getProfessionalBookingById = async (req, res) => {
   try {
     const professionalId = req.user.userId;
@@ -420,7 +459,10 @@ const getProfessionalBookingById = async (req, res) => {
       _id: id,
       professional: professionalId,
       professionalDeleted: false,
-    }).populate("user", "firstName lastName email profilePhoto");
+    }).populate(
+      "user",
+      "firstName lastName email profilePhoto"
+    );
 
     if (!booking) {
       return res.status(404).json({
@@ -444,7 +486,6 @@ const getProfessionalBookingById = async (req, res) => {
   }
 };
 
-// 6. Get Availability Schedule
 const getAvailability = async (req, res) => {
   try {
     const professionalId = req.user.userId;
@@ -475,7 +516,7 @@ const getAvailability = async (req, res) => {
     });
   }
 };
-// 7. Update Availability Schedule
+
 const updateAvailability = async (req, res) => {
   try {
     const professionalId = req.user.userId;
@@ -500,7 +541,6 @@ const updateAvailability = async (req, res) => {
       });
     }
 
-    // Convert "09:00 AM" into minutes
     const convertToMinutes = (time) => {
       const match = time.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
 
@@ -525,7 +565,6 @@ const updateAvailability = async (req, res) => {
       return hours * 60 + minutes;
     };
 
-    // Validate every day's slots
     for (const dayItem of availability) {
       if (!dayItem.day || !Array.isArray(dayItem.slots)) {
         return res.status(400).json({
@@ -570,30 +609,12 @@ const updateAvailability = async (req, res) => {
           });
         }
 
-        const durationMinutes = end - start;
-        const durationHours = durationMinutes / 60;
+                const durationMinutes = end - start;
 
-        // Minimum session duration = 1 hour
-        if (durationMinutes < 60) {
+        if (durationMinutes !== 60) {
           return res.status(400).json({
             success: false,
-            message: `Each session slot must be at least 1 hour long. Invalid slot on ${dayItem.day}: ${slot}`,
-          });
-        }
-
-        // Maximum session duration = 3 hours
-        if (durationMinutes > 180) {
-          return res.status(400).json({
-            success: false,
-            message: `Each session slot cannot be longer than 3 hours. Invalid slot on ${dayItem.day}: ${slot}`,
-          });
-        }
-
-        // Duration must be in complete hours
-        if (!Number.isInteger(durationHours)) {
-          return res.status(400).json({
-            success: false,
-            message: `Session slots must be exactly 1, 2, or 3 hours long. Invalid slot on ${dayItem.day}: ${slot}`,
+            message: `Each session slot must be exactly 1 hour long. Invalid slot on ${dayItem.day}: ${slot}`,
           });
         }
 
@@ -603,13 +624,14 @@ const updateAvailability = async (req, res) => {
         });
       }
 
-      // Check overlapping slots
       for (let i = 0; i < parsedSlots.length; i++) {
         for (let j = i + 1; j < parsedSlots.length; j++) {
           const slotA = parsedSlots[i];
           const slotB = parsedSlots[j];
 
-          const overlaps = slotA.start < slotB.end && slotA.end > slotB.start;
+          const overlaps =
+            slotA.start < slotB.end &&
+            slotA.end > slotB.start;
 
           if (overlaps) {
             return res.status(400).json({
@@ -641,13 +663,12 @@ const updateAvailability = async (req, res) => {
   }
 };
 
-// 8. Get Professional Earnings Breakdown
 const getProfessionalEarnings = async (req, res) => {
   try {
     const professionalId = req.user.userId;
 
     const professional = await UserModel.findById(professionalId).select(
-      "stripeAccountId stripeAccountStatus chargesEnabled payoutsEnabled maskedBank",
+      "stripeAccountId stripeAccountStatus chargesEnabled payoutsEnabled maskedBank"
     );
 
     if (!professional) {
@@ -664,18 +685,17 @@ const getProfessionalEarnings = async (req, res) => {
       .populate("user", "firstName lastName email")
       .sort({ createdAt: -1 });
 
-    /*
-     * ONLY COMPLETED PAYMENTS ARE ACTIVE EARNINGS.
-     * Failed payments are not included in earnings.
-     */
-    const completedPayments = payments.filter((p) => p.status === "completed");
+    const completedPayments = payments.filter(
+      (p) => p.status === "completed"
+    );
 
-    /*
-     * CURRENT MONTH
-     */
     const now = new Date();
 
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfMonth = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      1
+    );
 
     const monthlyPayments = completedPayments.filter((p) => {
       const paidDate = p.paidAt || p.createdAt;
@@ -683,36 +703,26 @@ const getProfessionalEarnings = async (req, res) => {
       return new Date(paidDate) >= startOfMonth;
     });
 
-    /*
-     * TOTAL EARNINGS
-     *
-     * Only completed payments contribute to earnings.
-     */
     const totalEarnings = completedPayments.reduce(
       (sum, p) => sum + Number(p.professionalAmount || 0),
-      0,
+      0
     );
 
-    /*
-     * CURRENT MONTH EARNINGS
-     */
     const currentMonthEarnings = monthlyPayments.reduce(
       (sum, p) => sum + Number(p.professionalAmount || 0),
-      0,
+      0
     );
 
-    /*
-     * RELEASED EARNINGS
-     *
-     * Only completed payments that have actually been
-     * transferred to the professional's Stripe Connect
-     * account are included.
-     */
     const releasedEarnings = completedPayments
       .filter(
-        (p) => p.payoutStatus === "transferred" || p.payoutStatus === "paid",
+        (p) =>
+          p.payoutStatus === "transferred" ||
+          p.payoutStatus === "paid"
       )
-      .reduce((sum, p) => sum + Number(p.professionalAmount || 0), 0);
+      .reduce(
+        (sum, p) => sum + Number(p.professionalAmount || 0),
+        0
+      );
 
     return res.status(200).json({
       success: true,
@@ -720,37 +730,52 @@ const getProfessionalEarnings = async (req, res) => {
       earnings: {
         totalEarnings: Number(totalEarnings.toFixed(2)),
 
-        currentMonthEarnings: Number(currentMonthEarnings.toFixed(2)),
+        currentMonthEarnings: Number(
+          currentMonthEarnings.toFixed(2)
+        ),
 
-        releasedEarnings: Number(releasedEarnings.toFixed(2)),
+        releasedEarnings: Number(
+          releasedEarnings.toFixed(2)
+        ),
 
         totalTransactionsCount: payments.length,
 
-        completedTransactionsCount: completedPayments.length,
+        completedTransactionsCount:
+          completedPayments.length,
       },
 
       stripeStatus: {
         connected: !!professional.stripeAccountId,
 
-        stripeAccountId: professional.stripeAccountId || null,
+        stripeAccountId:
+          professional.stripeAccountId || null,
 
-        accountStatus: professional.stripeAccountStatus || "unconnected",
+        accountStatus:
+          professional.stripeAccountStatus ||
+          "unconnected",
 
-        chargesEnabled: !!professional.chargesEnabled,
+        chargesEnabled:
+          !!professional.chargesEnabled,
 
-        payoutsEnabled: !!professional.payoutsEnabled,
+        payoutsEnabled:
+          !!professional.payoutsEnabled,
 
-        maskedBank: professional.maskedBank || "",
+        maskedBank:
+          professional.maskedBank || "",
       },
 
       paymentHistory: payments,
     });
   } catch (error) {
-    console.error("Get professional earnings error:", error);
+    console.error(
+      "Get professional earnings error:",
+      error
+    );
 
     return res.status(500).json({
       success: false,
-      message: "Internal server error while loading earnings data",
+      message:
+        "Internal server error while loading earnings data",
       error: error.message,
     });
   }
@@ -760,6 +785,7 @@ module.exports = {
   getProfessionalDashboard,
   getProfessionalProfile,
   updateProfessionalProfile,
+  changeProfessionalPassword,
   getProfessionalBookings,
   getProfessionalBookingById,
   getAvailability,

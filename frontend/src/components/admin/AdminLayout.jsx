@@ -60,12 +60,10 @@ const NAV_ITEMS = [
 export default function AdminLayout({ children }) {
   const navigate = useNavigate();
 
-  // Mobile sidebar
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const user = getUser();
 
-  // Desktop sidebar
   const [sidebarOpen, setSidebarOpen] = useState(() => {
     const savedState = localStorage.getItem("admin-sidebar-open");
 
@@ -104,9 +102,7 @@ export default function AdminLayout({ children }) {
 
   return (
     <div className="relative flex h-screen overflow-hidden bg-surface font-sans">
-      {/* =========================================================
-          BACKGROUND THEME
-      ========================================================= */}
+
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -left-32 -top-32 h-80 w-80 rounded-full bg-brand-light/35 blur-3xl" />
 
@@ -117,9 +113,6 @@ export default function AdminLayout({ children }) {
         <div className="absolute left-[45%] top-[20%] h-72 w-72 rounded-full bg-white/40 blur-3xl" />
       </div>
 
-      {/* =========================================================
-          MOBILE BACKDROP
-      ========================================================= */}
       {mobileMenuOpen && (
         <div
           onClick={() => setMobileMenuOpen(false)}
@@ -134,9 +127,6 @@ export default function AdminLayout({ children }) {
         />
       )}
 
-      {/* =========================================================
-          MOBILE SIDEBAR
-      ========================================================= */}
       <div
         className={`
           fixed
@@ -158,7 +148,7 @@ export default function AdminLayout({ children }) {
           ${mobileMenuOpen ? "translate-x-0" : "-translate-x-full"}
         `}
       >
-        {/* Mobile Header */}
+
         <div className="flex h-24 shrink-0 items-center justify-between border-b border-brand-light/50 px-5">
           <div className="flex min-w-0 items-center gap-3">
             <div className="dashboard-logo border border-brand-light/60 bg-white/80 shadow-card">
@@ -179,7 +169,6 @@ export default function AdminLayout({ children }) {
             </div>
           </div>
 
-          {/* Close Button */}
           <button
             type="button"
             onClick={() => setMobileMenuOpen(false)}
@@ -206,7 +195,6 @@ export default function AdminLayout({ children }) {
           </button>
         </div>
 
-        {/* Mobile Navigation */}
         <nav className="dashboard-nav flex-1 overflow-y-auto px-4 py-5">
           <p className="dashboard-menu-title">Admin Menu</p>
 
@@ -241,7 +229,6 @@ export default function AdminLayout({ children }) {
           ))}
         </nav>
 
-        {/* Mobile Footer */}
         <div className="dashboard-sidebar-footer shrink-0 border-brand-light/50 bg-white/30 p-4">
           <div className="dashboard-user-wrapper mb-3 gap-3">
             <div className="dashboard-logo h-10 w-10 border border-brand-light/60 bg-white/80 shadow-card">
@@ -271,9 +258,6 @@ export default function AdminLayout({ children }) {
         </div>
       </div>
 
-      {/* =========================================================
-          DESKTOP SIDEBAR
-      ========================================================= */}
       <aside
         className={`
           relative
@@ -291,7 +275,7 @@ export default function AdminLayout({ children }) {
           ${sidebarOpen ? "md:w-64" : "md:w-20"}
         `}
       >
-        {/* Desktop Sidebar Header */}
+
         <div
           className={`
             dashboard-sidebar-header
@@ -340,7 +324,6 @@ export default function AdminLayout({ children }) {
           </div>
         </div>
 
-        {/* Desktop Navigation */}
         <nav
           className={`dashboard-nav flex-1 overflow-y-auto ${
             sidebarOpen ? "px-3" : "px-2"
@@ -385,7 +368,6 @@ export default function AdminLayout({ children }) {
           ))}
         </nav>
 
-        {/* Desktop Footer */}
         <div
           className={`dashboard-sidebar-footer shrink-0 border-brand-light/50 bg-white/30 ${
             sidebarOpen ? "p-3" : "p-2"
@@ -430,11 +412,8 @@ export default function AdminLayout({ children }) {
         </div>
       </aside>
 
-      {/* =========================================================
-          MAIN AREA
-      ========================================================= */}
       <div className="relative z-10 min-w-0 flex-1 overflow-y-auto">
-        {/* Mobile Top Header */}
+
         <header
           className="
             sticky
@@ -453,7 +432,7 @@ export default function AdminLayout({ children }) {
           "
         >
           <div className="flex min-w-0 items-center gap-3">
-            {/* 3 Lines Hamburger */}
+
             <button
               type="button"
               onClick={() => setMobileMenuOpen(true)}
@@ -513,7 +492,6 @@ export default function AdminLayout({ children }) {
           </button>
         </header>
 
-        {/* Page Content */}
         <main className="dashboard-content bg-transparent">{children}</main>
       </div>
     </div>

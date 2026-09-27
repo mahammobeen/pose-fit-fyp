@@ -114,7 +114,7 @@ export default function AdminSettings() {
   return (
     <AdminLayout>
       <div className="min-h-screen pb-16 bg-transparent font-sans">
-        {/* Toast */}
+
         {toast && (
           <div
             className={`fixed right-5 top-5 z-50 rounded-2xl border px-5 py-3 text-sm font-bold text-white shadow-card-hover ${
@@ -127,7 +127,6 @@ export default function AdminSettings() {
           </div>
         )}
 
-        {/* Header */}
         <div className="px-4 pb-6 pt-6 sm:px-6 sm:pt-8 lg:px-8">
           <span className="inline-flex items-center rounded-full border border-brand-light/70 bg-brand-light/40 px-3 py-1.5 text-xs font-extrabold uppercase tracking-widest text-brand-dark">
             Account Settings
@@ -146,11 +145,10 @@ export default function AdminSettings() {
           </div>
         </div>
 
-        {/* Content */}
         <div className="max-w-5xl space-y-6 px-4 sm:px-6 lg:px-8">
-          {/* Profile Card */}
+
           <section className="overflow-hidden rounded-card border border-brand-light/50 bg-surface/80 shadow-card backdrop-blur-xl">
-            {/* Profile Header */}
+
             <div className="relative overflow-hidden px-7 py-7">
               <div className="absolute inset-0 bg-gradient-to-br from-brand-light/40 via-surface/80 to-accent-blue/20" />
 
@@ -188,7 +186,6 @@ export default function AdminSettings() {
               </div>
             </div>
 
-            {/* Profile Information */}
             <div className="px-7 pb-7">
               <div className="border-t border-brand-light/40 pt-6">
                 <div className="mb-4 flex items-center gap-2">
@@ -253,7 +250,6 @@ export default function AdminSettings() {
             </div>
           </section>
 
-          {/* Password Card */}
           <section className="overflow-hidden rounded-card border border-brand-light/50 bg-surface/80 shadow-card backdrop-blur-xl">
             <div className="border-b border-brand-light/40 px-7 py-6">
               <div className="flex items-center gap-3">
@@ -276,7 +272,7 @@ export default function AdminSettings() {
 
             <div className="p-7">
               <div className="max-w-xl">
-                {/* Error */}
+
                 {passError && (
                   <div className="mb-5 flex items-center gap-2 rounded-card border border-rose-200 bg-rose-50 p-3.5 text-xs font-semibold text-rose-700">
                     <AlertTriangle className="h-4 w-4 shrink-0" />
@@ -284,7 +280,6 @@ export default function AdminSettings() {
                   </div>
                 )}
 
-                {/* Success */}
                 {passSuccess && (
                   <div className="mb-5 flex items-center gap-2 rounded-card border border-brand-light/70 bg-brand-light/25 p-3.5 text-xs font-semibold text-brand-dark">
                     <CheckCircle className="h-4 w-4 shrink-0" />

@@ -12,12 +12,10 @@ export default function AdminUsers() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
-  // Modals
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
 
-  // Form & Feedback
   const [editForm, setEditForm] = useState(EMPTY_EDIT);
   const [editError, setEditError] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
@@ -54,7 +52,6 @@ export default function AdminUsers() {
     );
   });
 
-  /* ---- EDIT USER ---- */
   const openEdit = (user) => {
     setSelectedUser(user);
     setEditForm({
@@ -87,7 +84,6 @@ export default function AdminUsers() {
     }
   };
 
-  /* ---- DELETE USER ---- */
   const openDelete = (user) => {
     setSelectedUser(user);
     setDeleteOpen(true);
@@ -112,7 +108,7 @@ export default function AdminUsers() {
   return (
     <AdminLayout>
       <div className="min-h-screen bg-transparent pb-16 font-sans">
-        {/* Toast */}
+
         {toast && (
           <div
             className={`fixed right-5 top-5 z-50 rounded-2xl border px-5 py-3 text-sm font-bold text-white shadow-card-hover transition-all ${
@@ -126,7 +122,6 @@ export default function AdminUsers() {
           </div>
         )}
 
-        {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-4 px-4 pb-4 pt-6 sm:px-6 sm:pt-8 lg:px-8">
           <div>
             <span className="inline-flex rounded-full border border-brand-light/70 bg-brand-light/40 px-3 py-1 text-xs font-extrabold uppercase tracking-widest text-brand-dark">
@@ -143,7 +138,6 @@ export default function AdminUsers() {
           </div>
         </div>
 
-        {/* Search */}
         <div className="mb-4 px-4 sm:px-6 lg:px-8">
           <div className="relative max-w-sm">
             <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">
@@ -160,7 +154,6 @@ export default function AdminUsers() {
           </div>
         </div>
 
-        {/* Table */}
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="overflow-hidden rounded-card border border-brand-light/50 bg-surface/80 shadow-card backdrop-blur-xl">
             {loading ? (
@@ -195,7 +188,7 @@ export default function AdminUsers() {
                         key={user._id}
                         className="transition-colors hover:bg-brand-light/10"
                       >
-                        {/* Name */}
+
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
                             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-brand text-xs font-black text-white shadow-sm">
@@ -208,19 +201,16 @@ export default function AdminUsers() {
                           </div>
                         </td>
 
-                        {/* Email */}
                         <td className="px-6 py-4 font-medium text-gray-600">
                           {user.email}
                         </td>
 
-                        {/* Verified */}
                         <td className="px-6 py-4">
                           <StatusBadge
                             status={user.isVerified ? "verified" : "unverified"}
                           />
                         </td>
 
-                        {/* Joined */}
                         <td className="px-6 py-4 text-xs font-medium text-gray-500">
                           {new Date(user.createdAt).toLocaleDateString(
                             "en-US",
@@ -232,7 +222,6 @@ export default function AdminUsers() {
                           )}
                         </td>
 
-                        {/* Actions */}
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
                             <button
@@ -265,7 +254,6 @@ export default function AdminUsers() {
           </p>
         </div>
 
-        {/* EDIT MODAL (EMAIL DISABLED FOR ADMINS) */}
         <Modal
           isOpen={editOpen}
           onClose={() => setEditOpen(false)}
@@ -303,7 +291,6 @@ export default function AdminUsers() {
               ))}
             </div>
 
-            {/* DISABLED EMAIL FIELD */}
             <div>
               <div className="mb-1.5 flex items-center justify-between">
                 <label className="block text-xs font-bold uppercase tracking-wider text-gray-600">
@@ -349,7 +336,6 @@ export default function AdminUsers() {
           </form>
         </Modal>
 
-        {/* DELETE MODAL */}
         <Modal
           isOpen={deleteOpen}
           onClose={() => setDeleteOpen(false)}

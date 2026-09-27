@@ -28,7 +28,6 @@ export default function PublicProfessionals() {
   const [professionals, setProfessionals] = useState([]);
   const [loading, setLoading] = useState(true);
 
- 
   const fetchPublicProfessionals = useCallback(async () => {
     try {
       setLoading(true);
@@ -52,18 +51,15 @@ export default function PublicProfessionals() {
     }
   }, []);
 
- 
   useEffect(() => {
     fetchPublicProfessionals();
   }, [fetchPublicProfessionals]);
 
- 
   const getProfileImage = (profilePhoto) => {
     if (!profilePhoto) {
       return null;
     }
 
-    
     if (
       profilePhoto.startsWith("http://") ||
       profilePhoto.startsWith("https://")
@@ -74,7 +70,6 @@ export default function PublicProfessionals() {
     const baseURL =
       import.meta.env.VITE_BASE_URL || "http://localhost:4000/api";
 
-  
     const backendURL = baseURL.replace(/\/api\/?$/, "");
 
     if (profilePhoto.startsWith("/")) {
@@ -84,7 +79,6 @@ export default function PublicProfessionals() {
     return `${backendURL}/${profilePhoto}`;
   };
 
-  
   const handleImageError = (event) => {
     event.currentTarget.style.display = "none";
 
@@ -97,7 +91,6 @@ export default function PublicProfessionals() {
     }
   };
 
-  
   const handleViewProfile = (id) => {
     if (!id) {
       toast.error("Professional ID not found");
@@ -106,7 +99,6 @@ export default function PublicProfessionals() {
 
     navigate(`/user/professionals/${id}`);
   };
-
 
   if (loading) {
     return (
@@ -127,36 +119,35 @@ export default function PublicProfessionals() {
   return (
     <UserLayout>
       <div className="min-h-full bg-transparent font-sans">
-      
-          
-        <section className="border-b border-brand-light/50 bg-surface/75 backdrop-blur-xl">
-          <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
-            <div className="max-w-3xl">
-              <div className="mb-4 flex items-center gap-2">
-                <ShieldCheck className="h-5 w-5 text-brand-dark" />
 
-                <span className="text-sm font-bold uppercase tracking-wide text-brand-dark">
-                  Certified Professionals
-                </span>
-              </div>
+  
+<section className="border-b border-gray-200 bg-surface/75 backdrop-blur-xl">
+  <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 sm:py-7 lg:px-8">
+    <div className="max-w-3xl">
+      <div className="mb-2 flex items-center gap-2">
+        <ShieldCheck className="h-4 w-4 text-gray-800" />
 
-              <h1 className="text-3xl font-black tracking-tight text-gray-800 sm:text-4xl md:text-5xl">
-                Find Your Perfect{" "}
-                <span className="text-brand-dark">Fitness Professional</span>
-              </h1>
+        <span className="text-xs font-bold uppercase tracking-wide text-gray-800">
+          Certified Professionals
+        </span>
+      </div>
 
-              <p className="mt-4 text-base text-gray-500 sm:text-lg">
-                Connect with certified trainers and fitness professionals who
-                can help you achieve your goals.
-              </p>
-            </div>
-          </div>
-        </section>
+      <h1 className="text-2xl font-black tracking-tight text-gray-800 sm:text-3xl md:text-4xl">
+        Find Your Perfect{" "}
+        <span className="text-gray-800">Fitness Professional</span>
+      </h1>
 
-       
-          
+      <p className="mt-2 max-w-2xl text-sm text-gray-500 sm:text-base">
+        Connect with certified trainers and fitness professionals who
+        can help you achieve your goals.
+      </p>
+    </div>
+  </div>
+</section>
+
+
+
         <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
-          {/* Results Header */}
 
           <div className="mb-6 flex items-center justify-between">
             <div>
@@ -171,7 +162,6 @@ export default function PublicProfessionals() {
             </div>
           </div>
 
-            
             {professionals.length === 0 ? (
             <div className="rounded-card border border-brand-light/50 bg-surface/80 p-16 text-center shadow-card backdrop-blur-xl">
               <UserRound className="mx-auto mb-4 h-14 w-14 text-gray-300" />
@@ -185,8 +175,7 @@ export default function PublicProfessionals() {
               </p>
             </div>
           ) : (
-           
-            
+
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
               {professionals.map((professional) => {
                 const imageUrl = getProfileImage(professional.profilePhoto);
@@ -200,16 +189,12 @@ export default function PublicProfessionals() {
                     key={professional._id}
                     className="overflow-hidden rounded-card border border-brand-light/50 bg-surface/80 shadow-card backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover"
                   >
-                    
-                  
+
                     <div className="p-6">
-                      {/* Profile Header */}
 
                       <div className="flex items-start gap-4">
-                        {/* Profile Image */}
 
                         <div className="relative h-16 w-16 shrink-0">
-                          {/* Fallback */}
 
                           <div
                             className={`profile-image-fallback ${
@@ -218,8 +203,6 @@ export default function PublicProfessionals() {
                           >
                             {initials || "U"}
                           </div>
-
-                          {/* Image */}
 
                           {imageUrl && (
                             <img
@@ -232,8 +215,6 @@ export default function PublicProfessionals() {
                             />
                           )}
                         </div>
-
-                      
 
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
@@ -253,7 +234,6 @@ export default function PublicProfessionals() {
                         </div>
                       </div>
 
-                         
                       <div className="mt-5 flex items-center gap-2">
                         <div className="flex items-center gap-1">
                           <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
@@ -270,9 +250,7 @@ export default function PublicProfessionals() {
                         </span>
                       </div>
 
-                      
                  <div className="mt-5 grid grid-cols-2 gap-3">
-                        {/* Experience */}
 
                         <div className="rounded-btn border border-brand-light/40 bg-brand-light/10 p-3">
                           <div className="flex items-center gap-2 text-gray-400">
@@ -287,8 +265,6 @@ export default function PublicProfessionals() {
                             {formatExperience(professional.experience)}
                           </p>
                         </div>
-
-                        {/* Session */}
 
                         <div className="rounded-btn border border-brand-light/40 bg-brand-light/10 p-3">
                           <div className="flex items-center gap-2 text-gray-400">
@@ -307,7 +283,6 @@ export default function PublicProfessionals() {
                         </div>
                       </div>
 
-                        
                        <div className="mt-5 flex items-center gap-2 text-sm text-gray-500">
                         <Calendar className="h-4 w-4 text-brand" />
 
@@ -319,7 +294,6 @@ export default function PublicProfessionals() {
                       </div>
                     </div>
 
-                  
                    <div className="border-t border-brand-light/40 p-4">
                       <button
                         onClick={() => handleViewProfile(professional._id)}

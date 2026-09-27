@@ -291,7 +291,6 @@ PoseFit Team`,
   }
 };
 
-// 10. Delete a professional by ID
 const deleteProfessional = async (req, res) => {
   try {
     const { id } = req.params;
@@ -322,7 +321,6 @@ const deleteProfessional = async (req, res) => {
   }
 };
 
-// 11. Get admin registration analytics (past 7 days)
 const getAnalytics = async (req, res) => {
   try {
     const dates = [];
@@ -395,7 +393,6 @@ const getAnalytics = async (req, res) => {
   }
 };
 
-// 12. Get pending professional applications for verification
 const getPendingProfessionals = async (req, res) => {
   try {
     const professionals = await UserModel.find({
@@ -405,7 +402,7 @@ const getPendingProfessionals = async (req, res) => {
       },
     })
       .select(
-        "firstName lastName email role professionalType specialization experience bio profilePhoto sessionFee credentialDocs bankDetails availability professionalStatus rejectionReason appliedAt verificationNotes",
+        "firstName lastName email role professionalType specialization experience bio profilePhoto sessionFee credentialDocs bankDetails availability professionalStatus rejectionReason appliedAt ",
       )
       .sort({ updatedAt: -1 });
 
@@ -423,10 +420,9 @@ const getPendingProfessionals = async (req, res) => {
   }
 };
 
-// 13. Admin approves or rejects professional application
 const updateProfessionalStatus = async (req, res) => {
   try {
-    const { status, rejectionReason, verificationNotes } = req.body;
+    const { status, rejectionReason } = req.body;
 
     const normalizedStatus = (status || "").toLowerCase();
 
@@ -456,13 +452,12 @@ const updateProfessionalStatus = async (req, res) => {
       professional.professionalStatus = "rejected";
       professional.rejectionReason =
         rejectionReason ||
-        verificationNotes ||
-        "Application requirements not met.";
+        "Application rejected by Admin.";
     }
 
-    if (verificationNotes) {
-      professional.verificationNotes = verificationNotes;
-    }
+    // if (verificationNotes) {
+    //   professional.verificationNotes = verificationNotes;
+    // }
 
     await professional.save();
 

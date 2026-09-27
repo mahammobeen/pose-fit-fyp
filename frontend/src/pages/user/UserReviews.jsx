@@ -17,12 +17,11 @@ const RATING_LABELS = {
 };
 
 export default function UserReviews() {
-  const [activeTab, setActiveTab] = useState("platform"); // "platform" | "professional"
+  const [activeTab, setActiveTab] = useState("platform");
   const [reviews, setReviews] = useState([]);
   const [publicPlatformReviews, setPublicPlatformReviews] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Platform review form state
   const [platformRating, setPlatformRating] = useState(5);
   const [hoverRating, setHoverRating] = useState(0);
   const [platformComment, setPlatformComment] = useState("");
@@ -114,7 +113,7 @@ export default function UserReviews() {
   return (
     <UserLayout>
       <div className="min-h-screen bg-transparent pb-20 font-sans">
-        {/* Header */}
+
         <div className="border-b border-brand-light/50 bg-surface/80 px-4 py-6 backdrop-blur-xl sm:px-6 sm:py-8 lg:px-8">
           <div className="mx-auto max-w-6xl">
             <span className="inline-flex rounded-full border border-brand-light bg-brand-light/30 px-3 py-1 text-xs font-extrabold uppercase tracking-widest text-brand-dark">
@@ -131,7 +130,6 @@ export default function UserReviews() {
             </p>
           </div>
 
-          {/* Navigation Tabs */}
           <div className="mx-auto mt-6 flex max-w-6xl gap-3 overflow-x-auto border-b border-brand-light/40 pb-px sm:mt-8">
             <button
               onClick={() => setActiveTab("platform")}
@@ -178,10 +176,10 @@ export default function UserReviews() {
         </div>
 
         <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
-          {/* TAB 1: PLATFORM REVIEWS */}
+
           {activeTab === "platform" && (
             <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
-              {/* Form card */}
+
               <div className="lg:col-span-5">
                 <div className="rounded-card border border-brand-light/60 bg-surface/80 p-6 shadow-card backdrop-blur-xl">
                   <div className="flex items-center gap-2 border-b border-brand-light/40 pb-4">
@@ -268,9 +266,8 @@ export default function UserReviews() {
                 </div>
               </div>
 
-              {/* Platform Reviews list */}
               <div className="space-y-6 lg:col-span-7">
-                {/* My Platform reviews */}
+
                 <div className="rounded-card border border-brand-light/60 bg-surface/80 p-6 shadow-card backdrop-blur-xl">
                   <div className="flex items-center justify-between gap-3 border-b border-brand-light/40 pb-4">
                     <h2 className="text-base font-bold text-gray-800">
@@ -350,7 +347,6 @@ export default function UserReviews() {
                   )}
                 </div>
 
-                {/* Community platform reviews */}
                 <div className="rounded-card border border-brand-light/60 bg-surface/80 p-6 shadow-card backdrop-blur-xl">
                   <div className="flex items-center justify-between gap-3 border-b border-brand-light/40 pb-4">
                     <div>
@@ -432,10 +428,9 @@ export default function UserReviews() {
             </div>
           )}
 
-          {/* TAB 2: PROFESSIONAL RATINGS */}
           {activeTab === "professional" && (
             <div className="space-y-6">
-              {/* Already rated sessions */}
+
               <div className="rounded-card border border-brand-light/60 bg-surface/80 p-6 shadow-card backdrop-blur-xl">
                 <div className="flex items-center justify-between gap-3 border-b border-brand-light/40 pb-4">
                   <div>
@@ -513,7 +508,6 @@ export default function UserReviews() {
                             </button>
                           </div>
 
-                          {/* Stars */}
                           <div className="mt-3.5 flex items-center gap-2">
                             <div className="flex text-sm text-amber-400">
                               {[...Array(5)].map((_, i) => (
@@ -535,7 +529,6 @@ export default function UserReviews() {
                             </span>
                           </div>
 
-                          {/* Session & Date info */}
                           <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-brand-light/30 pt-3 text-[11px] font-medium text-gray-400">
                             <span className="flex items-center gap-1 font-bold text-brand-dark">
                               <CheckCircle className="h-3.5 w-3.5 text-brand" />

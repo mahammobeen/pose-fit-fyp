@@ -104,7 +104,7 @@ export default function ProfessionalDashboard() {
   return (
     <ProfessionalLayout>
       <div className="min-h-screen bg-transparent pb-16 font-sans">
-        {/* Toast */}
+
         {toast && (
           <div
             className={`fixed right-5 top-5 z-50 rounded-2xl border px-5 py-3 text-sm font-bold text-white shadow-card-hover transition-all ${
@@ -118,7 +118,6 @@ export default function ProfessionalDashboard() {
           </div>
         )}
 
-        {/* Header */}
         <div className="px-4 pb-4 pt-6 sm:px-6 sm:pt-8 lg:px-8">
           <span className="inline-flex rounded-full border border-brand-light/70 bg-brand-light/40 px-3 py-1 text-xs font-extrabold uppercase tracking-widest text-brand-dark">
             Professional Overview
@@ -134,7 +133,6 @@ export default function ProfessionalDashboard() {
           </p>
         </div>
 
-        {/* Verification Status Banner */}
         <div className="mb-6 px-4 sm:px-6 lg:px-8">
           {pro?.professionalStatus === "approved" ||
           pro?.professionalStatus === "APPROVED" ? (
@@ -214,7 +212,6 @@ export default function ProfessionalDashboard() {
           )}
         </div>
 
-        {/* Stripe Payout Connection Banner */}
         <div className="mb-6 px-4 sm:px-6 lg:px-8">
           <div className="flex flex-wrap items-center justify-between gap-4 rounded-card border border-brand-light/50 bg-surface/80 p-5 shadow-card backdrop-blur-xl">
             <div className="flex items-center gap-3.5">
@@ -274,9 +271,8 @@ export default function ProfessionalDashboard() {
           </div>
         </div>
 
-        {/* Metric Cards */}
         <div className="mb-6 grid grid-cols-1 gap-4 px-4 sm:grid-cols-2 sm:px-6 lg:grid-cols-4 lg:px-8">
-          {/* Upcoming Sessions */}
+
           <div className="rounded-card border border-brand-light/50 bg-surface/80 p-5 shadow-card transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover">
             <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-2xl bg-brand-light/40 text-brand-dark">
               <Calendar className="h-5 w-5" />
@@ -291,7 +287,6 @@ export default function ProfessionalDashboard() {
             </p>
           </div>
 
-          {/* Total Sessions */}
           <div className="rounded-card border border-brand-light/50 bg-surface/80 p-5 shadow-card transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover">
             <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-2xl bg-accent-blue/50 text-sky-700">
               <TrendingUp className="h-5 w-5" />
@@ -306,7 +301,6 @@ export default function ProfessionalDashboard() {
             </p>
           </div>
 
-          {/* Earnings This Month */}
           <div className="rounded-card border border-brand-light/50 bg-surface/80 p-5 shadow-card transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover">
             <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-2xl bg-brand-light/40 text-brand-dark">
               <DollarSign className="h-5 w-5" />
@@ -323,7 +317,6 @@ export default function ProfessionalDashboard() {
             </p>
           </div>
 
-          {/* Average Rating */}
           <div className="rounded-card border border-brand-light/50 bg-surface/80 p-5 shadow-card transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover">
             <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
               <Star className="h-5 w-5 fill-amber-400 text-amber-500" />
@@ -345,7 +338,6 @@ export default function ProfessionalDashboard() {
           </div>
         </div>
 
-        {/* Recent / Upcoming Bookings */}
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-lg font-extrabold tracking-tight text-gray-800">
@@ -398,7 +390,7 @@ export default function ProfessionalDashboard() {
                         key={b._id}
                         className="transition-colors hover:bg-brand-light/10"
                       >
-                        {/* Client */}
+
                         <td className="px-5 py-4">
                           <p className="whitespace-nowrap font-bold text-gray-800">
                             {b.user
@@ -411,22 +403,18 @@ export default function ProfessionalDashboard() {
                           </p>
                         </td>
 
-                        {/* Session Fee */}
                         <td className="whitespace-nowrap px-5 py-4 font-bold text-gray-800">
                           Rs. {Number(b.amount || 0).toLocaleString()}
                         </td>
 
-                        {/* Professional Share */}
                         <td className="whitespace-nowrap px-5 py-4 font-extrabold text-brand-dark">
                           Rs. {Number(b.professionalAmount || 0).toLocaleString()}
                         </td>
 
-                        {/* Status */}
                         <td className="whitespace-nowrap px-5 py-4">
                           <StatusBadge status={b.status} />
                         </td>
 
-                        {/* Date */}
                         <td className="whitespace-nowrap px-5 py-4 text-xs font-medium text-gray-500">
                           {b.appointmentDate ? (
                             new Date(b.appointmentDate).toLocaleDateString("en-US", {

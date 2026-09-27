@@ -56,14 +56,13 @@ const paymentSchema = new mongoose.Schema(
       type: Number,
       required: true,
       min: 1,
-      max: 3,
+      max: 1,
     },
 
     notes: {
       type: String,
       trim: true,
     },
-    
 
     stripePaymentIntentId: {
       type: String,
@@ -81,7 +80,6 @@ const paymentSchema = new mongoose.Schema(
       type: String,
       sparse: true,
     },
-    
 
     meetingLink: {
       type: String,
@@ -94,6 +92,11 @@ const paymentSchema = new mongoose.Schema(
     },
 
     meetingReminderSent: {
+      type: Boolean,
+      default: false,
+    },
+
+    confirmationEmailSent: {
       type: Boolean,
       default: false,
     },
@@ -133,6 +136,7 @@ const paymentSchema = new mongoose.Schema(
     timestamps: true,
   },
 );
+
 paymentSchema.index(
   {
     professional: 1,
@@ -142,13 +146,17 @@ paymentSchema.index(
   {
     unique: true,
     partialFilterExpression: {
-      status: { $in: ["pending", "completed"] },
+      status: {
+        $in: ["pending", "completed"],
+      },
       professionalDeleted: false,
     },
-  }
+  },
 );
 
-const PaymentModel = mongoose.model("Payment", paymentSchema);
+const PaymentModel = mongoose.model(
+  "Payment",
+  paymentSchema,
+);
 
 module.exports = PaymentModel;
-

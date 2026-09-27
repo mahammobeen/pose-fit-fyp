@@ -52,14 +52,8 @@ const NAV_ITEMS = [
 export default function UserLayout({ children }) {
   const navigate = useNavigate();
 
-  // =========================================================
-  // MOBILE SIDEBAR STATE
-  // =========================================================
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // =========================================================
-  // DESKTOP SIDEBAR STATE
-  // =========================================================
   const [sidebarOpen, setSidebarOpen] = useState(() => {
     const savedState = localStorage.getItem("user-sidebar-open");
 
@@ -68,9 +62,6 @@ export default function UserLayout({ children }) {
     return savedState === "true";
   });
 
-  // =========================================================
-  // TOGGLE DESKTOP SIDEBAR
-  // =========================================================
   const toggleSidebar = () => {
     setSidebarOpen((previousState) => {
       const newState = !previousState;
@@ -81,9 +72,6 @@ export default function UserLayout({ children }) {
     });
   };
 
-  // =========================================================
-  // GET USER FROM LOCAL STORAGE
-  // =========================================================
   const getStoredUser = () => {
     try {
       const storedUser = localStorage.getItem("pose-fit-user");
@@ -100,9 +88,6 @@ export default function UserLayout({ children }) {
 
   const user = getStoredUser();
 
-  // =========================================================
-  // LOGOUT
-  // =========================================================
   const handleLogout = () => {
     localStorage.removeItem("pose-fit");
     localStorage.removeItem("pose-fit-user");
@@ -116,9 +101,7 @@ export default function UserLayout({ children }) {
 
   return (
     <div className="relative flex h-screen overflow-hidden bg-surface font-sans">
-      {/* =====================================================
-          BACKGROUND THEME
-      ====================================================== */}
+
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -left-32 -top-32 h-80 w-80 rounded-full bg-brand-light/35 blur-3xl" />
 
@@ -129,9 +112,6 @@ export default function UserLayout({ children }) {
         <div className="absolute left-[45%] top-[20%] h-72 w-72 rounded-full bg-white/40 blur-3xl" />
       </div>
 
-      {/* =====================================================
-          MOBILE HAMBURGER BUTTON
-      ====================================================== */}
       <button
         type="button"
         onClick={() => setMobileMenuOpen(true)}
@@ -164,9 +144,6 @@ export default function UserLayout({ children }) {
         <Menu className="h-5 w-5" />
       </button>
 
-      {/* =====================================================
-          MOBILE BACKDROP
-      ====================================================== */}
       {mobileMenuOpen && (
         <div
           onClick={() => setMobileMenuOpen(false)}
@@ -182,9 +159,6 @@ export default function UserLayout({ children }) {
         />
       )}
 
-      {/* =====================================================
-          MOBILE DRAWER
-      ====================================================== */}
       <div
         className={`
           fixed
@@ -206,9 +180,7 @@ export default function UserLayout({ children }) {
           ${mobileMenuOpen ? "translate-x-0" : "-translate-x-full"}
         `}
       >
-        {/* ===================================================
-            MOBILE DRAWER HEADER
-        ==================================================== */}
+
         <div className="flex min-h-[96px] items-center justify-between border-b border-brand-light/50 px-5 py-5">
           <div className="flex min-w-0 items-center gap-3">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-btn border border-brand-light/60 bg-white/80 shadow-card">
@@ -231,7 +203,6 @@ export default function UserLayout({ children }) {
             </div>
           </div>
 
-          {/* CLOSE BUTTON */}
           <button
             type="button"
             onClick={() => setMobileMenuOpen(false)}
@@ -258,9 +229,6 @@ export default function UserLayout({ children }) {
           </button>
         </div>
 
-        {/* ===================================================
-            MOBILE NAVIGATION
-        ==================================================== */}
         <nav className="flex-1 overflow-y-auto px-4 py-5">
           <p className="mb-3 px-2 text-[10px] font-extrabold uppercase tracking-widest text-gray-400">
             User Menu
@@ -297,9 +265,6 @@ export default function UserLayout({ children }) {
           </div>
         </nav>
 
-        {/* ===================================================
-            MOBILE DRAWER FOOTER
-        ==================================================== */}
         <div className="border-t border-brand-light/50 bg-white/30 p-4">
           <div className="mb-3 flex min-w-0 items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-btn border border-brand-light/60 bg-white/80 shadow-card">
@@ -352,10 +317,6 @@ export default function UserLayout({ children }) {
         </div>
       </div>
 
-      {/* =====================================================
-          DESKTOP SIDEBAR
-          HIDDEN ON MOBILE
-      ====================================================== */}
       <aside
         className={`
           relative
@@ -373,9 +334,7 @@ export default function UserLayout({ children }) {
           ${sidebarOpen ? "md:w-64" : "md:w-20"}
         `}
       >
-        {/* ===================================================
-            DESKTOP HEADER
-        ==================================================== */}
+
         <div
           className={`
             dashboard-sidebar-header
@@ -383,7 +342,7 @@ export default function UserLayout({ children }) {
             ${sidebarOpen ? "h-24 px-6 py-6" : "h-24 px-2 py-3"}
           `}
         >
-          {/* SIDEBAR TOGGLE */}
+
           <button
             type="button"
             onClick={toggleSidebar}
@@ -400,7 +359,6 @@ export default function UserLayout({ children }) {
             )}
           </button>
 
-          {/* BRAND */}
           <div
             className={`
               dashboard-brand-wrapper
@@ -428,9 +386,6 @@ export default function UserLayout({ children }) {
           </div>
         </div>
 
-        {/* ===================================================
-            DESKTOP NAVIGATION
-        ==================================================== */}
         <nav className={`dashboard-nav ${sidebarOpen ? "px-3" : "px-2"}`}>
           {sidebarOpen && <p className="dashboard-menu-title">User Menu</p>}
 
@@ -471,9 +426,6 @@ export default function UserLayout({ children }) {
           ))}
         </nav>
 
-        {/* ===================================================
-            DESKTOP FOOTER
-        ==================================================== */}
         <div
           className={`
             dashboard-sidebar-footer
@@ -528,11 +480,8 @@ export default function UserLayout({ children }) {
         </div>
       </aside>
 
-      {/* =====================================================
-          MAIN AREA
-      ====================================================== */}
       <div className="dashboard-main-wrapper relative z-10 min-w-0 flex-1 overflow-y-auto">
-        {/* Mobile top spacing so hamburger doesn't overlap content */}
+
         <div className="md:hidden h-14" />
 
         <main className="dashboard-content bg-transparent">{children}</main>

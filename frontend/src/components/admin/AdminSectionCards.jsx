@@ -46,28 +46,24 @@ export function AdminSectionCards({ dbStats = {} }) {
         >
           <div className="p-5 sm:p-6">
             <div className="mb-5 flex items-center justify-between">
-              {/* Icon */}
+
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-brand-light/70 bg-brand-light/30 transition-transform duration-300 group-hover:-translate-y-0.5">
                 {stat.icon}
               </div>
 
-              {/* Trend */}
               <span className="rounded-full border border-brand-light/70 bg-brand-light/30 px-2.5 py-1 text-xs font-bold text-brand-dark">
                 {stat.trend}
               </span>
             </div>
 
-            {/* Title */}
             <p className="mb-1 text-sm font-semibold text-gray-500">
               {stat.title}
             </p>
 
-            {/* Value */}
             <h2 className="text-3xl font-extrabold tracking-tight text-gray-800">
               {stat.value}
             </h2>
 
-            {/* Description */}
             <p className="mt-2 text-[10px] font-bold uppercase tracking-wider text-gray-400">
               {stat.description}
             </p>

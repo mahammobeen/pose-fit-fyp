@@ -13,10 +13,6 @@ import {
   Receipt,
 } from "lucide-react";
 
-/* =========================================================
-   STAT CARD
-   ========================================================= */
-
 const StatCard = ({
   title,
   value,
@@ -60,10 +56,6 @@ const StatCard = ({
     <p className="text-xs text-stone-400 mt-2 font-medium">{description}</p>
   </div>
 );
-
-/* =========================================================
-   ADMIN DASHBOARD
-   ========================================================= */
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
@@ -111,10 +103,6 @@ export default function AdminDashboard() {
     1
   );
 
-  /* =========================================================
-     LOADING
-     ========================================================= */
-
   if (loading) {
     return (
       <AdminLayout>
@@ -130,10 +118,6 @@ export default function AdminDashboard() {
       </AdminLayout>
     );
   }
-
-  /* =========================================================
-     STAT CARDS
-     ========================================================= */
 
   const statCards = [
     {
@@ -226,16 +210,9 @@ export default function AdminDashboard() {
     },
   ];
 
-  /* =========================================================
-     UI
-     ========================================================= */
-
   return (
     <AdminLayout>
       <div className="min-h-screen pb-16 bg-transparent font-sans">
-        {/* =================================================
-            HEADER BANNER
-        ================================================= */}
 
         <div className="px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 pb-4">
           <div
@@ -262,19 +239,11 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* =================================================
-            STATS GRID
-        ================================================= */}
-
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 px-4 sm:px-6 lg:px-8 py-4">
           {statCards.map((card, i) => (
             <StatCard key={i} {...card} />
           ))}
         </div>
-
-        {/* =================================================
-            ANALYTICS
-        ================================================= */}
 
         <div className="px-4 sm:px-6 lg:px-8 mt-4">
           <div className="rounded-card p-5 sm:p-7 border border-brand-light/50 bg-surface/80 shadow-card backdrop-blur-xl">

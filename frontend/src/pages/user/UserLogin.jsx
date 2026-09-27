@@ -73,14 +73,12 @@ export default function UserLogin() {
         throw new Error("Invalid user role.");
       }
 
-      // USER verification check
       if (role === "USER" && user?.isVerified === false) {
         throw new Error(
           "Your account is not verified. Please verify your email first.",
         );
       }
 
-      // Normalize user data before storing
       const normalizedUser = {
         ...user,
         _id: userId,
@@ -94,13 +92,12 @@ export default function UserLogin() {
       showToast("success", "Login successful! Redirecting...");
 
       setTimeout(() => {
-        // ADMIN
+
         if (role === "ADMIN") {
           navigate("/admin/dashboard");
           return;
         }
 
-        // PROFESSIONAL
         if (role === "PROFESSIONAL") {
           const professionalStatus = String(
             user?.professionalStatus || "",
@@ -125,7 +122,6 @@ export default function UserLogin() {
           return;
         }
 
-        // USER
         const fromPath = location.state?.from?.pathname || "/user/dashboard";
 
         navigate(fromPath);
@@ -147,14 +143,13 @@ export default function UserLogin() {
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-surface px-4 py-8 font-sans">
-      {/* Background Decorations */}
+
       <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-brand-light/50 blur-3xl" />
 
       <div className="pointer-events-none absolute -bottom-24 -right-24 h-80 w-80 rounded-full bg-accent-blue/60 blur-3xl" />
 
       <div className="pointer-events-none absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent-orange/20 blur-3xl" />
 
-      {/* Toast */}
       {toast && (
         <div
           className={`fixed right-5 top-5 z-[100] flex max-w-sm items-center gap-3 rounded-card border px-5 py-4 text-sm font-medium shadow-card-hover ${
@@ -171,10 +166,9 @@ export default function UserLogin() {
         </div>
       )}
 
-      {/* Login Card */}
       <div className="relative z-10 w-full max-w-md">
         <div className="rounded-card border border-brand-light/70 bg-surface/80 p-8 shadow-card-hover backdrop-blur-xl sm:p-10">
-          {/* Logo */}
+
           <div className="mb-8 flex justify-center">
             <Link className="flex h-16 w-16 items-center justify-center rounded-card bg-white/70 p-2 shadow-card transition-transform duration-300 hover:-translate-y-1">
               <img
@@ -185,7 +179,6 @@ export default function UserLogin() {
             </Link>
           </div>
 
-          {/* Heading */}
           <div className="mb-8 text-center">
             <h1 className="text-3xl font-extrabold tracking-tight text-gray-800">
               Welcome Back
@@ -196,9 +189,8 @@ export default function UserLogin() {
             </p>
           </div>
 
-          {/* Login Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Email */}
+
             <div>
               <label
                 htmlFor="email"
@@ -219,7 +211,6 @@ export default function UserLogin() {
               />
             </div>
 
-            {/* Password */}
             <div>
               <label
                 htmlFor="password"
@@ -253,7 +244,6 @@ export default function UserLogin() {
               </div>
             </div>
 
-            {/* Forgot Password */}
             <div className="flex justify-end">
               <Link
                 to="/forgot-password"
@@ -263,7 +253,6 @@ export default function UserLogin() {
               </Link>
             </div>
 
-            {/* Login Button */}
             <button
               type="submit"
               disabled={loading}
@@ -280,7 +269,6 @@ export default function UserLogin() {
             </button>
           </form>
 
-          {/* Signup */}
           <div className="mt-7 text-center text-sm text-gray-500">
             Don't have an account?{" "}
             <Link
@@ -292,7 +280,6 @@ export default function UserLogin() {
           </div>
         </div>
 
-        {/* Bottom Text */}
         <p className="mt-5 text-center text-xs text-gray-400">
           Your fitness journey starts with PoseFit.
         </p>

@@ -1,8 +1,13 @@
 import { useState, useEffect } from "react";
+
 import { useParams, useNavigate, useLocation } from "react-router-dom";
+
 import { httpClient } from "../../lib/http";
+
 import { toast } from "sonner";
+
 import UserLayout from "../../components/user/UserLayout";
+
 import {
   CheckCircle,
   Clock,
@@ -45,7 +50,9 @@ function getSlotStartDateTime(dateInput, slot) {
       : formatDateForApi(dateInput);
 
   const parts = dateStr.split("-").map(Number);
+
   if (parts.length !== 3 || parts.some(Number.isNaN)) return null;
+
   const [year, month, day] = parts;
 
   const slotParts = slot.split("-").map((p) => p.trim());
@@ -53,6 +60,7 @@ function getSlotStartDateTime(dateInput, slot) {
   const endPart = slotParts[1] || "";
 
   const match = startPart.match(/^(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);
+
   if (!match) return null;
 
   let hour = Number(match[1]);
@@ -61,6 +69,7 @@ function getSlotStartDateTime(dateInput, slot) {
 
   if (!meridiem && endPart) {
     const endMatch = endPart.match(/(am|pm)/i);
+
     if (endMatch) {
       meridiem = endMatch[1].toLowerCase();
     }
@@ -75,12 +84,15 @@ function getSlotStartDateTime(dateInput, slot) {
   }
 
   const result = new Date(year, month - 1, day, hour, minute, 0, 0);
+
   return Number.isNaN(result.getTime()) ? null : result;
 }
 
 function isSlotTimePassed(dateInput, slot) {
   const slotStart = getSlotStartDateTime(dateInput, slot);
+
   if (!slotStart) return false;
+
   return slotStart.getTime() <= Date.now();
 }
 
@@ -88,18 +100,21 @@ function getUpcomingAvailableDates(availability, count = 14) {
   if (!availability || availability.length === 0) return [];
 
   const availableDaysMap = new Set(
-    availability.map((item) => item.day?.trim().toLowerCase())
+    availability.map((item) => item.day?.trim().toLowerCase()),
   );
 
   const dates = [];
   const today = new Date();
+
   today.setHours(0, 0, 0, 0);
 
   for (let i = 0; i < 60 && dates.length < count; i++) {
     const d = new Date(today);
+
     d.setDate(today.getDate() + i);
 
     const dayName = DAY_NAMES[d.getDay()];
+
     if (availableDaysMap.has(dayName.toLowerCase())) {
       dates.push({
         dateString: formatDateForApi(d),
@@ -147,6 +162,7 @@ function getNextDateForDay(day) {
   }
 
   const result = new Date(today);
+
   result.setDate(today.getDate() + daysUntil);
   result.setHours(0, 0, 0, 0);
 
@@ -181,7 +197,17 @@ function normalizeDate(date) {
 
 function formatExperience(years) {
   const n = Number(years);
-  if (years === undefined || years === null || years === "" || isNaN(n) || n < 0) return null;
+
+  if (
+    years === undefined ||
+    years === null ||
+    years === "" ||
+    isNaN(n) ||
+    n < 0
+  ) {
+    return null;
+  }
+
   return n === 1 ? "1 Year" : `${n} Years`;
 }
 
@@ -220,7 +246,6 @@ function parseSlotTime(slot) {
   };
 }
 
-// eslint-disable-next-line no-unused-vars
 function getSlotEndTime(slot) {
   if (!slot || typeof slot !== "string") return null;
 
@@ -309,17 +334,15 @@ export default function ProfessionalDetails() {
   const [loading, setLoading] = useState(true);
   const [bookingLoading, setBookingLoading] = useState(false);
   const [bookedSlots, setBookedSlots] = useState([]);
-
   const [showBooking, setShowBooking] = useState(false);
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedDay, setSelectedDay] = useState("");
   const [selectedSlot, setSelectedSlot] = useState("");
   const [notes, setNotes] = useState("");
-
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [bookingCancelled, setBookingCancelled] = useState(false);
   const [bookingPending, setBookingPending] = useState(false);
-
+  const [paymentReceipt, setPaymentReceipt] = useState(null);
   const [proReviews, setProReviews] = useState([]);
   const [reviewsLoading, setReviewsLoading] = useState(true);
   const [pendingEligibleSessions, setPendingEligibleSessions] = useState([]);
@@ -369,7 +392,6 @@ export default function ProfessionalDetails() {
 
       const [revRes, pendingRes] = await Promise.all([
         httpClient.get(`/reviews/professional/${proId}`),
-
         httpClient.get("/reviews/pending-ratings").catch(() => ({
           data: {
             pendingSessions: [],
@@ -515,19 +537,19 @@ export default function ProfessionalDetails() {
     if (bookingSuccessParam === "true") {
       if (!sessionId) {
         toast.info("Payment session details not found.");
-        navigate(location.pathname, { replace: true });
+
+        navigate(location.pathname, {
+          replace: true,
+        });
+
         return;
       }
-
-      // Clear search query from URL without re-triggering this effect
-      navigate(location.pathname, {
-        replace: true,
-      });
 
       let isCancelled = false;
       let timerId = null;
       let attempts = 0;
-      const MAX_ATTEMPTS = 10; // Poll every 2s for up to 20 seconds
+
+      const MAX_ATTEMPTS = 10;
       const POLL_INTERVAL = 2000;
 
       setBookingPending(true);
@@ -537,73 +559,155 @@ export default function ProfessionalDetails() {
       const pollSessionStatus = async () => {
         try {
           const res = await httpClient.get(
-            `/payment/verify-session?session_id=${sessionId}`
+            `/payment/verify-session?session_id=${sessionId}`,
           );
 
           if (isCancelled) return;
 
           const data = res.data;
+
           const isConfirmed =
             Boolean(data?.bookingConfirmed) ||
             String(data?.status || "").toLowerCase() === "completed" ||
             String(data?.payment?.status || "").toLowerCase() === "completed";
 
           if (isConfirmed) {
+            setPaymentReceipt(data?.payment || null);
             setBookingSuccess(true);
             setBookingPending(false);
+
             toast.success("Booking confirmed successfully!");
-            fetchBookedSlots();
+
+            await fetchBookedSlots();
+
+            navigate(location.pathname, {
+              replace: true,
+            });
+
             return;
           }
 
           attempts += 1;
 
           if (attempts < MAX_ATTEMPTS) {
-            timerId = setTimeout(pollSessionStatus, POLL_INTERVAL);
-          } else {
-            // Timeout reached: webhook has not completed yet or failed
-            setBookingPending(false);
-            toast.info(
-              "Your payment is being processed. Your booking will appear once payment confirmation is received."
+            timerId = setTimeout(
+              pollSessionStatus,
+              POLL_INTERVAL,
             );
-            fetchBookedSlots();
+          } else {
+            setBookingPending(false);
+
+            toast.info(
+              "Your payment is being processed. Your booking will appear once payment confirmation is received.",
+            );
+
+            await fetchBookedSlots();
+
+            if (!isCancelled) {
+              navigate(location.pathname, {
+                replace: true,
+              });
+            }
           }
         } catch (err) {
           if (isCancelled) return;
+
           console.error("Session verification error:", err);
+
           setBookingPending(false);
+
           toast.info(
-            "Your payment is being processed. Your booking will appear once payment confirmation is received."
+            "Your payment is being processed. Your booking will appear once payment confirmation is received.",
           );
+
+          if (!isCancelled) {
+            navigate(location.pathname, {
+              replace: true,
+            });
+          }
         }
       };
 
       pollSessionStatus();
 
       return () => {
-        // If query parameters change to a non-success state or component unmounts, cancel timer
-        if (timerId) clearTimeout(timerId);
+        isCancelled = true;
+
+        if (timerId) {
+          clearTimeout(timerId);
+        }
       };
     }
 
     if (bookingCancelledParam === "true") {
-      setBookingCancelled(true);
-      setBookingSuccess(false);
-      setBookingPending(false);
+      let isCancelled = false;
 
-      toast.error("Payment was cancelled.");
+      const cancelPendingPayment = async () => {
+        setBookingCancelled(true);
+        setBookingSuccess(false);
+        setBookingPending(false);
 
-      fetchBookedSlots();
+        if (!sessionId) {
+          toast.error("Payment was cancelled.");
 
-      navigate(location.pathname, {
-        replace: true,
-      });
+          await fetchBookedSlots();
+
+          if (!isCancelled) {
+            navigate(location.pathname, {
+              replace: true,
+            });
+          }
+
+          return;
+        }
+
+        try {
+          await httpClient.post("/payment/cancel", {
+            sessionId,
+          });
+
+          if (isCancelled) return;
+
+          toast.error(
+            "Payment was cancelled. The slot is now available.",
+          );
+
+          await fetchBookedSlots();
+        } catch (error) {
+          if (isCancelled) return;
+
+          console.error("Cancel payment error:", error);
+
+          toast.error(
+            error?.response?.data?.message ||
+              "Payment was cancelled. Please try booking again.",
+          );
+
+          await fetchBookedSlots();
+        } finally {
+          if (!isCancelled) {
+            navigate(location.pathname, {
+              replace: true,
+            });
+          }
+        }
+      };
+
+      cancelPendingPayment();
+
+      return () => {
+        isCancelled = true;
+      };
     }
   }, [location.search]);
 
   const availability = sortAvailability(pro?.availability || []);
 
-  const isSlotBooked = (day, slot, appointmentDate = null) => {
+  const isSlotBooked = (
+    day,
+    slot,
+    appointmentDate = null,
+  ) => {
     const targetDate = normalizeDate(appointmentDate);
 
     return bookedSlots.some((booking) => {
@@ -617,7 +721,9 @@ export default function ProfessionalDetails() {
       const bookingSlot =
         booking.appointmentSlot?.trim().toLowerCase() || "";
 
-      const bookingDate = normalizeDate(booking.appointmentDate);
+      const bookingDate = normalizeDate(
+        booking.appointmentDate,
+      );
 
       const sameDay =
         bookingDay === day?.trim().toLowerCase();
@@ -656,9 +762,17 @@ export default function ProfessionalDetails() {
   const openBooking = async () => {
     await fetchBookedSlots();
 
-    const upcoming = getUpcomingAvailableDates(availability, 14);
+    const upcoming = getUpcomingAvailableDates(
+      availability,
+      14,
+    );
+
     const firstAvailable = upcoming.find((item) => {
-      const slots = getAvailableSlotsForDate(item.dayName, item.dateString);
+      const slots = getAvailableSlotsForDate(
+        item.dayName,
+        item.dateString,
+      );
+
       return slots.length > 0;
     });
 
@@ -670,6 +784,7 @@ export default function ProfessionalDetails() {
       setSelectedDay(upcoming[0].dayName);
     } else {
       const todayStr = formatDateForApi(new Date());
+
       setSelectedDate(todayStr);
       setSelectedDay(DAY_NAMES[new Date().getDay()]);
     }
@@ -696,23 +811,38 @@ export default function ProfessionalDetails() {
       setSelectedDate("");
       setSelectedDay("");
       setSelectedSlot("");
+
       return;
     }
 
     const todayStr = formatDateForApi(new Date());
+
     if (dateStr < todayStr) {
       toast.error("Past dates cannot be selected.");
       return;
     }
 
-    const parts = dateStr.slice(0, 10).split("-").map(Number);
-    if (parts.length !== 3 || parts.some(Number.isNaN)) {
+    const parts = dateStr
+      .slice(0, 10)
+      .split("-")
+      .map(Number);
+
+    if (
+      parts.length !== 3 ||
+      parts.some(Number.isNaN)
+    ) {
       toast.error("Invalid date selected.");
       return;
     }
 
     const [year, month, day] = parts;
-    const dateObj = new Date(year, month - 1, day);
+
+    const dateObj = new Date(
+      year,
+      month - 1,
+      day,
+    );
+
     const dayName = DAY_NAMES[dateObj.getDay()];
 
     setSelectedDate(dateStr);
@@ -737,35 +867,59 @@ export default function ProfessionalDetails() {
     }
 
     const todayStr = formatDateForApi(new Date());
+
     if (selectedDate < todayStr) {
-      toast.error("Cannot book an appointment for a past date.");
+      toast.error(
+        "Cannot book an appointment for a past date.",
+      );
+
       return;
     }
 
-    if (isSlotTimePassed(selectedDate, selectedSlot)) {
+    if (
+      isSlotTimePassed(
+        selectedDate,
+        selectedSlot,
+      )
+    ) {
       toast.error(
         "The selected session start time has already passed. Please select an upcoming slot.",
       );
+
       return;
     }
 
     if (!pro?._id) {
-      toast.error("Professional information is missing.");
+      toast.error(
+        "Professional information is missing.",
+      );
+
       return;
     }
 
     if (!pro?.sessionFee) {
-      toast.error("Session fee is not available.");
+      toast.error(
+        "Session fee is not available.",
+      );
+
       return;
     }
 
-    if (isSlotBooked(selectedDay, selectedSlot, selectedDate)) {
+    if (
+      isSlotBooked(
+        selectedDay,
+        selectedSlot,
+        selectedDate,
+      )
+    ) {
       toast.error(
         "This session has already been booked. Please select another slot.",
       );
 
       setSelectedSlot("");
+
       await fetchBookedSlots();
+
       return;
     }
 
@@ -774,29 +928,42 @@ export default function ProfessionalDetails() {
 
       await fetchBookedSlots();
 
-      if (isSlotBooked(selectedDay, selectedSlot, selectedDate)) {
+      if (
+        isSlotBooked(
+          selectedDay,
+          selectedSlot,
+          selectedDate,
+        )
+      ) {
         toast.error(
           "This session was just booked by another user. Please select another slot.",
         );
 
         setSelectedSlot("");
+
         return;
       }
 
-      const response = await httpClient.post("/payment/create", {
-        professionalId: pro._id,
-        amount: Number(pro.sessionFee),
-        appointmentDay: selectedDay,
-        appointmentSlot: selectedSlot,
-        appointmentDate: selectedDate,
-        sessionDuration: 1,
-        notes: notes.trim(),
-      });
+      const response = await httpClient.post(
+        "/payment/create",
+        {
+          professionalId: pro._id,
+          amount: Number(pro.sessionFee),
+          appointmentDay: selectedDay,
+          appointmentSlot: selectedSlot,
+          appointmentDate: selectedDate,
+          sessionDuration: 1,
+          notes: notes.trim(),
+        },
+      );
 
-      const checkoutUrl = response.data?.checkoutUrl;
+      const checkoutUrl =
+        response.data?.checkoutUrl;
 
       if (!checkoutUrl) {
-        throw new Error("Payment checkout URL was not returned.");
+        throw new Error(
+          "Payment checkout URL was not returned.",
+        );
       }
 
       window.location.href = checkoutUrl;
@@ -806,7 +973,9 @@ export default function ProfessionalDetails() {
       if (error?.response?.status === 401) {
         localStorage.removeItem("pose-fit");
 
-        toast.error("Please login to book a session.");
+        toast.error(
+          "Please login to book a session.",
+        );
 
         navigate("/user/login", {
           state: {
@@ -824,6 +993,7 @@ export default function ProfessionalDetails() {
         );
 
         setSelectedSlot("");
+
         await fetchBookedSlots();
 
         return;
@@ -849,9 +1019,15 @@ export default function ProfessionalDetails() {
 
   const daySlots = selectedDayData?.slots || [];
 
-  const profilePhoto = getImageUrl(pro?.profilePhoto);
+  const profilePhoto = getImageUrl(
+    pro?.profilePhoto,
+  );
 
-  const upcomingAvailableDates = getUpcomingAvailableDates(availability, 14);
+  const upcomingAvailableDates =
+    getUpcomingAvailableDates(
+      availability,
+      14,
+    );
 
   if (loading) {
     return (
@@ -869,7 +1045,9 @@ export default function ProfessionalDetails() {
         <div className="min-h-full bg-transparent pb-20 font-sans">
           <div className="px-4 pt-6 sm:px-6 lg:px-8">
             <button
-              onClick={() => navigate("/user/professionals")}
+              onClick={() =>
+                navigate("/user/professionals")
+              }
               className="rounded-btn border border-brand-light/50 bg-surface/80 px-4 py-2 text-xs font-bold text-gray-700 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-white"
             >
               ← Back to Directory
@@ -901,7 +1079,9 @@ export default function ProfessionalDetails() {
           </span>
 
           <button
-            onClick={() => navigate("/user/professionals")}
+            onClick={() =>
+              navigate("/user/professionals")
+            }
             className="rounded-btn border border-brand-light/50 bg-surface/80 px-4 py-2 text-xs font-bold text-gray-700 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-white"
           >
             ← Back to Directory
@@ -911,7 +1091,7 @@ export default function ProfessionalDetails() {
         {bookingPending && (
           <div className="mx-auto mb-6 max-w-5xl px-4 sm:px-6 lg:px-8">
             <div className="flex items-center gap-3 rounded-card border border-blue-200 bg-blue-50/70 p-4">
-              <Clock className="h-5 w-5 shrink-0 text-blue-600 animate-spin" />
+              <Clock className="h-5 w-5 shrink-0 animate-spin text-blue-600" />
 
               <div>
                 <p className="text-sm font-bold text-blue-900">
@@ -926,20 +1106,191 @@ export default function ProfessionalDetails() {
           </div>
         )}
 
-        {bookingSuccess && (
-          <div className="mx-auto mb-6 max-w-5xl px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center gap-3 rounded-card border border-brand-light bg-brand-light/20 p-4">
-              <CheckCircle className="h-5 w-5 shrink-0 text-brand-dark" />
+        {bookingSuccess && paymentReceipt && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+            <div className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
+              <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-200 bg-white px-6 py-4">
+                <h2 className="text-lg font-bold text-gray-900">
+                  Payment Receipt
+                </h2>
 
-              <div>
-                <p className="text-sm font-bold text-brand-dark">
-                  Booking Confirmed!
-                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBookingSuccess(false);
+                    setPaymentReceipt(null);
+                  }}
+                  className="rounded-full p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-900"
+                  aria-label="Close receipt"
+                >
+                  ×
+                </button>
+              </div>
 
-                <p className="mt-0.5 text-xs font-medium text-brand-dark/80">
-                  Your payment was successful. The professional will be in touch
-                  to confirm your session details.
-                </p>
+              <div
+                id="payment-receipt"
+                className="p-6"
+              >
+                <div className="border-b border-gray-200 pb-5 text-center">
+                  <CheckCircle className="mx-auto h-10 w-10 text-green-600" />
+
+                  <h3 className="mt-3 text-xl font-bold text-gray-900">
+                    Payment Successful
+                  </h3>
+
+                  <p className="mt-1 text-sm text-gray-500">
+                    Your appointment has been confirmed.
+                  </p>
+
+                  <p className="mt-4 text-sm font-medium text-gray-500">
+                    Amount Paid
+                  </p>
+
+                  <p className="mt-1 text-3xl font-bold text-gray-900">
+                    Rs.{" "}
+                    {Number(
+                      paymentReceipt.amount || 0,
+                    ).toLocaleString()}
+                  </p>
+
+                  <p className="mt-1 text-sm font-semibold text-green-600">
+                    Payment Completed
+                  </p>
+                </div>
+
+                <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                  <div className="rounded-lg bg-gray-50 p-4">
+                    <p className="text-xs font-medium text-gray-500">
+                      Transaction ID
+                    </p>
+
+                    <p className="mt-1 break-all text-sm font-semibold text-gray-900">
+                      {paymentReceipt.stripeSessionId ||
+                        paymentReceipt._id ||
+                        "N/A"}
+                    </p>
+                  </div>
+
+                  <div className="rounded-lg bg-gray-50 p-4">
+                    <p className="text-xs font-medium text-gray-500">
+                      Payment Date
+                    </p>
+
+                    <p className="mt-1 text-sm font-semibold text-gray-900">
+                      {paymentReceipt.createdAt
+                        ? new Date(
+                            paymentReceipt.createdAt,
+                          ).toLocaleString()
+                        : "N/A"}
+                    </p>
+                  </div>
+
+                  <div className="rounded-lg bg-gray-50 p-4">
+                    <p className="text-xs font-medium text-gray-500">
+                      Professional
+                    </p>
+
+                    <p className="mt-1 text-sm font-semibold text-gray-900">
+                      {paymentReceipt.professional
+                        ? `${paymentReceipt.professional.firstName || ""} ${
+                            paymentReceipt.professional.lastName || ""
+                          }`.trim()
+                        : "N/A"}
+                    </p>
+                  </div>
+
+                  <div className="rounded-lg bg-gray-50 p-4">
+                    <p className="text-xs font-medium text-gray-500">
+                      Appointment Date
+                    </p>
+
+                    <p className="mt-1 text-sm font-semibold text-gray-900">
+                      {paymentReceipt.appointmentDate ||
+                        "N/A"}
+                    </p>
+                  </div>
+
+                  <div className="rounded-lg bg-gray-50 p-4">
+                    <p className="text-xs font-medium text-gray-500">
+                      Appointment Day
+                    </p>
+
+                    <p className="mt-1 text-sm font-semibold text-gray-900">
+                      {paymentReceipt.appointmentDay ||
+                        "N/A"}
+                    </p>
+                  </div>
+
+                  <div className="rounded-lg bg-gray-50 p-4">
+                    <p className="text-xs font-medium text-gray-500">
+                      Appointment Time
+                    </p>
+
+                    <p className="mt-1 text-sm font-semibold text-gray-900">
+                      {paymentReceipt.appointmentSlot ||
+                        "N/A"}
+                    </p>
+                  </div>
+
+                  <div className="rounded-lg bg-gray-50 p-4">
+                    <p className="text-xs font-medium text-gray-500">
+                      Session Duration
+                    </p>
+
+                    <p className="mt-1 text-sm font-semibold text-gray-900">
+                      {paymentReceipt.sessionDuration
+                        ? `${paymentReceipt.sessionDuration} hour${
+                            paymentReceipt.sessionDuration >
+                            1
+                              ? "s"
+                              : ""
+                          }`
+                        : "N/A"}
+                    </p>
+                  </div>
+
+                  <div className="rounded-lg bg-gray-50 p-4">
+                    <p className="text-xs font-medium text-gray-500">
+                      Payment Status
+                    </p>
+
+                    <p className="mt-1 text-sm font-semibold capitalize text-green-600">
+                      {paymentReceipt.status ||
+                        "Completed"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-6 rounded-lg border border-gray-200 p-4">
+                  <p className="text-xs font-medium text-gray-500">
+                    Receipt Reference
+                  </p>
+
+                  <p className="mt-1 break-all text-sm font-semibold text-gray-900">
+                    {paymentReceipt._id || "N/A"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="sticky bottom-0 flex flex-col gap-3 border-t border-gray-200 bg-white p-6 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBookingSuccess(false);
+                    setPaymentReceipt(null);
+                  }}
+                  className="flex-1 rounded-lg border border-gray-300 px-5 py-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+                >
+                  Back
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="flex-1 rounded-lg bg-brand-dark px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90"
+                >
+                  Save Receipt
+                </button>
               </div>
             </div>
           </div>
@@ -953,7 +1304,7 @@ export default function ProfessionalDetails() {
               </span>
 
               <p className="text-sm font-medium text-gray-800">
-                Payment was cancelled. You can try booking again anytime.
+                Payment was cancelled. The slot is available again and you can try booking again anytime.
               </p>
             </div>
           </div>
@@ -969,7 +1320,8 @@ export default function ProfessionalDetails() {
                     alt={`${pro.firstName || ""} ${pro.lastName || ""}`}
                     className="h-24 w-24 shrink-0 rounded-card border border-brand-light/60 object-cover shadow-sm"
                     onError={(event) => {
-                      event.currentTarget.style.display = "none";
+                      event.currentTarget.style.display =
+                        "none";
                     }}
                   />
                 ) : (
@@ -980,7 +1332,9 @@ export default function ProfessionalDetails() {
                         "linear-gradient(135deg, #53b889, #16845b)",
                     }}
                   >
-                    {pro.firstName?.charAt(0)?.toUpperCase() || "P"}
+                    {pro.firstName
+                      ?.charAt(0)
+                      ?.toUpperCase() || "P"}
                   </div>
                 )}
 
@@ -997,8 +1351,11 @@ export default function ProfessionalDetails() {
                   </div>
 
                   <p className="mt-1 text-sm font-bold text-gray-500">
-                    {pro.professionalType || "Trainer"} •{" "}
-                    {pro.specialization || "General Fitness"}
+                    {pro.professionalType ||
+                      "Trainer"}{" "}
+                    •{" "}
+                    {pro.specialization ||
+                      "General Fitness"}
                   </p>
 
                   <div className="mt-3 flex flex-wrap items-center gap-3">
@@ -1006,7 +1363,9 @@ export default function ProfessionalDetails() {
                       {pro.rating?.count > 0 ? (
                         <span>
                           Rating:{" "}
-                          {Number(pro.rating?.average || 0).toFixed(1)}{" "}
+                          {Number(
+                            pro.rating?.average || 0,
+                          ).toFixed(1)}{" "}
                           ({pro.rating.count})
                         </span>
                       ) : (
@@ -1017,12 +1376,21 @@ export default function ProfessionalDetails() {
                     </div>
 
                     <div className="rounded-btn border border-brand-light bg-brand-light/25 px-3.5 py-1.5 text-xs font-black text-brand-dark">
-                      Rs. {Number(pro.sessionFee || 0).toLocaleString()} / session
+                      Rs.{" "}
+                      {Number(
+                        pro.sessionFee || 0,
+                      ).toLocaleString()}{" "}
+                      / session
                     </div>
 
-                    {formatExperience(pro.experience) && (
+                    {formatExperience(
+                      pro.experience,
+                    ) && (
                       <div className="rounded-btn border border-brand-light/50 bg-brand-light/10 px-3.5 py-1.5 text-xs font-extrabold text-gray-800">
-                        {formatExperience(pro.experience)} Experience
+                        {formatExperience(
+                          pro.experience,
+                        )}{" "}
+                        Experience
                       </div>
                     )}
                   </div>
@@ -1033,12 +1401,18 @@ export default function ProfessionalDetails() {
                 {myRating ? (
                   <div className="flex items-center gap-1.5 rounded-btn border border-brand-light bg-brand-light/25 px-4 py-3 text-xs font-black text-brand-dark shadow-sm">
                     <Star className="h-4 w-4 fill-amber-400 text-amber-500" />
-                    You Rated: {Number(myRating.rating).toFixed(1)} ★
+                    You Rated:{" "}
+                    {Number(
+                      myRating.rating,
+                    ).toFixed(1)}{" "}
+                    ★
                   </div>
                 ) : (
                   <button
                     type="button"
-                    onClick={() => setShowRatingModal(true)}
+                    onClick={() =>
+                      setShowRatingModal(true)
+                    }
                     className="flex items-center gap-2 rounded-btn border border-brand-light/60 bg-white/70 px-5 py-3.5 text-sm font-bold text-gray-700 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-white hover:shadow-card"
                   >
                     <Star className="h-4 w-4 text-amber-400" />
@@ -1048,7 +1422,10 @@ export default function ProfessionalDetails() {
 
                 <button
                   onClick={openBooking}
-                  disabled={!pro.sessionFee || availability.length === 0}
+                  disabled={
+                    !pro.sessionFee ||
+                    availability.length === 0
+                  }
                   className="rounded-btn bg-gray-800 px-8 py-3.5 text-sm font-bold text-white shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:bg-gray-700 hover:shadow-card-hover disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Book a Session
@@ -1117,32 +1494,40 @@ export default function ProfessionalDetails() {
               <div>
                 <h3 className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-gray-400">
                   <Star className="h-4 w-4 text-amber-400" />
-                  Client Ratings & Reviews
+                  Client Ratings
                 </h3>
 
                 <p className="mt-1 text-xl font-black text-gray-800">
                   {pro.rating?.count > 0
-                    ? `${Number(pro.rating.average || 0).toFixed(1)} out of 5.0`
+                    ? `${Number(
+                        pro.rating.average || 0,
+                      ).toFixed(1)} out of 5.0`
                     : "No Ratings Yet"}
                 </p>
               </div>
 
-              <div className="flex items-center gap-3">
-                <div className="rounded-btn border border-brand-light/40 bg-brand-light/10 px-4 py-2 text-center">
-                  <p className="text-xs font-extrabold text-gray-800">
-                    {pro.rating?.count || 0} Total{" "}
-                    {pro.rating?.count === 1 ? "Rating" : "Ratings"}
-                  </p>
-                </div>
+                            <div className="flex items-center gap-3">
+                <p className="text-xs font-bold text-gray-500">
+                  {pro.rating?.count || 0} Total{" "}
+                  {pro.rating?.count === 1
+                    ? "Rating"
+                    : "Ratings"}
+                </p>
 
                 {myRating ? (
                   <span className="inline-flex items-center gap-1 rounded-btn border border-brand-light bg-brand-light/25 px-3.5 py-2 text-xs font-bold text-brand-dark">
                     <CheckCircle className="h-3.5 w-3.5 text-brand" />
-                    You Rated ({Number(myRating.rating).toFixed(1)} ★)
+                    You Rated (
+                    {Number(
+                      myRating.rating,
+                    ).toFixed(1)}{" "}
+                    ★)
                   </span>
                 ) : (
                   <button
-                    onClick={() => setShowRatingModal(true)}
+                    onClick={() =>
+                      setShowRatingModal(true)
+                    }
                     className="flex items-center gap-1.5 rounded-btn border border-brand-light bg-brand-light/25 px-4 py-2 text-xs font-bold text-brand-dark shadow-sm transition-all hover:bg-brand-light/40"
                   >
                     <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-500" />
@@ -1163,8 +1548,7 @@ export default function ProfessionalDetails() {
                 </p>
 
                 <p className="mt-1 text-xs text-gray-400">
-                  Ratings become available after scheduled client sessions
-                  have ended.
+                  Ratings become available after scheduled client sessions have ended.
                 </p>
               </div>
             ) : (
@@ -1187,40 +1571,32 @@ export default function ProfessionalDetails() {
                             "U"}
                         </div>
 
-                        <div>
+                                                <div>
                           <p className="text-xs font-bold text-gray-800">
                             {review.user
                               ? `${review.user.firstName} ${review.user.lastName}`
                               : "PoseFit User"}
-                          </p>
-
-                          <p className="text-[11px] text-gray-400">
-                            Verified Client Session •{" "}
-                            {new Date(
-                              review.createdAt,
-                            ).toLocaleDateString("en-US", {
-                              month: "short",
-                              day: "numeric",
-                              year: "numeric",
-                            })}
                           </p>
                         </div>
                       </div>
 
                       <div className="flex items-center gap-2">
                         <div className="flex text-sm">
-                          {[...Array(5)].map((_, i) => (
-                            <span
-                              key={i}
-                              className={
-                                i < review.rating
-                                  ? "text-amber-400"
-                                  : "text-gray-200"
-                              }
-                            >
-                              ★
-                            </span>
-                          ))}
+                          {[...Array(5)].map(
+                            (_, i) => (
+                              <span
+                                key={i}
+                                className={
+                                  i <
+                                  review.rating
+                                    ? "text-amber-400"
+                                    : "text-gray-200"
+                                }
+                              >
+                                ★
+                              </span>
+                            ),
+                          )}
                         </div>
 
                         <span className="text-xs font-black text-gray-800">
@@ -1252,10 +1628,14 @@ export default function ProfessionalDetails() {
                   <p className="mt-0.5 text-xs font-medium text-gray-500">
                     with{" "}
                     <span className="font-bold text-gray-700">
-                      {pro.firstName} {pro.lastName}
+                      {pro.firstName}{" "}
+                      {pro.lastName}
                     </span>{" "}
                     (Rs.{" "}
-                    {Number(pro.sessionFee || 0).toLocaleString()} per session)
+                    {Number(
+                      pro.sessionFee || 0,
+                    ).toLocaleString()}{" "}
+                    per session)
                   </p>
                 </div>
 
@@ -1277,7 +1657,10 @@ export default function ProfessionalDetails() {
 
                     {selectedDate && (
                       <span className="rounded-full bg-brand-light/30 px-2.5 py-0.5 text-[11px] font-bold text-brand-dark">
-                        {new Date(selectedDate + "T00:00:00").toLocaleDateString(
+                        {new Date(
+                          selectedDate +
+                            "T00:00:00",
+                        ).toLocaleDateString(
                           "en-US",
                           {
                             weekday: "short",
@@ -1290,68 +1673,100 @@ export default function ProfessionalDetails() {
                     )}
                   </div>
 
-                  {/* HTML5 Date Input Picker */}
                   <div className="mb-3">
                     <div className="relative flex items-center">
                       <Calendar className="pointer-events-none absolute left-3.5 h-4 w-4 text-gray-400" />
+
                       <input
                         type="date"
-                        min={formatDateForApi(new Date())}
+                        min={formatDateForApi(
+                          new Date(),
+                        )}
                         value={selectedDate}
-                        onChange={(e) => handleDateSelect(e.target.value)}
+                        onChange={(e) =>
+                          handleDateSelect(
+                            e.target.value,
+                          )
+                        }
                         className="w-full rounded-btn border border-brand-light/60 bg-white/90 py-2.5 pl-10 pr-3.5 text-xs font-bold text-gray-800 outline-none transition-all focus:border-brand focus:ring-2 focus:ring-brand-light/60"
                       />
                     </div>
+
                     <p className="mt-1 text-[11px] text-gray-500">
                       Pick any future date above, or choose an upcoming working day below:
                     </p>
                   </div>
 
-                  {/* Upcoming Available Dates */}
                   {availability.length === 0 ? (
                     <p className="text-xs font-medium text-gray-400">
                       No availability slots configured by this professional yet.
                     </p>
                   ) : (
                     <div className="flex flex-wrap gap-2">
-                      {upcomingAvailableDates.map((item) => {
-                        const availableSlots = getAvailableSlotsForDate(
-                          item.dayName,
-                          item.dateString,
-                        );
-                        const isSelected = selectedDate === item.dateString;
-                        const isFullyBooked = availableSlots.length === 0;
+                      {upcomingAvailableDates.map(
+                        (item) => {
+                          const availableSlots =
+                            getAvailableSlotsForDate(
+                              item.dayName,
+                              item.dateString,
+                            );
 
-                        return (
-                          <button
-                            key={item.dateString}
-                            type="button"
-                            disabled={isFullyBooked}
-                            onClick={() => handleDateSelect(item.dateString)}
-                            className={`rounded-btn border px-2.5 py-2 text-xs font-bold transition-all ${
-                              isSelected
-                                ? "border-brand-dark bg-brand-dark text-white shadow-card"
-                                : isFullyBooked
-                                ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
-                                : "border-brand-light/50 bg-brand-light/10 text-gray-700 hover:border-brand hover:bg-brand-light/25"
-                            }`}
-                          >
-                            <span>
-                              {item.isToday ? "Today" : item.dayName.slice(0, 3)},{" "}
-                              {item.dateObj.toLocaleDateString("en-US", {
-                                month: "short",
-                                day: "numeric",
-                              })}
-                            </span>
+                          const isSelected =
+                            selectedDate ===
+                            item.dateString;
 
-                            <span className="mt-0.5 block text-[10px] font-medium opacity-70">
-                              {isFullyBooked
-                                ? "No slots"
-                                : `${availableSlots.length} slots`}
-                            </span>
-                          </button>
-                        );
-                      })}
+                          const isFullyBooked =
+                            availableSlots.length ===
+                            0;
+
+                          return (
+                            <button
+                              key={
+                                item.dateString
+                              }
+                              type="button"
+                              disabled={
+                                isFullyBooked
+                              }
+                              onClick={() =>
+                                handleDateSelect(
+                                  item.dateString,
+                                )
+                              }
+                              className={`rounded-btn border px-2.5 py-2 text-xs font-bold transition-all ${
+                                isSelected
+                                  ? "border-brand-dark bg-brand-dark text-white shadow-card"
+                                  : isFullyBooked
+                                  ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
+                                  : "border-brand-light/50 bg-brand-light/10 text-gray-700 hover:border-brand hover:bg-brand-light/25"
+                              }`}
+                            >
+                              <span>
+                                {item.isToday
+                                  ? "Today"
+                                  : item.dayName.slice(
+                                      0,
+                                      3,
+                                    )}
+                                ,{" "}
+                                {item.dateObj.toLocaleDateString(
+                                  "en-US",
+                                  {
+                                    month: "short",
+                                    day: "numeric",
+                                  },
+                                )}
+                              </span>
+
+                              <span className="mt-0.5 block text-[10px] font-medium opacity-70">
+                                {isFullyBooked
+                                  ? "No slots"
+                                  : `${availableSlots.length} slots`}
+                              </span>
+                            </button>
+                          );
+                        },
+                      )}
                     </div>
                   )}
                 </div>
@@ -1359,8 +1774,12 @@ export default function ProfessionalDetails() {
                 {selectedDate && (
                   <div>
                     <label className="mb-2 block text-xs font-extrabold uppercase tracking-wider text-gray-500">
-                      Step 2: Choose a Time Slot for {selectedDay},{" "}
-                      {new Date(selectedDate + "T00:00:00").toLocaleDateString(
+                      Step 2: Choose a Time Slot for{" "}
+                      {selectedDay},{" "}
+                      {new Date(
+                        selectedDate +
+                          "T00:00:00",
+                      ).toLocaleDateString(
                         "en-US",
                         {
                           month: "short",
@@ -1369,83 +1788,112 @@ export default function ProfessionalDetails() {
                       )}
                     </label>
 
-                    {!selectedDayData || daySlots.length === 0 ? (
+                    {!selectedDayData ||
+                    daySlots.length === 0 ? (
                       <div className="rounded-card border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
-                        <p className="font-bold">Not available on {selectedDay}s</p>
+                        <p className="font-bold">
+                          Not available on{" "}
+                          {selectedDay}s
+                        </p>
+
                         <p className="mt-0.5 text-[11px] text-amber-700">
-                          This professional does not have slots configured for {selectedDay}.
-                          Available working days:{" "}
+                          This professional does not have slots configured for{" "}
+                          {selectedDay}. Available working days:{" "}
                           <span className="font-semibold">
-                            {availability.map((a) => a.day).join(", ")}
-                          </span>.
+                            {availability
+                              .map((a) => a.day)
+                              .join(", ")}
+                          </span>
+                          .
                         </p>
                       </div>
                     ) : (
                       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                        {daySlots.map((slot) => {
-                          const booked = isSlotBooked(
-                            selectedDay,
-                            slot,
-                            selectedDate,
-                          );
-                          const isPassed = isSlotTimePassed(
-                            selectedDate,
-                            slot,
-                          );
-                          const isUnavailable = booked || isPassed;
+                        {daySlots.map(
+                          (slot) => {
+                            const booked =
+                              isSlotBooked(
+                                selectedDay,
+                                slot,
+                                selectedDate,
+                              );
 
-                          return (
-                            <button
-                              key={slot}
-                              type="button"
-                              disabled={isUnavailable}
-                              onClick={() => {
-                                if (!isUnavailable) {
-                                  setSelectedSlot(slot);
+                            const isPassed =
+                              isSlotTimePassed(
+                                selectedDate,
+                                slot,
+                              );
+
+                            const isUnavailable =
+                              booked ||
+                              isPassed;
+
+                            return (
+                              <button
+                                key={slot}
+                                type="button"
+                                disabled={
+                                  isUnavailable
                                 }
-                              }}
-                              className={`flex items-center gap-2 rounded-btn border px-4 py-3 text-xs font-bold transition-all ${
-                                isPassed
-                                  ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
-                                  : booked
-                                  ? "cursor-not-allowed border-rose-200 bg-rose-50 text-rose-400"
-                                  : selectedSlot === slot
-                                  ? "border-brand-dark bg-brand-dark text-white shadow-card"
-                                  : "border-brand-light/50 bg-brand-light/10 text-gray-700 hover:border-brand hover:bg-brand-light/25"
-                              }`}
-                            >
-                              <Clock
-                                className={`h-4 w-4 shrink-0 ${
+                                onClick={() => {
+                                  if (
+                                    !isUnavailable
+                                  ) {
+                                    setSelectedSlot(
+                                      slot,
+                                    );
+                                  }
+                                }}
+                                className={`flex items-center gap-2 rounded-btn border px-4 py-3 text-xs font-bold transition-all ${
                                   isPassed
-                                    ? "text-gray-400"
+                                    ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
                                     : booked
-                                    ? "text-rose-400"
-                                    : selectedSlot === slot
-                                    ? "text-white"
-                                    : "text-gray-400"
+                                    ? "cursor-not-allowed border-rose-200 bg-rose-50 text-rose-400"
+                                    : selectedSlot ===
+                                      slot
+                                    ? "border-brand-dark bg-brand-dark text-white shadow-card"
+                                    : "border-brand-light/50 bg-brand-light/10 text-gray-700 hover:border-brand hover:bg-brand-light/25"
                                 }`}
-                              />
+                              >
+                                <Clock
+                                  className={`h-4 w-4 shrink-0 ${
+                                    isPassed
+                                      ? "text-gray-400"
+                                      : booked
+                                      ? "text-rose-400"
+                                      : selectedSlot ===
+                                        slot
+                                      ? "text-white"
+                                      : "text-gray-400"
+                                  }`}
+                                />
 
-                              <span>{slot}</span>
-
-                              {isPassed && (
-                                <span className="ml-auto rounded bg-gray-200 px-1.5 py-0.5 text-[9px] font-bold uppercase text-gray-500">
-                                  Passed
+                                <span>
+                                  {slot}
                                 </span>
-                              )}
 
-                              {booked && !isPassed && (
-                                <span className="ml-auto text-[10px] font-black uppercase">
-                                  Unavailable
-                                </span>
-                              )}
+                                {isPassed && (
+                                  <span className="ml-auto rounded bg-gray-200 px-1.5 py-0.5 text-[9px] font-bold uppercase text-gray-500">
+                                    Passed
+                                  </span>
+                                )}
 
-                              {selectedSlot === slot && !isUnavailable && (
-                                <CheckCircle className="ml-auto h-4 w-4 text-white" />
-                              )}
-                            </button>
-                          );
-                        })}
+                                {booked &&
+                                  !isPassed && (
+                                    <span className="ml-auto text-[10px] font-black uppercase">
+                                      Unavailable
+                                    </span>
+                                  )}
+
+                                {selectedSlot ===
+                                  slot &&
+                                  !isUnavailable && (
+                                    <CheckCircle className="ml-auto h-4 w-4 text-white" />
+                                  )}
+                              </button>
+                            );
+                          },
+                        )}
                       </div>
                     )}
                   </div>
@@ -1462,7 +1910,9 @@ export default function ProfessionalDetails() {
                       maxLength={500}
                       placeholder="Any specific goals, injuries to be aware of, or questions for your professional..."
                       value={notes}
-                      onChange={(event) => setNotes(event.target.value)}
+                      onChange={(event) =>
+                        setNotes(event.target.value)
+                      }
                       className="w-full resize-none rounded-btn border border-gray-200 bg-white/70 px-3.5 py-2.5 text-xs font-medium text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand-light/60"
                     />
 
@@ -1472,40 +1922,54 @@ export default function ProfessionalDetails() {
                   </div>
                 )}
 
-                {selectedDate && selectedDay && selectedSlot && (
-                  <div className="flex flex-wrap items-start justify-between gap-4 rounded-card border border-brand-light bg-brand-light/20 p-4">
-                    <div>
-                      <p className="text-xs font-extrabold uppercase tracking-wide text-brand-dark">
-                        Booking Summary
-                      </p>
+                {selectedDate &&
+                  selectedDay &&
+                  selectedSlot && (
+                    <div className="flex flex-wrap items-start justify-between gap-4 rounded-card border border-brand-light bg-brand-light/20 p-4">
+                      <div>
+                        <p className="text-xs font-extrabold uppercase tracking-wide text-brand-dark">
+                          Booking Summary
+                        </p>
 
-                      <p className="mt-1 text-sm font-bold text-gray-800">
-                        {selectedDay} at {selectedSlot}
-                      </p>
+                        <p className="mt-1 text-sm font-bold text-gray-800">
+                          {selectedDay} at{" "}
+                          {selectedSlot}
+                        </p>
 
-                      <p className="mt-0.5 text-xs font-medium text-gray-500">
-                        with {pro.firstName} {pro.lastName}
-                      </p>
+                        <p className="mt-0.5 text-xs font-medium text-gray-500">
+                          with{" "}
+                          {pro.firstName}{" "}
+                          {pro.lastName}
+                        </p>
 
-                      <p className="mt-1 text-xs font-medium text-gray-500">
-                        Date:{" "}
-                        {new Date(selectedDate + "T00:00:00").toLocaleDateString(
-                          "en-US",
-                          {
-                            weekday: "short",
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                          },
-                        )}
+                        <p className="mt-1 text-xs font-medium text-gray-500">
+                          Date:{" "}
+                          {new Date(
+                            selectedDate +
+                              "T00:00:00",
+                          ).toLocaleDateString(
+                            "en-US",
+                            {
+                              weekday:
+                                "short",
+                              month:
+                                "short",
+                              day: "numeric",
+                              year:
+                                "numeric",
+                            },
+                          )}
+                        </p>
+                      </div>
+
+                      <p className="text-xl font-black text-brand-dark">
+                        Rs.{" "}
+                        {Number(
+                          pro.sessionFee || 0,
+                        ).toLocaleString()}
                       </p>
                     </div>
-
-                    <p className="text-xl font-black text-brand-dark">
-                      Rs. {Number(pro.sessionFee || 0).toLocaleString()}
-                    </p>
-                  </div>
-                )}
+                  )}
 
                 <div className="flex items-center gap-3 pt-2">
                   <button
@@ -1519,14 +1983,19 @@ export default function ProfessionalDetails() {
 
                   <button
                     type="button"
-                    onClick={handleConfirmBooking}
+                    onClick={
+                      handleConfirmBooking
+                    }
                     disabled={
                       !selectedDate ||
                       !selectedDay ||
                       !selectedSlot ||
                       bookingLoading ||
                       !pro.sessionFee ||
-                      isSlotTimePassed(selectedDate, selectedSlot) ||
+                      isSlotTimePassed(
+                        selectedDate,
+                        selectedSlot,
+                      ) ||
                       isSlotBooked(
                         selectedDay,
                         selectedSlot,
@@ -1543,7 +2012,10 @@ export default function ProfessionalDetails() {
                       ? "Select a Day"
                       : !selectedSlot
                       ? "Select a Time Slot"
-                      : isSlotTimePassed(selectedDate, selectedSlot)
+                      : isSlotTimePassed(
+                          selectedDate,
+                          selectedSlot,
+                        )
                       ? "Slot Has Passed"
                       : isSlotBooked(
                           selectedDay,
@@ -1565,7 +2037,8 @@ export default function ProfessionalDetails() {
               <div className="flex items-start justify-between border-b border-brand-light/40 p-6">
                 <div>
                   <h2 className="text-lg font-black text-gray-800">
-                    Rate {pro.firstName} {pro.lastName}
+                    Rate {pro.firstName}{" "}
+                    {pro.lastName}
                   </h2>
 
                   <p className="mt-0.5 text-xs font-medium text-gray-500">
@@ -1575,7 +2048,9 @@ export default function ProfessionalDetails() {
 
                 <button
                   type="button"
-                  onClick={() => setShowRatingModal(false)}
+                  onClick={() =>
+                    setShowRatingModal(false)
+                  }
                   disabled={ratingSubmitting}
                   className="text-xl font-bold leading-none text-gray-400 transition-colors hover:text-gray-700 disabled:opacity-40"
                 >
@@ -1584,16 +2059,27 @@ export default function ProfessionalDetails() {
               </div>
 
               <form
-                onSubmit={handleRateProfessional}
+                onSubmit={
+                  handleRateProfessional
+                }
                 className="space-y-5 p-6"
               >
                 {pendingEligibleSessions[0] && (
                   <div className="rounded-card border border-brand-light bg-brand-light/20 p-3 text-xs text-brand-dark">
-                    <p className="font-bold">Completed Session:</p>
+                    <p className="font-bold">
+                      Completed Session:
+                    </p>
 
                     <p className="mt-0.5 text-[11px] text-brand-dark/80">
-                      {pendingEligibleSessions[0].appointmentDay} •{" "}
-                      {pendingEligibleSessions[0].appointmentSlot}
+                      {
+                        pendingEligibleSessions[0]
+                          .appointmentDay
+                      }{" "}
+                      •{" "}
+                      {
+                        pendingEligibleSessions[0]
+                          .appointmentSlot
+                      }
                     </p>
                   </div>
                 )}
@@ -1604,38 +2090,59 @@ export default function ProfessionalDetails() {
                   </label>
 
                   <div className="mt-3 flex items-center justify-center gap-3 rounded-card border border-brand-light/40 bg-brand-light/10 p-4">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <button
-                        key={star}
-                        type="button"
-                        onClick={() => setUserRating(star)}
-                        onMouseEnter={() => setUserHoverRating(star)}
-                        onMouseLeave={() => setUserHoverRating(0)}
-                        className="p-1 text-3xl transition-transform hover:scale-125 focus:outline-none"
-                      >
-                        <span
-                          className={
-                            star <=
-                            (userHoverRating || userRating)
-                              ? "text-amber-400 drop-shadow-sm"
-                              : "text-gray-200"
+                    {[1, 2, 3, 4, 5].map(
+                      (star) => (
+                        <button
+                          key={star}
+                          type="button"
+                          onClick={() =>
+                            setUserRating(
+                              star,
+                            )
                           }
+                          onMouseEnter={() =>
+                            setUserHoverRating(
+                              star,
+                            )
+                          }
+                          onMouseLeave={() =>
+                            setUserHoverRating(
+                              0,
+                            )
+                          }
+                          className="p-1 text-3xl transition-transform hover:scale-125 focus:outline-none"
                         >
-                          ★
-                        </span>
-                      </button>
-                    ))}
+                          <span
+                            className={
+                              star <=
+                              (userHoverRating ||
+                                userRating)
+                                ? "text-amber-400 drop-shadow-sm"
+                                : "text-gray-200"
+                            }
+                          >
+                            ★
+                          </span>
+                        </button>
+                      ),
+                    )}
                   </div>
 
                   <p className="mt-2 text-center text-xs font-bold text-gray-700">
-                    {userHoverRating || userRating} out of 5 Stars
+                    {userHoverRating ||
+                      userRating}{" "}
+                    out of 5 Stars
                   </p>
                 </div>
 
                 <div className="flex items-center gap-3 pt-2">
                   <button
                     type="button"
-                    onClick={() => setShowRatingModal(false)}
+                    onClick={() =>
+                      setShowRatingModal(
+                        false,
+                      )
+                    }
                     disabled={ratingSubmitting}
                     className="flex-1 rounded-btn border border-gray-200 bg-gray-100 py-3 text-sm font-bold text-gray-700 transition-colors hover:bg-gray-200 disabled:opacity-50"
                   >

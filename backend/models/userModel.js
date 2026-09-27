@@ -149,19 +149,19 @@ const UserSchema = new Schema({
     trim: true,
   },
 
-  verificationMeetingLink: {
-    type: String,
-    trim: true,
-  },
+  // verificationMeetingLink: {
+  //   type: String,
+  //   trim: true,
+  // },
 
-  verificationMeetingTime: {
-    type: Date,
-  },
+  // verificationMeetingTime: {
+  //   type: Date,
+  // },
 
-  verificationNotes: {
-    type: String,
-    trim: true,
-  },
+  // verificationNotes: {
+  //   type: String,
+  //   trim: true,
+  // },
 
   appliedAt: {
     type: Date,

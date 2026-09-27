@@ -2,24 +2,11 @@ const mongoose = require("mongoose");
 
 const macrosSchema = new mongoose.Schema(
   {
-    carbs: {
-      type: Number,
-      required: true,
-    },
-
-    protein: {
-      type: Number,
-      required: true,
-    },
-
-    fat: {
-      type: Number,
-      required: true,
-    },
+    carbs: { type: Number, required: true },
+    protein: { type: Number, required: true },
+    fat: { type: Number, required: true },
   },
-  {
-    _id: false,
-  },
+  { _id: false },
 );
 
 const waterIntakeSchema = new mongoose.Schema(
@@ -42,6 +29,7 @@ const waterIntakeSchema = new mongoose.Schema(
   {
     _id: false,
   },
+  { _id: false },
 );
 
 const UserMetricsSchema = new mongoose.Schema(
@@ -98,13 +86,14 @@ const UserMetricsSchema = new mongoose.Schema(
       enum: ["Underweight", "Normal", "Overweight", "Obese", "Unknown"],
     },
 
-    bmr: {
-      type: Number,
-    },
+    bmr: { type: Number },
+    tdee: { type: Number },
+    goalCalories: { type: Number },
+    targetCalories: { type: Number },
 
-    tdee: {
-      type: Number,
-    },
+    protein: { type: Number },
+    carbs: { type: Number },
+    fats: { type: Number },
 
     goalCalories: {
       type: Number,
@@ -138,6 +127,7 @@ const UserMetricsSchema = new mongoose.Schema(
   {
     timestamps: true,
   },
+  { timestamps: true },
 );
 
 module.exports = mongoose.model("UserMetrics", UserMetricsSchema);

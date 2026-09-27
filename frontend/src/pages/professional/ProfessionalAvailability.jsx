@@ -142,24 +142,10 @@ export default function ProfessionalAvailability() {
       return;
     }
 
-    const durationMinutes = newEndMinutes - newStartMinutes;
-    const durationHours = durationMinutes / 60;
+       const durationMinutes = newEndMinutes - newStartMinutes;
 
-    if (durationMinutes < 60) {
-      showToast("Each session slot must be at least 1 hour long.", "error");
-      return;
-    }
-
-    if (durationMinutes > 180) {
-      showToast("Each session slot cannot be longer than 3 hours.", "error");
-      return;
-    }
-
-    if (!Number.isInteger(durationHours)) {
-      showToast(
-        "Session slots must be exactly 1, 2, or 3 hours long.",
-        "error",
-      );
+    if (durationMinutes !== 60) {
+      showToast("Each session slot must be exactly 1 hour long.", "error");
       return;
     }
 
@@ -252,28 +238,11 @@ export default function ProfessionalAvailability() {
           return;
         }
 
-        const durationMinutes = end - start;
-        const durationHours = durationMinutes / 60;
+               const durationMinutes = end - start;
 
-        if (durationMinutes < 60) {
+        if (durationMinutes !== 60) {
           showToast(
-            `Each session slot must be at least 1 hour. Invalid slot on ${dayItem.day}: ${slot}`,
-            "error",
-          );
-          return;
-        }
-
-        if (durationMinutes > 180) {
-          showToast(
-            `Each session slot cannot exceed 3 hours. Invalid slot on ${dayItem.day}: ${slot}`,
-            "error",
-          );
-          return;
-        }
-
-        if (!Number.isInteger(durationHours)) {
-          showToast(
-            `Session slots must be exactly 1, 2, or 3 hours. Invalid slot on ${dayItem.day}: ${slot}`,
+            `Each session slot must be exactly 1 hour long. Invalid slot on ${dayItem.day}: ${slot}`,
             "error",
           );
           return;
@@ -349,8 +318,8 @@ export default function ProfessionalAvailability() {
             </p>
 
             <p className="mt-1 text-xs font-medium leading-relaxed text-gray-600">
-              Each availability slot must be exactly 1, 2, or 3 hours long.
-              For example: 9:00 AM - 10:00 AM or 1:00 PM - 4:00 PM.
+              Each availability slot must be exactly 1 hour long.
+              For example: 9:00 AM - 10:00 AM.
             </p>
           </div>
         </div>

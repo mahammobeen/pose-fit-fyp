@@ -24,7 +24,6 @@ export default function UserRegister() {
 
   const [loading, setLoading] = useState(false);
 
-  // TOAST
   const [toast, setToast] = useState(null);
 
   const showToast = useCallback((type, message) => {
@@ -44,7 +43,6 @@ export default function UserRegister() {
     };
   }, []);
 
-  // INPUT CHANGE
   const handleChange = (e) => {
     setForm((prev) => ({
       ...prev,
@@ -52,7 +50,6 @@ export default function UserRegister() {
     }));
   };
 
-  // REGISTER
   const handleRegisterSubmit = async (e) => {
     e.preventDefault();
 
@@ -90,7 +87,6 @@ export default function UserRegister() {
         return;
       }
 
-      // SAVE USER ID FOR VERIFICATION
       setUserId(res.data.userId);
 
       showToast(
@@ -114,7 +110,6 @@ export default function UserRegister() {
     }
   };
 
-  // VERIFY EMAIL
   const handleVerifySubmit = async (e) => {
     e.preventDefault();
 
@@ -143,7 +138,6 @@ export default function UserRegister() {
     try {
       setLoading(true);
 
-      // VERIFY EMAIL
       const verifyRes = await httpClient.post("/auth/verify-email", {
         userId,
         code: trimmedCode,
@@ -160,7 +154,6 @@ export default function UserRegister() {
 
       showToast("success", "Email verified successfully. Logging you in...");
 
-      // AUTO LOGIN
       const loginEmail = form.email.trim().toLowerCase();
 
       const loginRes = await httpClient.post("/auth/login", {
@@ -170,7 +163,6 @@ export default function UserRegister() {
 
       const { success, token, user } = loginRes.data;
 
-      // LOGIN RESPONSE VALIDATION
       if (!success || !token || !user) {
         showToast(
           "error",
@@ -188,7 +180,6 @@ export default function UserRegister() {
         return;
       }
 
-      // ROLE CHECK
       if (user.role !== "USER") {
         showToast(
           "error",
@@ -197,7 +188,6 @@ export default function UserRegister() {
         return;
       }
 
-      // NORMALIZE USER
       const normalizedUser = {
         ...user,
         _id: user._id || user.id || user.userId,
@@ -210,19 +200,15 @@ export default function UserRegister() {
         return;
       }
 
-      // CLEAR OLD LOGIN DATA
       localStorage.removeItem("pose-fit");
       localStorage.removeItem("pose-fit-user");
 
-      // SAVE AUTH DATA
       localStorage.setItem("pose-fit", token);
 
       localStorage.setItem("pose-fit-user", JSON.stringify(normalizedUser));
 
-      // REMEMBER EMAIL ONLY
       localStorage.setItem("pose-fit-email", loginEmail);
 
-      // DEBUG
       console.log("REGISTER LOGIN RESPONSE:", loginRes.data);
 
       console.log("SAVED TOKEN:", token);
@@ -231,7 +217,6 @@ export default function UserRegister() {
 
       console.log("SAVED USER ID:", normalizedUser._id);
 
-      // REDIRECT
       const from = location.state?.from?.pathname || "/user/dashboard";
 
       navigate(from, {
@@ -251,7 +236,6 @@ export default function UserRegister() {
     }
   };
 
-  // BACK TO REGISTER
   const handleBack = () => {
     setStep(1);
     setCode("");
@@ -259,15 +243,12 @@ export default function UserRegister() {
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-surface px-4 py-8 font-sans">
-      {/* ================= BACKGROUND DECORATIONS ================= */}
 
       <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-brand-light/50 blur-3xl" />
 
       <div className="pointer-events-none absolute -bottom-24 -right-24 h-80 w-80 rounded-full bg-accent-blue/60 blur-3xl" />
 
       <div className="pointer-events-none absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent-orange/20 blur-3xl" />
-
-      {/* ================= TOAST ================= */}
 
       {toast && (
         <div
@@ -296,11 +277,8 @@ export default function UserRegister() {
         </div>
       )}
 
-      {/* ================= REGISTER CARD ================= */}
-
       <div className="relative z-10 w-full max-w-md">
         <div className="rounded-card border border-brand-light/70 bg-surface/80 p-8 shadow-card-hover backdrop-blur-xl sm:p-10">
-          {/* ================= LOGO ================= */}
 
           <div className="mb-7 flex justify-center">
             <Link className="flex h-16 w-16 items-center justify-center rounded-card bg-white/70 p-2 shadow-card transition-transform duration-300 hover:-translate-y-1">
@@ -311,8 +289,6 @@ export default function UserRegister() {
               />
             </Link>
           </div>
-
-          {/* ================= HEADING ================= */}
 
           <div className="mb-8 text-center">
             <h1 className="text-3xl font-extrabold tracking-tight text-gray-800">
@@ -326,18 +302,14 @@ export default function UserRegister() {
             </p>
           </div>
 
-          {/* ================= STEP 1 ================= */}
-
           {step === 1 ? (
             <form
               onSubmit={handleRegisterSubmit}
               className="space-y-5"
               autoComplete="on"
             >
-              {/* FIRST + LAST NAME */}
 
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                {/* FIRST NAME */}
 
                 <div>
                   <label
@@ -360,8 +332,6 @@ export default function UserRegister() {
                     className="w-full rounded-btn border border-gray-200 bg-white/70 px-4 py-3.5 text-sm text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand-light/60 disabled:cursor-not-allowed disabled:opacity-60"
                   />
                 </div>
-
-                {/* LAST NAME */}
 
                 <div>
                   <label
@@ -386,8 +356,6 @@ export default function UserRegister() {
                 </div>
               </div>
 
-              {/* EMAIL */}
-
               <div>
                 <label
                   htmlFor="email"
@@ -409,8 +377,6 @@ export default function UserRegister() {
                   className="w-full rounded-btn border border-gray-200 bg-white/70 px-4 py-3.5 text-sm text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand-light/60 disabled:cursor-not-allowed disabled:opacity-60"
                 />
               </div>
-
-              {/* PASSWORD */}
 
               <div>
                 <label
@@ -435,8 +401,6 @@ export default function UserRegister() {
                     className="w-full rounded-btn border border-gray-200 bg-white/70 px-4 py-3.5 pr-12 text-sm text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand-light/60 disabled:cursor-not-allowed disabled:opacity-60"
                   />
 
-                  {/* SHOW PASSWORD */}
-
                   <button
                     type="button"
                     onClick={() => setShowPassword((prev) => !prev)}
@@ -457,8 +421,6 @@ export default function UserRegister() {
                 </p>
               </div>
 
-              {/* REGISTER BUTTON */}
-
               <button
                 type="submit"
                 disabled={loading}
@@ -475,10 +437,8 @@ export default function UserRegister() {
               </button>
             </form>
           ) : (
-            /* ================= STEP 2 ================= */
 
             <form onSubmit={handleVerifySubmit} className="space-y-5">
-              {/* VERIFICATION CODE */}
 
               <div>
                 <label
@@ -513,8 +473,6 @@ export default function UserRegister() {
                 </p>
               </div>
 
-              {/* VERIFY BUTTON */}
-
               <button
                 type="submit"
                 disabled={loading}
@@ -530,8 +488,6 @@ export default function UserRegister() {
                 )}
               </button>
 
-              {/* BACK */}
-
               <button
                 type="button"
                 onClick={handleBack}
@@ -542,8 +498,6 @@ export default function UserRegister() {
               </button>
             </form>
           )}
-
-          {/* ================= LOGIN LINK ================= */}
 
           <div className="mt-7 text-center text-sm text-gray-500">
             Already have an account?{" "}
@@ -556,8 +510,6 @@ export default function UserRegister() {
             </Link>
           </div>
         </div>
-
-        {/* ================= BOTTOM TEXT ================= */}
 
         <p className="mt-5 text-center text-xs text-gray-400">
           Your fitness journey starts with PoseFit.
