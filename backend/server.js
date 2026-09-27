@@ -3,8 +3,6 @@ dotenv.config();
 
 const express = require("express");
 const cors = require("cors");
-const path = require("path");
-const fs = require("fs");
 
 const authRoutes = require("./routes/auth/authRoutes");
 const adminRoutes = require("./routes/admin/adminRoutes");
@@ -23,18 +21,6 @@ const app = express();
 
 const PORT = process.env.PORT || 4000;
 
-const uploadsPath = path.join(__dirname, "uploads");
-const photosPath = path.join(uploadsPath, "photos");
-const documentsPath = path.join(uploadsPath, "documents");
-
-if (!fs.existsSync(photosPath)) {
-  fs.mkdirSync(photosPath, { recursive: true });
-}
-
-if (!fs.existsSync(documentsPath)) {
-  fs.mkdirSync(documentsPath, { recursive: true });
-}
-
 app.use(
   cors({
     origin: process.env.FRONTEND_URL || "http://localhost:5173",
@@ -49,8 +35,6 @@ app.post(
 );
 
 app.use(express.json());
-
-app.use("/uploads", express.static(uploadsPath));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
