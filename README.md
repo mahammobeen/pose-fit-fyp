@@ -1,238 +1,504 @@
 # PoseFit
 
-PoseFit is an AI-powered fitness and wellness computer vision, and modern web technologies to create a complete personal wellness platform. Users can calculate key metabolic metrics, receive automated multi-day meal plans based on Pakistani culinary datasets, and perform guided home workouts with interactive posture feedback and rep counting. Certified trainers and nutritionists can offer consultative sessions, manage availability calendars, and receive secure payouts. The platform automates payment verification with Stripe webhooks, generates Google Meet appointment links, and dispatches automated email reminders.
+PoseFit is an AI-powered fitness and wellness web application that combines computer vision, machine learning, and modern web technologies to support users with their fitness, nutrition, and wellness goals. Users can calculate key health metrics, generate personalized Pakistani meal plans, perform guided workouts with real-time posture feedback and rep counting, use an AI fitness chatbot, and book sessions with certified fitness professionals.
 
----
+The platform also provides separate professional and admin portals for managing profiles, availability, bookings, payments, reviews, and platform operations. Stripe handles online payments, Google Calendar creates Google Meet appointment links, and automated emails are used for verification, booking confirmation, and appointment reminders.
+
+## 1. Project Overview
+
+PoseFit integrates real-time computer vision, machine learning, and full-stack web technologies into a single fitness and wellness platform.
+
+The system provides:
+
+* Personalized health and nutrition calculations
+* Pakistani food-based diet recommendations
+* Real-time exercise posture detection
+* Exercise rep counting and form feedback
+* AI fitness chatbot
+* Professional trainer and nutritionist marketplace
+* Appointment booking and Stripe payments
+* Google Meet integration
+* Automated email notifications and reminders
+* Separate User, Professional, and Admin portals
+
+### Authentication
+
+* **Method:** JWT token-based authentication with Bearer header
+
+* **Verification:** 6-digit numeric OTP email verification and password reset flow
+
+* **Roles:** Role-Based Access Control (`USER`, `PROFESSIONAL`, `ADMIN`)
+
+### Google Services
+
+* **Calendar & Meetings:** Google Calendar API v3 with automatic Google Meet video meeting creation
 
 ## 2. Tech Stack
 
 ### Frontend
+
 * **Framework:** React 19 (Vite)
+
 * **Styling:** Tailwind CSS v4
+
 * **Routing:** React Router DOM v7
+
 * **Icons & Notifications:** Lucide React, Sonner
+
 * **HTTP Client:** Axios
+
 * **Token Management:** JWT-Decode
 
 ### Backend
+
 * **Runtime & Framework:** Node.js v22, Express.js 5
+
 * **Database ODM:** Mongoose 9
-* **Job Scheduler:** Node-Cron (automated appointment reminders)
-* **Email Service:** Nodemailer (SMTP transport)
-* **File Uploads:** Multer (multipart form handling for photos and documents)
-* **Security & Auth:** Bcryptjs, JSON Web Tokens (JWT)
+
+* **Job Scheduler:** Node-Cron for automated appointment reminders
+
+* **Email Service:** Nodemailer with Gmail SMTP
+
+* **File Uploads:** Multer for profile photos and professional documents
+
+* **Security & Authentication:** Bcryptjs and JSON Web Tokens (JWT)
 
 ### Database
-* **Database Engine:** MongoDB (via Mongoose)
+
+* **Database Engine:** MongoDB through Mongoose
 
 ### Python Services
-* **Diet Recommendation Microservice:** FastAPI, Uvicorn, Scikit-learn, Pandas, NumPy, Joblib
-* **Pose Detection Microservice:** Flask, Flask-CORS, OpenCV (cv2), MediaPipe Pose, NumPy
+
+* **Diet Recommendation Microservice:** FastAPI, Uvicorn, Pandas, NumPy, SciPy, Joblib
+
+* **Pose Detection Microservice:** Flask, Flask-CORS, OpenCV, MediaPipe Pose, NumPy
 
 ### AI / ML
-* **Computer Vision:** MediaPipe 33-landmark pose tracking for joint angle computation and rep classification
-* **Nutritional Recommendation:** K-Nearest Neighbors / KDTree macro-optimization algorithm trained on Pakistani food database
+
+* **Computer Vision:** MediaPipe Pose with 33 body landmarks for joint angle calculation, posture analysis, and exercise rep counting
+
+* **Nutritional Recommendation:** K-Nearest Neighbors / KDTree-based recommendation and portion optimization using a Pakistani food dataset
 
 ### Payments
-* **Payment Processor:** Stripe Checkout (Session-based flow in PKR test mode)
-* **Payouts:** Stripe Connect Express Onboarding for professional payouts
-* **Fulfillment:** Stripe Webhooks (`POST /api/payment/webhook`) as single source of truth
- web application designed to support users in achieving their health, nutrition, and exercise goals. It provides real-time computer vision pose estimation for guided workouts, an AI-driven personalized diet recommendation microservice, and a full-featured booking and consultation marketplace with certified fitness trainers and nutritionists. Through PoseFit, users can track health metrics, generate tailored diet plans, correct exercise posture with real-time rep counting, and schedule video consultations powered by Stripe payments and Google Meet.
 
----
+* **Payment Processor:** Stripe Checkout with PKR Test Mode
 
-## 1. Project Overview
+* **Payouts:** Stripe Connect for professional payout onboarding
 
-PoseFit integrates real-time machine learning,
-### Authentication
-* **Method:** JWT token-based authentication with Bearer header
-* **Verification:** 6-digit numeric OTP email verification and password reset flow
-* **Roles:** Role-Based Access Control (`USER`, `PROFESSIONAL`, `ADMIN`)
+* **Payment Verification:** Stripe Webhooks through `POST /api/payment/webhook`
 
-### Google Services
-* **Calendar & Meetings:** Google Calendar API v3 with automatic Google Meet video room creation
+### External Services
 
----
+* **Cloud Storage:** Cloudinary
+
+* **AI Chatbot:** Groq API
+
+* **Email:** Gmail SMTP
+
+* **Video Meetings:** Google Calendar API and Google Meet
 
 ## 3. Folder Structure
 
-* `backend/` — Express REST API, controllers, models, routes, middleware, and scheduled jobs
-* `frontend/` — React 19 single-page application with Vite and Tailwind CSS
-* `python-service/` — FastAPI microservice delivering machine-learning diet recommendations
-* `backend/controllers/user/python-pose-service/` — Flask microservice running MediaPipe for real-time video pose detection and form evaluation
+* `backend/` — Express REST API, controllers, models, routes, middleware, services, utilities, and scheduled jobs
 
----
+* `frontend/` — React 19 single-page application using Vite and Tailwind CSS
+
+* `diet-service/` — FastAPI microservice for personalized diet recommendations
+
+* `python-pose-service/` — Flask microservice using MediaPipe and OpenCV for real-time pose detection
+
+### Backend Structure
+
+```text
+backend/
+├── config/
+├── controllers/
+├── middleware/
+├── models/
+├── routes/
+├── scripts/
+├── services/
+├── utils/
+└── server.js
+```
+
+### Frontend Structure
+
+```text
+frontend/
+├── public/
+└── src/
+    ├── app-routes/
+    ├── components/
+    ├── lib/
+    └── pages/
+        ├── admin/
+        ├── professional/
+        └── user/
+```
+
+### Diet Service
+
+```text
+diet-service/
+├── data/
+├── models/
+├── src/
+├── tests/
+└── main.py
+```
+
+### Pose Service
+
+```text
+python-pose-service/
+├── app.py
+└── requirements.txt
+```
 
 ## 4. Features
 
 ### User
-* Account registration and email verification with 6-digit OTP code
-* Secure login, profile tracking, and forgot/reset password workflows
-* Health and body metrics intake: weight, height in cm, age, gender, activity level, fitness goal
-* Automated calculation of BMI, BMR, TDEE, target calories, daily macronutrient breakdown (protein, carbs, fats), and recommended water intake
-* 3-day personalized Pakistani meal plan generator with breakfast, lunch, dinner, and snack portion allocations
-* Interactive AI Workout Assistant utilizing computer vision (MediaPipe) for real-time camera form analysis, rep counting, and posture feedback across Squats, Planks, Arm Raises, and Side Bends
-* AI Fitness Chatbot assistant for guidance on fitness and nutrition
-* Directory of approved fitness trainers and nutritionists with filterable specializations, experience levels, session fees, and ratings
-* Interactive appointment booking calendar with date selection, real-time slot availability, and Stripe Checkout in PKR
-* Post-session professional star ratings, review submissions, and platform feedback
+
+* Account registration and email verification with a 6-digit OTP code
+
+* Secure login using JWT authentication
+
+* Forgot and reset password functionality
+
+* Health and body metrics including weight, height, age, gender, activity level, and fitness goal
+
+* Automatic calculation of BMI, BMR, TDEE, target calories, macronutrients, and recommended water intake
+
+* Personalized 3-day Pakistani meal plan with breakfast, lunch, dinner, and snack recommendations
+
+* AI Fitness Chatbot for fitness and nutrition-related guidance
+
+* Real-time webcam workout analysis using MediaPipe
+
+* Exercise posture feedback and rep counting for Squats, Plank, Arm Raise, and Side Bend
+
+* Browse approved fitness trainers and nutritionists
+
+* View professional specialization, experience, session fee, availability, and ratings
+
+* Select available appointment dates and time slots
+
+* Book 1-hour professional sessions
+
+* Stripe Checkout payment in PKR Test Mode
+
+* Google Meet link for confirmed sessions
+
+* Booking confirmation and reminder emails
+
+* Submit professional ratings and reviews after completed sessions
+
+* Submit platform reviews and feedback
 
 ### Professional
-* Professional profile completion workflow (specialization, bio, years of experience, session fee in PKR, and document uploads)
-* Weekly schedule and time slot availability manager
-* Stripe Connect Express onboarding to configure automated bank payouts
-* Dedicated dashboard with monthly earnings metrics, booking history, and upcoming client sessions
-* Google Meet video links automatically attached to confirmed bookings
-* Client session history and record management
+
+* Admin-invited professional accounts
+
+* Professional profile completion workflow
+
+* Specialization, biography, experience, and session fee management
+
+* Profile photo and credential document uploads
+
+* Weekly availability and 1-hour time slot management
+
+* Upcoming booking management
+
+* Booking history
+
+* Earnings information
+
+* Stripe Connect onboarding for professional payouts
+
+* Google Meet links for confirmed sessions
+
+* Professional rating information
+
+* Password change functionality
 
 ### Admin
-* Comprehensive analytics dashboard (total revenue, platform commission, active user counts, professional metrics)
-* User account management (listing, profile detail inspection, status updates, account removal)
-* Professional application review center (credential inspection, verification meeting assignment, approval, or rejection with reason)
-* Professional directory management (create, view, and remove professionals)
-* Global financial ledger (view payment records, Stripe session IDs, transfer IDs, commission cuts, and payout status)
-* Moderation center for professional reviews and platform feedback
-* Secure admin password management
 
----
+* Dashboard with user, professional, booking, revenue, and commission information
+
+* User account management
+
+* User profile and account status management
+
+* Professional invitation and management
+
+* Professional application review
+
+* Professional approval and rejection with rejection reason
+
+* Professional directory management
+
+* Payment records and financial information
+
+* Payment details viewing
+
+* Payment record soft deletion
+
+* Stripe session and payout information
+
+* Professional and platform review moderation
+
+* Admin password management
 
 ## 5. Setup Instructions
 
 ### Backend
-* **Prerequisites:** Node.js v18+ (tested on v22.19.0) and running MongoDB instance
+
+* **Prerequisites:** Node.js 20.19+ and a running MongoDB instance
+
 * **Directory:** `cd backend`
+
 * **Install dependencies:** `npm install`
-* **Configuration:** Create `.env` file (see Environment Variables section below)
-* **Optional Seed Admin:** `npm run create-admin`
-* **Run Server:** `npm start` (or `npm run dev` for development with nodemon)
+
+* **Configuration:** Create a `.env` file using the Environment Variables section below
+
+* **Seed Admin:** `npm run create-admin`
+
+* **Run Server:** `npm start` or `npm run dev` for development with nodemon
+
 * **Port:** Default is `4000`
 
 ### Frontend
-* **Prerequisites:** Node.js v18+
+
+* **Prerequisites:** Node.js 20.19+
+
 * **Directory:** `cd frontend`
+
 * **Install dependencies:** `npm install`
-* **Configuration:** Create `.env` file with `VITE_BASE_URL`
+
+* **Configuration:** Create `.env` file with `VITE_BASE_URL` and `VITE_POSE_API_URL`
+
 * **Run Development Server:** `npm run dev`
+
 * **Build Production:** `npm run build`
-* **Port:** Default is `5173` (Vite)
+
+* **Port:** Default is `5173`
 
 ### Diet Python Service
-* **Prerequisites:** Python 3.10+ (tested on Python 3.11.9)
-* **Directory:** `cd python-service`
+
+* **Prerequisites:** Python 3.10+ (Python 3.11 recommended)
+
+* **Directory:** `cd diet-service`
+
 * **Virtual Environment:**
+
   * Windows: `python -m venv venv` and `.\venv\Scripts\Activate.ps1`
+
   * Linux/macOS: `python3 -m venv venv` and `source venv/bin/activate`
+
 * **Install dependencies:** `pip install -r requirements.txt`
-* **Run Service:** `uvicorn main:app --reload --port 8000`
+
+* **Run Service:** `uvicorn main:app --host 127.0.0.1 --port 8000 --reload`
+
 * **Port:** `8000`
 
 ### Pose Detection Service
-* **Prerequisites:** Python 3.10+ with OpenCV and MediaPipe support
-* **Directory:** `cd backend/controllers/user/python-pose-service`
-* **Virtual Environment:**
-  * Windows: `python -m venv venv311` and `.\venv311\Scripts\Activate.ps1`
-  * Linux/macOS: `python3 -m venv venv311` and `source venv311/bin/activate`
-* **Install dependencies:** `pip install -r requirements.txt`
-* **Run Service:** `python app.py`
-* **Port:** `5000`
 
----
+* **Prerequisites:** Python 3.10+ with OpenCV and MediaPipe support
+
+* **Directory:** `cd python-pose-service`
+
+* **Virtual Environment:**
+
+  * Windows: `python -m venv venv` and `.\venv\Scripts\Activate.ps1`
+
+  * Linux/macOS: `python3 -m venv venv` and `source venv/bin/activate`
+
+* **Install dependencies:** `pip install -r requirements.txt`
+
+* **Run Service:** `python app.py`
+
+* **Port:** `5002`
 
 ## 6. Environment Variables
 
 ### Backend (`backend/.env`)
+
 ```env
 PORT=4000
+
 FRONTEND_URL=http://localhost:5173
+
 MONGO_URI=mongodb://localhost:27017/posefit
+
 SECRET_KEY=your_jwt_secret_key_here
+
+# Admin Seed
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=ChangeMe123!
 
 # Email / Nodemailer
 EMAIL_USER=your_email@gmail.com
-EMAIL_PASS=your_email_app_password_here
+EMAIL_PASSWORD=your_gmail_app_password
 
-# Stripe Payments (Test Mode)
-STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key
-STRIPE_WEBHOOK_SECRET=whsec_your_stripe_webhook_secret
+# Cloudinary
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
 
-# Google OAuth & Calendar Integration
-GOOGLE_CLIENT_ID=your_google_client_id.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=your_google_client_secret
+# Stripe Payments - Test Mode
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+
+# Google OAuth & Calendar
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
 GOOGLE_REDIRECT_URI=http://localhost:4000/api/google/callback
+GOOGLE_TOKEN_JSON=
 GOOGLE_CALENDAR_ID=primary
 GOOGLE_CALENDAR_TIMEZONE=Asia/Karachi
 
-# Microservices
+# Chatbot
+GROQ_API_KEY=
+
+# Diet Microservice
 FASTAPI_DIET_URL=http://127.0.0.1:8000
 ```
 
 ### Frontend (`frontend/.env`)
+
 ```env
 VITE_BASE_URL=http://localhost:4000/api
+VITE_POSE_API_URL=http://localhost:5002
 ```
 
----
+Do not commit `.env` files or API keys to Git.
 
 ## 7. API Structure
 
-The backend exposes RESTful endpoints with the `/api` route prefix:
+The backend exposes RESTful endpoints using the `/api` route prefix.
 
-* `/api/auth` — User registration, login, email verification OTP, password reset, and professional onboarding
-* `/api/user` — Public professional listings, health metrics calculation, diet plan generation, and AI chatbot
-* `/api/professional` — Professional dashboard metrics, profile management, booking management, weekly availability, and earnings
-* `/api/payment` — Stripe checkout session initiation, session verification polling, professional booked slots lookup, Stripe Connect onboarding, and payment logs
-* `/api/reviews` — Platform and professional review submissions, rating summaries, pending rating lookups, and review moderation
-* `/api/admin` — Admin analytics, user list management, professional application approvals/rejections, and payment ledger
-* `/api/upload` — Multipart file uploads for profile photos and credential documents
-* `/api/google` — Google OAuth flow for calendar and meet session integration
+### Authentication
 
----
+* `/api/auth` — User registration, login, email verification, password reset, and professional onboarding
+
+### User
+
+* `/api/user` — Public professional listings, user metrics, diet plans, and AI chatbot
+
+### Professional
+
+* `/api/professional` — Professional dashboard, profile, password, bookings, availability, and earnings
+
+### Payments
+
+* `/api/payment` — Stripe Checkout, payment verification, booked slots, Stripe Connect, payment records, and Stripe webhook
+
+### Reviews
+
+* `/api/reviews` — Professional reviews, platform reviews, ratings, pending ratings, and review moderation
+
+### Admin
+
+* `/api/admin` — Dashboard statistics, analytics, user management, professional management, professional approvals, and payment management
+
+### Upload
+
+* `/api/upload` — Profile photo and professional document uploads
+
+### Google
+
+* `/api/google` — Google OAuth and Calendar integration
+
+### Main Payment Endpoints
+
+```text
+POST   /api/payment/create
+POST   /api/payment/cancel
+GET    /api/payment/verify-session
+GET    /api/payment/booked-slots/:id
+GET    /api/payment/my-payments
+POST   /api/payment/webhook
+
+POST   /api/payment/stripe-connect/onboard
+GET    /api/payment/stripe-connect/status
+GET    /api/payment/stripe-connect/dashboard-link
+
+GET    /api/payment/admin/payments
+DELETE /api/payment/admin/payments/:id
+```
 
 ## 8. Known Limitations / TODOs
 
-* **Camera / Pose Stream:** Pose detection runs locally over HTTP via Flask; client webcam frames are analyzed on port 5000. For production deployment, WebRTC streaming or client-side MediaPipe WASM is recommended.
-* **Google Meet OAuth Storage:** Google OAuth tokens are saved in a local file (`backend/google-token.json`). An initial administrative authorization at `/api/google/auth` is required before calendar events can be created.
-* **Stripe Test Mode:** Payments and Stripe Connect Express transfers are configured for test mode using PKR currency. Real bank transfers require live Stripe keys and verified merchant setup.
-* **Scheduler Heartbeat:** Appointment reminder emails run on a 1-minute cron check (`* * * * *`) on the main Express process. In high-traffic multi-instance environments, this should be offloaded to a dedicated worker queue (e.g., BullMQ with Redis).
+* **Camera / Pose Stream:** Pose detection currently runs as a separate Flask service and receives webcam frames from the frontend. A more optimized streaming or client-side approach can be considered for large-scale production use.
 
----
+* **Google Meet OAuth Storage:** Google Calendar requires an initial OAuth authorization. Google access and refresh tokens must be stored securely and should not be committed to Git.
 
-# ⚠️ Known Issues / Conflicts
+* **Stripe Test Mode:** Payments and Stripe Connect payouts currently use Stripe Test Mode with PKR. Live payments require Stripe live-mode configuration and account verification.
 
-### 1. Duplicate Implementations
-* **Public Professionals Endpoint:** `backend/routes/user/userRoutes.js` previously defined duplicate routes `GET /professionals` and `GET /public-professionals`. The frontend calls `GET /user/public-professionals`. The redundant `GET /professionals` route was safely removed during cleanup.
-* **Admin Reviews Endpoint:** `backend/routes/review/reviewRoutes.js` registered both `GET /admin` and `GET /admin/all`. The frontend component `AdminReviews.jsx` uses `/reviews/admin`. The duplicate `GET /admin/all` was safely removed.
-* **Auth State Helpers:** `frontend/src/lib/user-auth.js` contained an old, 100% commented-out authentication helper that conflicted with active helpers in `frontend/src/lib/local-storage.js`. It was safely removed.
-* **Unused Utility:** `frontend/src/lib/utils.js` exported a `cn()` helper referencing `clsx` and `tailwind-merge` that was never imported or used across the React components. It was safely removed.
-* **Unused Route Wrapper:** `frontend/src/app-routes/auth-required.jsx` was an unreferenced route guard superseded by `private-route.jsx` and `user-private-route.jsx`. It was safely removed.
+* **Scheduler:** Appointment reminder emails run through a 1-minute Node-Cron job in the Express backend. A dedicated background job system could be used for a large production deployment.
 
-### 2. Unmounted / Unreachable Routes
-* **Root Review POST Route:** `POST /api/reviews/` in `reviewRoutes.js` is functionally duplicate to `POST /api/reviews/professional` and `POST /api/reviews/platform`. The frontend specifically calls the dedicated endpoints.
-* **Unlinked Payment Endpoints:** `GET /api/payment/:id` and `DELETE /api/payment/professional/payments/:id` exist on the payment router, but the current professional UI displays bookings from `GET /api/professional/bookings` and does not provide an in-app payment deletion button.
-* **Specific Payment Review Lookup:** `GET /api/reviews/payment/:paymentId` is registered on the backend, but the frontend checks user reviews collectively via `GET /api/reviews/my-reviews`.
+* **Chatbot Session Storage:** Chatbot conversation history is currently maintained in server memory and is not designed for persistent multi-instance production use.
 
-### 3. Unused Database Fields
-* **`UserModel.credentialDocs[].fileUrl`:** Holds relative paths like `/uploads/documents/...`. In some components, file paths are reconstructed using base URL concatenation.
-* **`UserModel.bankDetails`:** Legacy field originally storing raw bank title and account details, now superseded by automated `stripeAccountId` for Stripe Connect Express onboarding.
-* **`PaymentModel.adminDeleted` & `PaymentModel.professionalDeleted`:** Soft-delete boolean flags defined on payments; current deletion endpoints set these flags, while UI filters primarily by status.
-* **`UserMetrics.dietPref`:** Schema includes `dietPref` with `veg`/`non-veg` enum, but the current ML recommendation model optimizes strictly by macronutrient targets rather than filtering by dietary preference flags.
+# known Issues / Conflicts
 
-### 4. Frontend / Backend Mismatches
-* **Auth Token vs User Object Storage:** `user-private-route.jsx` checks both `localStorage.getItem("pose-fit")` and `localStorage.getItem("pose-fit-user")`, whereas `local-storage.js` decodes the token dynamically with `jwt-decode`. Both keys are populated at login, but unifying around the decoded JWT avoids potential cache divergence.
-* **Height Units:** `UserMetrics` model stores height strictly in centimeters (`cm`), but some legacy form labels in frontend onboarding mention feet/inches before client-side conversion.
+### 1. Legacy Code Removed During Cleanup
 
-### 5. Naming Inconsistencies
-* **Professional Status Casing:** Backend schemas and controllers support both lowercase (`"approved"`, `"pending_verification"`, `"rejected"`) and uppercase (`"APPROVED"`, `"PENDING"`, `"REJECTED"`). Code uses `$in` queries to handle both, but standardizing to lowercase is recommended.
-* **Currency Formatting:** Database and Stripe records store lowercase `"pkr"`, while frontend components format display values with `"Rs."`.
-* **Session ID Naming:** Checkout session identifier is represented as `session_id` in URL query parameters and `stripeSessionId` in MongoDB.
+The following unused or duplicate implementations were removed during project cleanup:
 
-### 6. Hardcoded Configuration
-* **Backend Server Fallback:** `backend/server.js` hardcodes fallback CORS origin `http://localhost:5173`.
-* **FastAPI Service URL:** `backend/services/fastapiDietService.js` falls back to `http://127.0.0.1:8000`.
-* **Pose Detection Service URL:** `frontend/src/pages/user/WorkoutSession.jsx` connects directly to `http://127.0.0.1:5000/video_feed`. This should be moved to an environment variable `VITE_POSE_SERVICE_URL`.
-* **Default Admin Seed:** `backend/scripts/createAdmin.js` contains hardcoded credentials (`admin@posefit.com` / `admin@123`) intended strictly for local development initialization.
+* Duplicate public professional route
 
-### 7. Security Concerns
-* **Sensitive Token File:** `backend/google-token.json` stores Google OAuth refresh and access tokens locally. It must remain excluded from Git version control via `.gitignore`.
-* **Rate Limiting:** Authentication (`/api/auth/login`, `/api/auth/register`), chatbot (`/api/user/chatbot`), and webhook (`/api/payment/webhook`) routes currently lack Express rate-limiting middleware (`express-rate-limit`), leaving them susceptible to brute-force or denial-of-service attempts.
-* **Meeting Link Visibility:** Google Meet links are generated through administrative credentials and saved in `PaymentModel.meetingLink`. Both user and professional receive access upon payment completion. Ensure proper authorization checks remain on any route returning payment objects.\n
+* Duplicate admin review route
+
+* Old commented authentication helper
+
+* Unused frontend `utils.js`
+
+* Unused authentication route wrapper
+
+These files and routes are no longer part of the active system.
+
+### 2. Legacy / Unused Database Fields
+
+Some legacy fields may still exist in database schemas for compatibility:
+
+* `UserModel.bankDetails` — Legacy payment/bank information, with Stripe Connect now used for professional payouts
+
+* `PaymentModel.adminDeleted` and `PaymentModel.professionalDeleted` — Used for soft deletion of payment records
+
+* `UserMetrics.dietPref` — Stored as part of the metrics schema but is not currently used as a filtering condition by the recommendation system
+
+### 3. Naming and Configuration Notes
+
+* Professional status values should preferably remain standardized to the currently used lowercase values such as `approved`, `pending_verification`, and `rejected`.
+
+* Currency values are stored as PKR and displayed as `Rs.` in the frontend.
+
+* Stripe Checkout session IDs are stored using `stripeSessionId` in the database.
+
+### 4. Security Notes
+
+* **Google Token:** `backend/google-token.json`, if generated during Google authorization, must not be committed to Git.
+
+* **Environment Variables:** Stripe keys, Google credentials, Gmail App Passwords, Groq API keys, Cloudinary credentials, MongoDB credentials, and JWT secrets must remain in environment variables.
+
+* **Authentication:** Protected routes should verify the authenticated user's role and identity before returning user-specific information.
+
+### 5. Production Considerations
+
+* Add rate limiting to authentication and other public API endpoints before production deployment.
+
+* Use secure token expiry and storage for password reset and email verification flows.
+
+* Restrict CORS origins in production.
+
+* Use a dedicated job queue if the reminder system needs to support multiple backend instances.
+
+* Use secure persistent storage for Google OAuth tokens in a production environment.
+
+
+## License
+
+This project is developed for academic/FYP purposes.
+
+The backend package uses the ISC license.
