@@ -1,6 +1,7 @@
 const UserModel = require("../../models/userModel");
 const bcrypt = require("bcryptjs");
 const nodemailer = require("nodemailer");
+const { validatePassword } = require("../../validators/authValidator");
 
 const transporter = nodemailer.createTransport({
   host: "smtp.gmail.com",
@@ -531,6 +532,15 @@ const changeAdminPassword = async (req, res) => {
       });
     }
 
+    const passwordError = validatePassword(newPassword);
+
+    if (passwordError) {
+      return res.status(400).json({
+        success: false,
+        message: passwordError,
+      });
+    }
+
     const admin = await UserModel.findOne({
       _id: req.user.userId,
       role: "ADMIN",
@@ -545,7 +555,7 @@ const changeAdminPassword = async (req, res) => {
 
     const isPasswordCorrect = await bcrypt.compare(
       currentPassword,
-      admin.password,
+      admin.password
     );
 
     if (!isPasswordCorrect) {
@@ -555,7 +565,10 @@ const changeAdminPassword = async (req, res) => {
       });
     }
 
-    const isSamePassword = await bcrypt.compare(newPassword, admin.password);
+    const isSamePassword = await bcrypt.compare(
+      newPassword,
+      admin.password
+    );
 
     if (isSamePassword) {
       return res.status(400).json({

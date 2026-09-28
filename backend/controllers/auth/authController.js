@@ -1,8 +1,21 @@
 const bcrypt = require("bcryptjs");
+
 const nodemailer = require("nodemailer");
 
 const UserModel = require("../../models/userModel");
+
 const generateToken = require("../../utils/token");
+
+const {
+  validateEmail,
+  validateName,
+  validatePassword,
+  validateOtp,
+} = require("../../validators/authValidator");
+
+const {
+  validateProfessionalProfile,
+} = require("../../validators/professionalProfileValidator");
 
 const transporter = nodemailer.createTransport({
   host: "smtp.gmail.com",
@@ -18,7 +31,7 @@ const signup = async (req, res) => {
   try {
     const { firstName, lastName, email, password, role } = req.body;
 
-    if (role && role.toUpperCase() === "PROFESSIONAL") {
+    if (role?.toUpperCase() === "PROFESSIONAL") {
       return res.status(403).json({
         success: false,
         message:
@@ -33,8 +46,23 @@ const signup = async (req, res) => {
       });
     }
 
+    const validationError =
+      validateName(firstName, "First name") ||
+      validateName(lastName, "Last name") ||
+      validateEmail(email) ||
+      validatePassword(password);
+
+    if (validationError) {
+      return res.status(400).json({
+        success: false,
+        message: validationError,
+      });
+    }
+
+    const userEmail = email.trim().toLowerCase();
+
     const existingUser = await UserModel.findOne({
-      email: email.toLowerCase(),
+      email: userEmail,
     });
 
     if (existingUser) {
@@ -47,13 +75,13 @@ const signup = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const verificationCode = Math.floor(
-      100000 + Math.random() * 900000,
+      100000 + Math.random() * 900000
     ).toString();
 
     const newUser = new UserModel({
-      firstName,
-      lastName,
-      email: email.toLowerCase(),
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      email: userEmail,
       password: hashedPassword,
       role: "USER",
       isVerified: false,
@@ -64,7 +92,7 @@ const signup = async (req, res) => {
 
     await transporter.sendMail({
       from: `"PoseFit" <${process.env.EMAIL_USER}>`,
-      to: email,
+      to: userEmail,
       subject: "PoseFit Email Verification",
       text:
         `Hi ${firstName} ${lastName},\n\n` +
@@ -74,7 +102,8 @@ const signup = async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message: "Registration successful. Verification code sent to your email.",
+      message:
+        "Registration successful. Verification code sent to your email.",
       userId: newUser._id,
     });
   } catch (error) {
@@ -96,6 +125,15 @@ const verifyEmail = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "User ID and verification code are required",
+      });
+    }
+
+    const otpError = validateOtp(code);
+
+    if (otpError) {
+      return res.status(400).json({
+        success: false,
+        message: otpError,
       });
     }
 
@@ -146,15 +184,24 @@ const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    if (!email || !password) {
+    const emailError = validateEmail(email);
+
+    if (emailError) {
       return res.status(400).json({
         success: false,
-        message: "Email and password are required",
+        message: emailError,
+      });
+    }
+
+    if (!password) {
+      return res.status(400).json({
+        success: false,
+        message: "Password is required",
       });
     }
 
     const user = await UserModel.findOne({
-      email: email.toLowerCase(),
+      email: email.trim().toLowerCase(),
     });
 
     if (!user) {
@@ -171,7 +218,10 @@ const login = async (req, res) => {
       });
     }
 
-    const isPasswordCorrect = await bcrypt.compare(password, user.password);
+    const isPasswordCorrect = await bcrypt.compare(
+      password,
+      user.password
+    );
 
     if (!isPasswordCorrect) {
       return res.status(401).json({
@@ -214,50 +264,50 @@ const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
 
-    const isExisted = await UserModel.findOne({ email }).lean();
+    const emailError = validateEmail(email);
+
+    if (emailError) {
+      return res.status(400).json({
+        success: false,
+        message: emailError,
+      });
+    }
+
+    const userEmail = email.trim().toLowerCase();
+
+    const isExisted = await UserModel.findOne({
+      email: userEmail,
+    }).lean();
 
     if (!isExisted) {
       return res.status(400).json({
+        success: false,
         message: "Email does not exist",
       });
     }
 
-    const transporter = nodemailer.createTransport({
-      host: "smtp.gmail.com",
-      port: 465,
-      secure: true,
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD,
-      },
-    });
+    const resetLink = `http://localhost:5173/reset-password?email=${encodeURIComponent(
+      isExisted.email
+    )}`;
 
     await transporter.sendMail({
-      from: '"PoseFit" <support@posefit.com>',
-      to: email,
+      from: `"PoseFit" <${process.env.EMAIL_USER}>`,
+      to: userEmail,
       subject: "Reset Your PoseFit Password",
-
-      text: `Hi ${isExisted.firstName} ${isExisted.lastName},
-
-We received a request to reset your PoseFit password.
-
-Please click the link below to create a new password:
-http://localhost:5173/reset-password?email=${encodeURIComponent(
-        isExisted.email,
-      )}
-
-If you did not request a password reset, please ignore this email.
-
-Regards,
-PoseFit Team`,
-
+      text:
+        `Hi ${isExisted.firstName} ${isExisted.lastName},\n\n` +
+        `We received a request to reset your PoseFit password.\n\n` +
+        `Please click the link below to create a new password:\n\n` +
+        `${resetLink}\n\n` +
+        `If you did not request a password reset, please ignore this email.\n\n` +
+        `Regards,\n\n` +
+        `PoseFit Team`,
       html: `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Reset Password</title>
-
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -320,43 +370,36 @@ PoseFit Team`,
 </head>
 
 <body>
-
   <div class="container">
-
     <div class="header">
       Reset Your Password
     </div>
 
     <div class="content">
-
       Hi ${isExisted.firstName} ${isExisted.lastName},
       <br><br>
 
       We received a request to reset your PoseFit password.
       Click the button below to create a new password.
+
       <br><br>
 
-      <a
-        href="http://localhost:5173/reset-password?email=${encodeURIComponent(
-          isExisted.email,
-        )}"
-        class="button"
-      >
+      <a href="${resetLink}" class="button">
         Reset Password
       </a>
 
       <br><br>
 
       This password reset link will allow you to create a new password.
+
       <br><br>
 
       If you did not request a password reset, please ignore this email.
-
     </div>
 
     <div class="footer">
-
       &copy; 2026 PoseFit. All rights reserved.
+
       <br><br>
 
       If you're having trouble clicking the button, copy and paste this link
@@ -364,20 +407,11 @@ PoseFit Team`,
 
       <br><br>
 
-      <a
-        href="http://localhost:5173/reset-password?email=${encodeURIComponent(
-          isExisted.email,
-        )}"
-      >
-        http://localhost:5173/reset-password?email=${encodeURIComponent(
-          isExisted.email,
-        )}
+      <a href="${resetLink}">
+        ${resetLink}
       </a>
-
     </div>
-
   </div>
-
 </body>
 </html>`,
     });
@@ -402,26 +436,43 @@ const resetPassword = async (req, res) => {
     const { email } = req.params;
     const { password } = req.body;
 
-    if (!email || !password) {
+    const emailError = validateEmail(email);
+
+    if (emailError) {
       return res.status(400).json({
-        message: "Email or password are missing fields",
+        success: false,
+        message: emailError,
+      });
+    }
+
+    const passwordError = validatePassword(password);
+
+    if (passwordError) {
+      return res.status(400).json({
+        success: false,
+        message: passwordError,
       });
     }
 
     const user = await UserModel.findOne({
-      email: email.toLowerCase(),
+      email: email.trim().toLowerCase(),
     });
 
     if (!user) {
       return res.status(404).json({
-        message: "User not found!",
+        success: false,
+        message: "User not found",
       });
     }
 
-    const isSamePassword = await bcrypt.compare(password, user.password);
+    const isSamePassword = await bcrypt.compare(
+      password,
+      user.password
+    );
 
     if (isSamePassword) {
       return res.status(400).json({
+        success: false,
         message: "New password must be different from old password",
       });
     }
@@ -469,19 +520,45 @@ const completeProfessionalProfile = async (req, res) => {
       experience,
       sessionFee,
       credentialDocs,
-      // bankDetails,
       availability,
     } = req.body;
 
-    if (profilePhoto) professional.profilePhoto = profilePhoto;
-    if (bio) professional.bio = bio;
-    if (specialization) professional.specialization = specialization;
-    if (experience !== undefined) professional.experience = Number(experience);
+    const validationError = validateProfessionalProfile(req.body);
 
-    if (sessionFee !== undefined) professional.sessionFee = Number(sessionFee);
-    if (credentialDocs) professional.credentialDocs = credentialDocs;
-    // if (bankDetails) professional.bankDetails = bankDetails;
-    if (availability) professional.availability = availability;
+    if (validationError) {
+      return res.status(400).json({
+        success: false,
+        message: validationError,
+      });
+    }
+
+    if (experience !== undefined) {
+      professional.experience = Number(experience);
+    }
+
+    if (sessionFee !== undefined) {
+      professional.sessionFee = Number(sessionFee);
+    }
+
+    if (profilePhoto) {
+      professional.profilePhoto = profilePhoto;
+    }
+
+    if (bio) {
+      professional.bio = bio.trim();
+    }
+
+    if (specialization) {
+      professional.specialization = specialization.trim();
+    }
+
+    if (credentialDocs) {
+      professional.credentialDocs = credentialDocs;
+    }
+
+    if (availability) {
+      professional.availability = availability;
+    }
 
     professional.professionalStatus = "pending_verification";
     professional.rejectionReason = undefined;
@@ -490,6 +567,7 @@ const completeProfessionalProfile = async (req, res) => {
     await professional.save();
 
     const result = professional.toObject();
+
     delete result.password;
 
     return res.status(200).json({

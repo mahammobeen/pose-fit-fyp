@@ -36,24 +36,16 @@ const MEAL_CATEGORY_IMAGES = {
 
 export default function DietPlan() {
   const [userId, setUserId] = useState(null);
-
   const [age, setAge] = useState("");
   const [height, setHeight] = useState("");
   const [weight, setWeight] = useState("");
   const [gender, setGender] = useState("");
   const [activityLevel, setActivityLevel] = useState("");
   const [goal, setGoal] = useState("");
-
   const [metrics, setMetrics] = useState(null);
   const [dietPlan, setDietPlan] = useState(null);
-
-  // Controls which card is visible: true = show Health Info form,
-  // false = show Calculated Targets card. Starts true (first-time users
-  // see the form); flipped to false once we confirm saved metrics exist.
   const [showMetricsForm, setShowMetricsForm] = useState(true);
-
   const [selectedDay, setSelectedDay] = useState(1);
-
   const [loading, setLoading] = useState(true);
   const [savingMetrics, setSavingMetrics] = useState(false);
   const [generatingPlan, setGeneratingPlan] = useState(false);
@@ -120,9 +112,6 @@ export default function DietPlan() {
 
             setMetrics(savedMetrics);
             clearMetricForm();
-
-            // User already has calculated metrics — show them the
-            // Targets card directly instead of the empty form.
             setShowMetricsForm(false);
           }
         } catch (err) {
@@ -244,16 +233,9 @@ export default function DietPlan() {
         throw new Error("Server did not return saved metrics");
       }
 
-      // NOTE: We intentionally do NOT call discardDietPlan() here anymore.
-      // Recalculating/regenerating targets should only update the
-      // Calculated Targets card. The existing 3-Day Diet Plan (if any)
-      // stays exactly as it is until the user explicitly clicks
-      // "Generate 3-Day Diet Plan" to build a new one.
       setMetrics(saved);
 
       clearMetricForm();
-
-      // Switch from the form to the Calculated Targets card
       setShowMetricsForm(false);
 
       toast.success("Health metrics calculated successfully!");
@@ -271,10 +253,6 @@ export default function DietPlan() {
     }
   };
 
-  // Called when the user clicks "Regenerate Targets" inside the
-  // Calculated Targets card. Pre-fills the form with the user's last
-  // saved values (so they don't have to retype everything) and
-  // switches the view back to the Health Information form.
   const handleRegenerateClick = () => {
     if (metrics) {
       setAge(metrics.age?.toString() || "");
@@ -385,12 +363,11 @@ export default function DietPlan() {
 
             <p className="max-w-3xl text-[11px] sm:text-xs md:text-sm font-medium leading-5 sm:leading-6 text-gray-500">
               Calculate your precise nutritional targets and generate an
-              authentic 3-day Pakistani meal plan optimized by our ML model.
+              authentic 3-day meal plan.
             </p>
           </div>
         </div>
 
-        {/* CHANGE 1: wrapper widened from max-w-3xl to max-w-6xl */}
         <div className="w-full max-w-6xl mx-auto min-w-0">
 
           {showMetricsForm && (
@@ -507,7 +484,6 @@ export default function DietPlan() {
                 </div>
               </div>
 
-              {/* Gender on its own row, Activity Level and Fitness Goal side by side below */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
               <div className="lg:col-span-2">
                 <label className="block text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-500 mb-1.5">
@@ -668,7 +644,7 @@ export default function DietPlan() {
 
                 <div className="min-w-0">
                   <h2 className="text-base sm:text-lg md:text-xl font-extrabold text-gray-800">
-                    Calculated Targets
+                    Calculated Metrics
                   </h2>
 
                   <p className="text-[11px] sm:text-xs leading-5 text-gray-400 mt-1">
@@ -682,11 +658,10 @@ export default function DietPlan() {
                 onClick={handleRegenerateClick}
                 className="shrink-0 rounded-btn border border-brand-light/50 bg-brand-light/20 px-2.5 py-1.5 sm:px-3 sm:py-2 text-[10px] sm:text-xs font-bold text-brand-dark transition-all hover:bg-brand-light/35"
               >
-                Regenerate Targets
+                Recalculate Metrics
               </button>
             </div>
 
-            {/* CHANGE 3: 4 stat boxes in one row on large screens */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 md:gap-4">
 
               <div className="min-w-0 bg-brand-light/15 rounded-btn p-3 sm:p-4 border border-brand-light/30">

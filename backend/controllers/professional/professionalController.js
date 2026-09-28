@@ -4,6 +4,11 @@ const Stripe = require("stripe");
 const bcrypt = require("bcryptjs");
 const UserModel = require("../../models/userModel");
 const PaymentModel = require("../../models/PaymentModel");
+const {
+  validateProfessionalProfile,
+} = require("../../validators/professionalProfileValidator");
+
+const { validatePassword } = require("../../validators/authValidator");
 
 const getStripe = () => {
   const secretKey = process.env.STRIPE_SECRET_KEY;
@@ -261,18 +266,50 @@ const updateProfessionalProfile = async (req, res) => {
       availability,
     } = req.body;
 
+    const validationError = validateProfessionalProfile(req.body);
+
+    if (validationError) {
+      return res.status(400).json({
+        success: false,
+        message: validationError,
+      });
+    }
+
     if (availability !== undefined) {
       professional.availability = availability;
     }
 
-    if (firstName) professional.firstName = firstName;
-    if (lastName) professional.lastName = lastName;
-    if (profilePhoto !== undefined) professional.profilePhoto = profilePhoto;
-    if (bio !== undefined) professional.bio = bio;
-    if (specialization !== undefined) professional.specialization = specialization;
-    if (experience !== undefined) professional.experience = Number(experience);
-    if (sessionFee !== undefined) professional.sessionFee = Number(sessionFee);
-    if (credentialDocs !== undefined) professional.credentialDocs = credentialDocs;
+    if (firstName) {
+      professional.firstName = firstName.trim();
+    }
+
+    if (lastName) {
+      professional.lastName = lastName.trim();
+    }
+
+    if (profilePhoto !== undefined) {
+      professional.profilePhoto = profilePhoto;
+    }
+
+    if (bio !== undefined) {
+      professional.bio = bio.trim();
+    }
+
+    if (specialization !== undefined) {
+      professional.specialization = specialization.trim();
+    }
+
+    if (experience !== undefined) {
+      professional.experience = Number(experience);
+    }
+
+    if (sessionFee !== undefined) {
+      professional.sessionFee = Number(sessionFee);
+    }
+
+    if (credentialDocs !== undefined) {
+      professional.credentialDocs = credentialDocs;
+    }
 
     if (
       professional.professionalStatus === "rejected" ||
@@ -286,6 +323,7 @@ const updateProfessionalProfile = async (req, res) => {
     await professional.save();
 
     const updatedData = professional.toObject();
+
     delete updatedData.password;
     delete updatedData.verificationCode;
 
@@ -313,7 +351,8 @@ const changeProfessionalPassword = async (req, res) => {
     if (!currentPassword || !newPassword || !confirmPassword) {
       return res.status(400).json({
         success: false,
-        message: "Current password, new password, and confirm password are required",
+        message:
+          "Current password, new password, and confirm password are required",
       });
     }
 
@@ -324,17 +363,12 @@ const changeProfessionalPassword = async (req, res) => {
       });
     }
 
-    if (newPassword.length < 6) {
-      return res.status(400).json({
-        success: false,
-        message: "New password must be at least 6 characters long",
-      });
-    }
+    const passwordError = validatePassword(newPassword);
 
-    if (currentPassword === newPassword) {
+    if (passwordError) {
       return res.status(400).json({
         success: false,
-        message: "New password must be different from the current password",
+        message: passwordError,
       });
     }
 
@@ -359,6 +393,18 @@ const changeProfessionalPassword = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "Current password is incorrect",
+      });
+    }
+
+    const isSamePassword = await bcrypt.compare(
+      newPassword,
+      professional.password
+    );
+
+    if (isSamePassword) {
+      return res.status(400).json({
+        success: false,
+        message: "New password must be different from the current password",
       });
     }
 

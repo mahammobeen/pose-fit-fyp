@@ -132,7 +132,7 @@ function Chatbot() {
   return (
     <UserLayout>
       <div className="relative min-h-full bg-transparent p-4 sm:p-6 md:p-8 font-sans">
-        {/* CHANGE 1: header widened from max-w-4xl to max-w-6xl */}
+        
         <header className="max-w-6xl mx-auto mb-6 sm:mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
           <div>
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-gray-800 tracking-tight flex items-center gap-3">
@@ -157,8 +157,6 @@ function Chatbot() {
             </button>
           )}
         </header>
-
-        {/* CHANGE 2: chat card widened from max-w-4xl to max-w-6xl */}
         <div className="max-w-6xl mx-auto h-[calc(100vh-14rem)] min-h-[460px] flex flex-col bg-surface/85 rounded-3xl sm:rounded-[2rem] border border-brand-light/50 shadow-card-hover backdrop-blur-xl overflow-hidden">
           <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 space-y-6 sm:space-y-7 bg-brand-light/10">
             {messages.length === 0 && (
@@ -244,8 +242,6 @@ function Chatbot() {
                 </div>
               </div>
             )}
-
-            {/* CHANGE 3: marginTop 0 removes the extra scrollbar on the empty screen */}
             <div ref={messagesEndRef} style={{ marginTop: 0 }} />
           </div>
 
