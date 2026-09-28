@@ -192,7 +192,12 @@ const UserSchema = new Schema({
     type: String,
     trim: true,
   },
-});
+  
+},
+ {
+    timestamps: true,
+  }
+);
 
 UserSchema.pre("save", function () {
   if (this.role !== "PROFESSIONAL") {
