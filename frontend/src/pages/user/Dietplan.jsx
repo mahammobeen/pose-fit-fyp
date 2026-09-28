@@ -47,6 +47,11 @@ export default function DietPlan() {
   const [metrics, setMetrics] = useState(null);
   const [dietPlan, setDietPlan] = useState(null);
 
+  // Controls which card is visible: true = show Health Info form,
+  // false = show Calculated Targets card. Starts true (first-time users
+  // see the form); flipped to false once we confirm saved metrics exist.
+  const [showMetricsForm, setShowMetricsForm] = useState(true);
+
   const [selectedDay, setSelectedDay] = useState(1);
 
   const [loading, setLoading] = useState(true);
@@ -115,6 +120,10 @@ export default function DietPlan() {
 
             setMetrics(savedMetrics);
             clearMetricForm();
+
+            // User already has calculated metrics — show them the
+            // Targets card directly instead of the empty form.
+            setShowMetricsForm(false);
           }
         } catch (err) {
           if (err?.response?.status !== 404) {
@@ -235,15 +244,19 @@ export default function DietPlan() {
         throw new Error("Server did not return saved metrics");
       }
 
-      discardDietPlan();
-
+      // NOTE: We intentionally do NOT call discardDietPlan() here anymore.
+      // Recalculating/regenerating targets should only update the
+      // Calculated Targets card. The existing 3-Day Diet Plan (if any)
+      // stays exactly as it is until the user explicitly clicks
+      // "Generate 3-Day Diet Plan" to build a new one.
       setMetrics(saved);
 
       clearMetricForm();
 
-      toast.success(
-        "Health metrics calculated successfully! Your previous diet plan has been discarded.",
-      );
+      // Switch from the form to the Calculated Targets card
+      setShowMetricsForm(false);
+
+      toast.success("Health metrics calculated successfully!");
     } catch (err) {
       console.error("Save metrics error:", err);
 
@@ -256,6 +269,24 @@ export default function DietPlan() {
     } finally {
       setSavingMetrics(false);
     }
+  };
+
+  // Called when the user clicks "Regenerate Targets" inside the
+  // Calculated Targets card. Pre-fills the form with the user's last
+  // saved values (so they don't have to retype everything) and
+  // switches the view back to the Health Information form.
+  const handleRegenerateClick = () => {
+    if (metrics) {
+      setAge(metrics.age?.toString() || "");
+      setHeight(metrics.height?.toString() || "");
+      setWeight(metrics.weight?.toString() || "");
+      setGender(metrics.gender || "");
+      setActivityLevel(metrics.activityLevel || "");
+      setGoal(metrics.goal || "");
+    }
+
+    setErrors({});
+    setShowMetricsForm(true);
   };
 
   const handleGeneratePlan = async () => {
@@ -359,9 +390,10 @@ export default function DietPlan() {
           </div>
         </div>
 
-        <div className="w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 lg:gap-8 items-start min-w-0">
+        <div className="w-full max-w-3xl mx-auto min-w-0">
 
-          <section className="lg:col-span-6 min-w-0 card bg-surface/90 border border-brand-light/40 p-4 sm:p-5 md:p-6 lg:p-8">
+          {showMetricsForm && (
+          <section className="min-w-0 card bg-surface/90 border border-brand-light/40 p-4 sm:p-5 md:p-6 lg:p-8">
             <div className="flex items-start gap-2.5 sm:gap-3 mb-5 sm:mb-6">
               <div className="shrink-0 p-2.5 sm:p-3 bg-brand-light/35 rounded-btn">
                 <Scale className="w-4 h-4 sm:w-5 sm:h-5 text-brand-dark" />
@@ -620,27 +652,38 @@ export default function DietPlan() {
               </button>
             </form>
           </section>
+          )}
 
-          <section className="lg:col-span-6 min-w-0 card bg-surface/90 border border-brand-light/40 p-4 sm:p-5 md:p-6 lg:p-8 space-y-5 sm:space-y-6">
-            <div className="flex items-start gap-2.5 sm:gap-3">
-              <div className="shrink-0 p-2.5 sm:p-3 bg-accent-blue/30 rounded-btn">
-                <HeartPulse className="w-4 h-4 sm:w-5 sm:h-5 text-blue-700" />
+          {!showMetricsForm && (
+          <section className="min-w-0 card bg-surface/90 border border-brand-light/40 p-4 sm:p-5 md:p-6 lg:p-8 space-y-5 sm:space-y-6">
+            <div className="flex items-start justify-between gap-2.5 sm:gap-3">
+              <div className="flex items-start gap-2.5 sm:gap-3 min-w-0">
+                <div className="shrink-0 p-2.5 sm:p-3 bg-accent-blue/30 rounded-btn">
+                  <HeartPulse className="w-4 h-4 sm:w-5 sm:h-5 text-blue-700" />
+                </div>
+
+                <div className="min-w-0">
+                  <h2 className="text-base sm:text-lg md:text-xl font-extrabold text-gray-800">
+                    Calculated Targets
+                  </h2>
+
+                  <p className="text-[11px] sm:text-xs leading-5 text-gray-400 mt-1">
+                    Updated from your latest health metrics.
+                  </p>
+                </div>
               </div>
 
-              <div className="min-w-0">
-                <h2 className="text-base sm:text-lg md:text-xl font-extrabold text-gray-800">
-                  Calculated Targets
-                </h2>
-
-                <p className="text-[11px] sm:text-xs leading-5 text-gray-400 mt-1">
-                  {metrics
-                    ? "Updated from your latest health metrics."
-                    : "Enter and save your metrics on the left to see your targets."}
-                </p>
-              </div>
+              <button
+                type="button"
+                onClick={handleRegenerateClick}
+                className="shrink-0 rounded-btn border border-brand-light/50 bg-brand-light/20 px-2.5 py-1.5 sm:px-3 sm:py-2 text-[10px] sm:text-xs font-bold text-brand-dark transition-all hover:bg-brand-light/35"
+              >
+                Regenerate Targets
+              </button>
             </div>
 
             <div className="grid grid-cols-2 gap-2.5 sm:gap-3 md:gap-4">
+
               <div className="min-w-0 bg-brand-light/15 rounded-btn p-3 sm:p-4 border border-brand-light/30">
                 <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-400">
                   BMI
@@ -778,6 +821,7 @@ export default function DietPlan() {
               )}
             </div>
           </section>
+          )}
         </div>
 
         {dietPlan && (
