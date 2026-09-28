@@ -390,10 +390,11 @@ export default function DietPlan() {
           </div>
         </div>
 
-        <div className="w-full max-w-3xl mx-auto min-w-0">
+        {/* CHANGE 1: wrapper widened from max-w-3xl to max-w-6xl */}
+        <div className="w-full max-w-6xl mx-auto min-w-0">
 
           {showMetricsForm && (
-          <section className="min-w-0 card bg-surface/90 border border-brand-light/40 p-4 sm:p-5 md:p-6 lg:p-8">
+          <section className="min-w-0 w-full card bg-surface/90 border border-brand-light/40 p-4 sm:p-5 md:p-6 lg:p-8">
             <div className="flex items-start gap-2.5 sm:gap-3 mb-5 sm:mb-6">
               <div className="shrink-0 p-2.5 sm:p-3 bg-brand-light/35 rounded-btn">
                 <Scale className="w-4 h-4 sm:w-5 sm:h-5 text-brand-dark" />
@@ -506,7 +507,9 @@ export default function DietPlan() {
                 </div>
               </div>
 
-              <div>
+              {/* Gender on its own row, Activity Level and Fitness Goal side by side below */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
+              <div className="lg:col-span-2">
                 <label className="block text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-500 mb-1.5">
                   Gender
                 </label>
@@ -633,6 +636,7 @@ export default function DietPlan() {
                   </p>
                 )}
               </div>
+              </div>
 
               <button
                 type="submit"
@@ -682,7 +686,8 @@ export default function DietPlan() {
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-2.5 sm:gap-3 md:gap-4">
+            {/* CHANGE 3: 4 stat boxes in one row on large screens */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 md:gap-4">
 
               <div className="min-w-0 bg-brand-light/15 rounded-btn p-3 sm:p-4 border border-brand-light/30">
                 <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-400">
