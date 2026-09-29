@@ -1,8 +1,41 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { z } from "zod";
 import { httpClient } from "../../lib/http";
 import { toast } from "sonner";
 import posefit_logo from "../../assets/posefit_logo.png";
+
+const resetPasswordSchema = z
+  .object({
+    password: z
+      .string()
+      .min(1, "Password is required.")
+      .min(8, "Password must be at least 8 characters.")
+      .max(64, "Password must not exceed 64 characters.")
+      .refine((value) => !/\s/.test(value), {
+        message: "Password must not contain spaces.",
+      })
+      .refine((value) => /[a-z]/.test(value), {
+        message: "Password must contain a lowercase letter.",
+      })
+      .refine((value) => /[A-Z]/.test(value), {
+        message: "Password must contain an uppercase letter.",
+      })
+      .refine((value) => /[0-9]/.test(value), {
+        message: "Password must contain a number.",
+      })
+      .refine((value) => /[^A-Za-z0-9]/.test(value), {
+        message: "Password must contain a special character.",
+      }),
+
+    confirmPassword: z
+      .string()
+      .min(1, "Please confirm your password."),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords do not match.",
+    path: ["confirmPassword"],
+  });
 
 const ResetPassword = () => {
   const [searchParams] = useSearchParams();
@@ -29,42 +62,30 @@ const ResetPassword = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const cleanEmail = email?.trim().toLowerCase();
-    const cleanPassword = password.trim();
-    const cleanConfirmPassword = confirmPassword.trim();
+    const validation = resetPasswordSchema.safeParse({
+      password,
+      confirmPassword,
+    });
+
+    if (!validation.success) {
+      toast.error(validation.error.issues[0].message);
+      return;
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const validatedData = validation.data;
 
     if (!cleanEmail) {
-      return;
-    }
-
-    if (!cleanPassword) {
-      toast.error("Password is required.");
-      return;
-    }
-
-    if (cleanPassword.length < 6) {
-      toast.error("Password must be at least 6 characters.");
-      return;
-    }
-
-    if (!cleanConfirmPassword) {
-      toast.error("Please confirm your password.");
-      return;
-    }
-
-    if (cleanPassword !== cleanConfirmPassword) {
-      toast.error("Passwords do not match.");
       return;
     }
 
     setLoading(true);
 
     try {
-
       const { data } = await httpClient.put(
         `/auth/reset-password/${encodeURIComponent(cleanEmail)}`,
         {
-          password: cleanPassword,
+          password: validatedData.password,
         },
       );
 
@@ -103,7 +124,6 @@ const ResetPassword = () => {
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-surface px-4 py-8 font-sans">
-
       <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-brand-light/50 blur-3xl" />
 
       <div className="pointer-events-none absolute -bottom-24 -right-24 h-80 w-80 rounded-full bg-accent-blue/60 blur-3xl" />
@@ -112,7 +132,6 @@ const ResetPassword = () => {
 
       <div className="relative z-10 w-full max-w-md">
         <div className="rounded-card border border-brand-light/70 bg-surface/80 p-8 shadow-card-hover backdrop-blur-xl sm:p-10">
-
           <div className="mb-7 flex justify-center">
             <Link className="flex h-16 w-16 items-center justify-center rounded-card bg-white/70 p-2 shadow-card transition-transform duration-300 hover:-translate-y-1">
               <img
@@ -151,7 +170,6 @@ const ResetPassword = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
-
             <div>
               <label
                 htmlFor="password"
@@ -165,10 +183,11 @@ const ResetPassword = () => {
                   id="password"
                   type={showPassword ? "text" : "password"}
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => setPassword(e.target.value.slice(0, 64))}
                   placeholder="Enter new password"
                   disabled={loading}
                   autoComplete="new-password"
+                  maxLength={64}
                   className="w-full rounded-btn border border-gray-200 bg-white/70 px-4 py-3.5 pr-12 text-sm text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand-light/60 disabled:cursor-not-allowed disabled:opacity-60"
                 />
 
@@ -186,7 +205,8 @@ const ResetPassword = () => {
               </div>
 
               <p className="mt-1.5 text-xs text-gray-400">
-                Password must be at least 6 characters.
+                Password must be 8 to 64 characters with uppercase, lowercase,
+                number, and special character.
               </p>
             </div>
 
@@ -203,10 +223,13 @@ const ResetPassword = () => {
                   id="confirmPassword"
                   type={showConfirmPassword ? "text" : "password"}
                   value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  onChange={(e) =>
+                    setConfirmPassword(e.target.value.slice(0, 64))
+                  }
                   placeholder="Confirm new password"
                   disabled={loading}
                   autoComplete="new-password"
+                  maxLength={64}
                   className="w-full rounded-btn border border-gray-200 bg-white/70 px-4 py-3.5 pr-12 text-sm text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand-light/60 disabled:cursor-not-allowed disabled:opacity-60"
                 />
 

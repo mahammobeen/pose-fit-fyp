@@ -1,8 +1,67 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
+import { z } from "zod";
 import { httpClient } from "../../lib/http";
 import { AlertTriangle, Check } from "lucide-react";
 import posefit_logo from "../../assets/posefit_logo.png";
+
+const registerSchema = z.object({
+  firstName: z
+    .string()
+    .trim()
+    .min(2, "First name must be at least 2 characters.")
+    .max(50, "First name must not exceed 50 characters.")
+    .regex(
+      /^[A-Za-z][A-Za-z\s'.-]*$/,
+      "First name contains invalid characters.",
+    ),
+
+  lastName: z
+    .string()
+    .trim()
+    .min(2, "Last name must be at least 2 characters.")
+    .max(50, "Last name must not exceed 50 characters.")
+    .regex(
+      /^[A-Za-z][A-Za-z\s'.-]*$/,
+      "Last name contains invalid characters.",
+    ),
+
+  email: z
+    .string()
+    .trim()
+    .min(1, "Email is required.")
+    .max(254, "Email address is too long.")
+    .email("Please enter a valid email address."),
+
+  password: z
+    .string()
+    .min(1, "Password is required.")
+    .min(8, "Password must be at least 8 characters.")
+    .max(64, "Password must not exceed 64 characters.")
+    .refine((value) => !/\s/.test(value), {
+      message: "Password must not contain spaces.",
+    })
+    .refine((value) => /[a-z]/.test(value), {
+      message: "Password must contain a lowercase letter.",
+    })
+    .refine((value) => /[A-Z]/.test(value), {
+      message: "Password must contain an uppercase letter.",
+    })
+    .refine((value) => /[0-9]/.test(value), {
+      message: "Password must contain a number.",
+    })
+    .refine((value) => /[^A-Za-z0-9]/.test(value), {
+      message: "Password must contain a special character.",
+    }),
+});
+
+const verificationSchema = z.object({
+  code: z
+    .string()
+    .trim()
+    .length(6, "Please enter the 6-digit verification code.")
+    .regex(/^\d{6}$/, "Please enter the 6-digit verification code."),
+});
 
 export default function UserRegister() {
   const navigate = useNavigate();
@@ -53,29 +112,23 @@ export default function UserRegister() {
   const handleRegisterSubmit = async (e) => {
     e.preventDefault();
 
-    if (
-      !form.firstName.trim() ||
-      !form.lastName.trim() ||
-      !form.email.trim() ||
-      !form.password
-    ) {
-      showToast("error", "All fields are required.");
+    const validation = registerSchema.safeParse(form);
+
+    if (!validation.success) {
+      showToast("error", validation.error.issues[0].message);
       return;
     }
 
-    if (form.password.length < 6) {
-      showToast("error", "Password must be at least 6 characters.");
-      return;
-    }
+    const validatedData = validation.data;
 
     try {
       setLoading(true);
 
       const res = await httpClient.post("/auth/register", {
-        firstName: form.firstName.trim(),
-        lastName: form.lastName.trim(),
-        email: form.email.trim().toLowerCase(),
-        password: form.password,
+        firstName: validatedData.firstName,
+        lastName: validatedData.lastName,
+        email: validatedData.email.toLowerCase(),
+        password: validatedData.password,
         role: "USER",
       });
 
@@ -113,7 +166,16 @@ export default function UserRegister() {
   const handleVerifySubmit = async (e) => {
     e.preventDefault();
 
-    const trimmedCode = code.trim();
+    const validation = verificationSchema.safeParse({
+      code,
+    });
+
+    if (!validation.success) {
+      showToast("error", validation.error.issues[0].message);
+      return;
+    }
+
+    const trimmedCode = validation.data.code;
 
     if (!userId) {
       showToast(
@@ -122,16 +184,6 @@ export default function UserRegister() {
       );
 
       setStep(1);
-      return;
-    }
-
-    if (!trimmedCode) {
-      showToast("error", "Verification code is required.");
-      return;
-    }
-
-    if (!/^\d{6}$/.test(trimmedCode)) {
-      showToast("error", "Please enter the 6-digit verification code.");
       return;
     }
 
@@ -243,7 +295,6 @@ export default function UserRegister() {
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-surface px-4 py-8 font-sans">
-
       <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-brand-light/50 blur-3xl" />
 
       <div className="pointer-events-none absolute -bottom-24 -right-24 h-80 w-80 rounded-full bg-accent-blue/60 blur-3xl" />
@@ -279,7 +330,6 @@ export default function UserRegister() {
 
       <div className="relative z-10 w-full max-w-md">
         <div className="rounded-card border border-brand-light/70 bg-surface/80 p-8 shadow-card-hover backdrop-blur-xl sm:p-10">
-
           <div className="mb-7 flex justify-center">
             <Link className="flex h-16 w-16 items-center justify-center rounded-card bg-white/70 p-2 shadow-card transition-transform duration-300 hover:-translate-y-1">
               <img
@@ -308,9 +358,7 @@ export default function UserRegister() {
               className="space-y-5"
               autoComplete="on"
             >
-
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-
                 <div>
                   <label
                     htmlFor="firstName"
@@ -392,11 +440,17 @@ export default function UserRegister() {
                     type={showPassword ? "text" : "password"}
                     name="password"
                     required
-                    minLength={6}
+                    minLength={8}
+                    maxLength={64}
                     autoComplete="new-password"
                     placeholder="Enter your password"
                     value={form.password}
-                    onChange={handleChange}
+                    onChange={(e) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        password: e.target.value.slice(0, 64),
+                      }))
+                    }
                     disabled={loading}
                     className="w-full rounded-btn border border-gray-200 bg-white/70 px-4 py-3.5 pr-12 text-sm text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand-light/60 disabled:cursor-not-allowed disabled:opacity-60"
                   />
@@ -417,7 +471,8 @@ export default function UserRegister() {
                 </div>
 
                 <p className="mt-1.5 text-xs text-gray-400">
-                  Password must be at least 6 characters.
+                  Password must be 8 to 64 characters with uppercase,
+                  lowercase, number, and special character.
                 </p>
               </div>
 
@@ -437,9 +492,7 @@ export default function UserRegister() {
               </button>
             </form>
           ) : (
-
             <form onSubmit={handleVerifySubmit} className="space-y-5">
-
               <div>
                 <label
                   htmlFor="verificationCode"

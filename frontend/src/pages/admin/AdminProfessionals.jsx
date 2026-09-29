@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { z } from "zod";
 import AdminLayout from "../../components/admin/AdminLayout";
 import Modal from "../../components/admin/Modal";
 import StatusBadge from "../../components/admin/StatusBadge";
@@ -14,6 +15,45 @@ const EMPTY_FORM = {
   specialization: "",
   sessionFee: "",
 };
+
+const addProfessionalSchema = z.object({
+  firstName: z.string().min(1, "First name is required."),
+  lastName: z.string().min(1, "Last name is required."),
+  email: z.string().email("Please enter a valid email address."),
+  password: z
+    .string()
+    .refine(
+      (value) => value === "" || value.length >= 8,
+      "Password must be at least 8 characters.",
+    )
+    .refine(
+      (value) => value === "" || value.length <= 64,
+      "Password must not exceed 64 characters.",
+    )
+    .refine(
+      (value) => value === "" || /[a-z]/.test(value),
+      "Password must contain a lowercase letter.",
+    )
+    .refine(
+      (value) => value === "" || /[A-Z]/.test(value),
+      "Password must contain an uppercase letter.",
+    )
+    .refine(
+      (value) => value === "" || /\d/.test(value),
+      "Password must contain a number.",
+    )
+    .refine(
+      (value) => value === "" || /[^A-Za-z0-9]/.test(value),
+      "Password must contain a special character.",
+    )
+    .refine(
+      (value) => value === "" || !/\s/.test(value),
+      "Password must not contain spaces.",
+    ),
+  professionalType: z.string(),
+  specialization: z.string(),
+  sessionFee: z.string(),
+});
 
 export default function AdminProfessionals() {
   const [professionals, setProfessionals] = useState([]);
@@ -67,8 +107,10 @@ export default function AdminProfessionals() {
   const handleAdd = async (e) => {
     e.preventDefault();
 
-    if (!addForm.firstName || !addForm.lastName || !addForm.email) {
-      setAddError("First name, last name, and email are required.");
+    const validation = addProfessionalSchema.safeParse(addForm);
+
+    if (!validation.success) {
+      setAddError(validation.error.issues[0]?.message || "Please check the form.");
       return;
     }
 
@@ -114,7 +156,6 @@ export default function AdminProfessionals() {
   return (
     <AdminLayout>
       <div className="min-h-screen pb-16 bg-transparent font-sans">
-
         {toast && (
           <div
             className={`fixed top-5 right-5 z-50 px-5 py-3 rounded-btn shadow-card-hover text-white text-sm font-bold border transition-all ${
@@ -286,7 +327,6 @@ export default function AdminProfessionals() {
                         key={pro._id}
                         className="hover:bg-brand-light/10 transition-colors"
                       >
-
                         <td className="px-5 py-4">
                           <div className="flex items-center gap-3">
                             <div className="w-9 h-9 rounded-btn flex items-center justify-center text-white text-xs font-black shrink-0 bg-brand">
@@ -453,7 +493,7 @@ export default function AdminProfessionals() {
                   <option value="Trainer">Trainer</option>
                   <option value="Nutritionist">Nutritionist</option>
                 </select>
-              </div> 
+              </div>
 
               <div>
                 <label className="block text-xs font-bold text-gray-600 mb-1.5 uppercase tracking-wider">
@@ -504,14 +544,20 @@ export default function AdminProfessionals() {
                 type="text"
                 placeholder="Auto-generated if left blank"
                 value={addForm.password}
+                maxLength={64}
                 onChange={(e) =>
                   setAddForm((p) => ({
                     ...p,
-                    password: e.target.value,
+                    password: e.target.value.slice(0, 64),
                   }))
                 }
                 className="w-full px-3.5 py-2.5 rounded-btn border border-gray-200 bg-white/70 text-sm text-gray-800 outline-none focus:border-brand focus:ring-2 focus:ring-brand-light/60 font-medium"
               />
+
+              <p className="text-xs text-gray-400 font-medium mt-1.5">
+                Password must be 8 to 64 characters with uppercase, lowercase,
+                number, and special character.
+              </p>
             </div>
 
             <p className="text-xs text-gray-400 font-medium">
@@ -581,4 +627,5 @@ export default function AdminProfessionals() {
       </div>
     </AdminLayout>
   );
-};
+}
+

@@ -1,11 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
-
+import { z } from "zod";
 import ProfessionalLayout from "../../components/professional/ProfessionalLayout";
-
 import StatusBadge from "../../components/admin/StatusBadge";
-
 import { httpClient } from "../../lib/http";
-
 import {
   Save,
   Plus,
@@ -16,16 +13,117 @@ import {
   Lock,
 } from "lucide-react";
 
+const professionalProfileSchema = z.object({
+  firstName: z
+    .string()
+    .trim()
+    .min(2, "First name must be at least 2 characters.")
+    .max(50, "First name must not exceed 50 characters.")
+    .regex(
+      /^[A-Za-z][A-Za-z\s'.-]*$/,
+      "First name contains invalid characters.",
+    ),
+
+  lastName: z
+    .string()
+    .trim()
+    .min(2, "Last name must be at least 2 characters.")
+    .max(50, "Last name must not exceed 50 characters.")
+    .regex(
+      /^[A-Za-z][A-Za-z\s'.-]*$/,
+      "Last name contains invalid characters.",
+    ),
+
+  specialization: z
+    .string()
+    .trim()
+    .min(2, "Specialization must be at least 2 characters.")
+    .max(100, "Specialization must not exceed 100 characters."),
+
+  experience: z
+    .union([z.string(), z.number()])
+    .transform((value) => String(value).trim())
+    .refine((value) => value !== "", {
+      message: "Years of experience is required.",
+    })
+    .refine((value) => /^\d+$/.test(value), {
+      message: "Years of experience must be a whole number.",
+    })
+    .refine((value) => Number(value) >= 0 && Number(value) <= 50, {
+      message: "Years of experience must be between 0 and 50.",
+    }),
+
+  sessionFee: z
+    .union([z.string(), z.number()])
+    .transform((value) => String(value).trim())
+    .refine((value) => value !== "", {
+      message: "Session fee is required.",
+    })
+    .refine((value) => /^\d+(\.\d+)?$/.test(value), {
+      message: "Session fee must be a valid number.",
+    })
+    .refine((value) => Number(value) >= 0, {
+      message: "Session fee cannot be negative.",
+    }),
+
+  bio: z
+    .string()
+    .trim()
+    .max(1000, "Bio must not exceed 1000 characters."),
+
+  profilePhoto: z.string(),
+
+  credentialDocs: z.array(z.any()),
+});
+
+const passwordSchema = z
+  .object({
+    currentPassword: z
+      .string()
+      .min(1, "Current password is required."),
+
+    newPassword: z
+      .string()
+      .min(1, "New password is required.")
+      .min(8, "New password must be at least 8 characters.")
+      .max(64, "New password must not exceed 64 characters.")
+      .refine((value) => !/\s/.test(value), {
+        message: "New password must not contain spaces.",
+      })
+      .refine((value) => /[a-z]/.test(value), {
+        message: "New password must contain a lowercase letter.",
+      })
+      .refine((value) => /[A-Z]/.test(value), {
+        message: "New password must contain an uppercase letter.",
+      })
+      .refine((value) => /[0-9]/.test(value), {
+        message: "New password must contain a number.",
+      })
+      .refine((value) => /[^A-Za-z0-9]/.test(value), {
+        message: "New password must contain a special character.",
+      }),
+
+    confirmPassword: z
+      .string()
+      .min(1, "Please confirm your new password."),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "New password and confirm password do not match.",
+    path: ["confirmPassword"],
+  })
+  .refine((data) => data.currentPassword !== data.newPassword, {
+    message: "New password must be different from the current password.",
+    path: ["newPassword"],
+  });
+
 export default function ProfessionalProfileSettings() {
   const [profile, setProfile] = useState(null);
-
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [uploadingDoc, setUploadingDoc] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
-
   const [photoPreview, setPhotoPreview] = useState("");
   const [newDocTitle, setNewDocTitle] = useState("");
 
@@ -114,12 +212,12 @@ export default function ProfessionalProfileSettings() {
 
     if (
       !["image/jpeg", "image/jpg", "image/png", "image/webp"].includes(
-        file.type
+        file.type,
       )
     ) {
       showToast(
         "Please select a valid image file (PNG, JPG, WEBP).",
-        "error"
+        "error",
       );
       return;
     }
@@ -155,7 +253,7 @@ export default function ProfessionalProfileSettings() {
     } catch (err) {
       showToast(
         err?.response?.data?.message || "Failed to upload photo.",
-        "error"
+        "error",
       );
     } finally {
       setUploadingPhoto(false);
@@ -187,7 +285,7 @@ export default function ProfessionalProfileSettings() {
     if (!allowed.includes(file.type)) {
       showToast(
         "Please select a valid document (PDF, PNG, JPG).",
-        "error"
+        "error",
       );
       return;
     }
@@ -227,12 +325,11 @@ export default function ProfessionalProfileSettings() {
       }));
 
       setNewDocTitle("");
-
       showToast("Certificate document uploaded from device!");
     } catch (err) {
       showToast(
         err?.response?.data?.message || "Failed to upload document.",
-        "error"
+        "error",
       );
     } finally {
       setUploadingDoc(false);
@@ -244,7 +341,7 @@ export default function ProfessionalProfileSettings() {
     setForm((prev) => ({
       ...prev,
       credentialDocs: prev.credentialDocs.filter(
-        (_, i) => i !== index
+        (_, i) => i !== index,
       ),
     }));
   };
@@ -254,7 +351,7 @@ export default function ProfessionalProfileSettings() {
 
     try {
       const res = await httpClient.post(
-        "/payment/stripe-connect/onboard"
+        "/payment/stripe-connect/onboard",
       );
 
       if (res.data?.url) {
@@ -264,7 +361,7 @@ export default function ProfessionalProfileSettings() {
       showToast(
         err?.response?.data?.message ||
           "Failed to initiate Stripe Connect setup.",
-        "error"
+        "error",
       );
     } finally {
       setActionLoading(false);
@@ -276,7 +373,7 @@ export default function ProfessionalProfileSettings() {
 
     try {
       const res = await httpClient.post(
-        "/payment/stripe-connect/dashboard-link"
+        "/payment/stripe-connect/dashboard-link",
       );
 
       if (res.data?.url) {
@@ -286,7 +383,7 @@ export default function ProfessionalProfileSettings() {
       showToast(
         err?.response?.data?.message ||
           "Failed to open Stripe Dashboard.",
-        "error"
+        "error",
       );
     } finally {
       setActionLoading(false);
@@ -296,12 +393,21 @@ export default function ProfessionalProfileSettings() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    const validation = professionalProfileSchema.safeParse(form);
+
+    if (!validation.success) {
+      showToast(validation.error.issues[0].message, "error");
+      return;
+    }
+
+    const validatedData = validation.data;
+
     setSaving(true);
 
     try {
       const res = await httpClient.put(
         "/professional/profile",
-        form
+        validatedData,
       );
 
       showToast("Profile details updated successfully!");
@@ -313,7 +419,7 @@ export default function ProfessionalProfileSettings() {
       showToast(
         err?.response?.data?.message ||
           "Failed to update profile.",
-        "error"
+        "error",
       );
     } finally {
       setSaving(false);
@@ -323,56 +429,26 @@ export default function ProfessionalProfileSettings() {
   const handleChangePassword = async (e) => {
     e.preventDefault();
 
-    if (
-      !passwordForm.currentPassword ||
-      !passwordForm.newPassword ||
-      !passwordForm.confirmPassword
-    ) {
-      showToast("Please fill in all password fields.", "error");
+    const validation = passwordSchema.safeParse(passwordForm);
+
+    if (!validation.success) {
+      showToast(validation.error.issues[0].message, "error");
       return;
     }
 
-    if (
-      passwordForm.newPassword !==
-      passwordForm.confirmPassword
-    ) {
-      showToast(
-        "New password and confirm password do not match.",
-        "error"
-      );
-      return;
-    }
-
-    if (passwordForm.newPassword.length < 6) {
-      showToast(
-        "New password must be at least 6 characters long.",
-        "error"
-      );
-      return;
-    }
-
-    if (
-      passwordForm.currentPassword ===
-      passwordForm.newPassword
-    ) {
-      showToast(
-        "New password must be different from the current password.",
-        "error"
-      );
-      return;
-    }
+    const validatedData = validation.data;
 
     setChangingPassword(true);
 
     try {
       const res = await httpClient.put(
         "/professional/change-password",
-        passwordForm
+        validatedData,
       );
 
       showToast(
         res.data?.message ||
-          "Password updated successfully!"
+          "Password updated successfully!",
       );
 
       setPasswordForm({
@@ -384,7 +460,7 @@ export default function ProfessionalProfileSettings() {
       showToast(
         err?.response?.data?.message ||
           "Failed to change password.",
-        "error"
+        "error",
       );
     } finally {
       setChangingPassword(false);
@@ -509,9 +585,7 @@ export default function ProfessionalProfileSettings() {
                       {profile?.payoutsEnabled ? (
                         <button
                           type="button"
-                          onClick={
-                            handleOpenStripeDashboard
-                          }
+                          onClick={handleOpenStripeDashboard}
                           disabled={actionLoading}
                           className="w-full rounded-btn border border-sky-200 bg-white px-4 py-2.5 text-xs font-bold text-sky-800 transition-all hover:bg-sky-50 disabled:cursor-not-allowed disabled:opacity-60"
                         >
@@ -886,7 +960,7 @@ export default function ProfessionalProfileSettings() {
                                 <Trash2 className="h-4 w-4" />
                               </button>
                             </div>
-                          )
+                          ),
                         )}
                       </div>
                     )}
@@ -971,9 +1045,10 @@ export default function ProfessionalProfileSettings() {
                       onChange={(e) =>
                         setPasswordForm((p) => ({
                           ...p,
-                          newPassword: e.target.value,
+                          newPassword: e.target.value.slice(0, 64),
                         }))
                       }
+                      maxLength={64}
                       placeholder="Enter new password"
                       autoComplete="new-password"
                       className="w-full rounded-btn border border-gray-200 bg-white/70 px-4 py-3 text-sm font-medium text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand-light/60"
@@ -991,9 +1066,10 @@ export default function ProfessionalProfileSettings() {
                       onChange={(e) =>
                         setPasswordForm((p) => ({
                           ...p,
-                          confirmPassword: e.target.value,
+                          confirmPassword: e.target.value.slice(0, 64),
                         }))
                       }
+                      maxLength={64}
                       placeholder="Confirm new password"
                       autoComplete="new-password"
                       className="w-full rounded-btn border border-gray-200 bg-white/70 px-4 py-3 text-sm font-medium text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand-light/60"
@@ -1003,8 +1079,9 @@ export default function ProfessionalProfileSettings() {
 
                 <div className="flex flex-col gap-4 border-t border-brand-light/40 pt-5 sm:flex-row sm:items-center sm:justify-between">
                   <p className="text-[11px] font-medium text-gray-400">
-                    Your new password must be at least 6
-                    characters long.
+                    New password must be 8–64 characters and
+                    include uppercase, lowercase, number, and
+                    special character.
                   </p>
 
                   <button
@@ -1029,3 +1106,4 @@ export default function ProfessionalProfileSettings() {
     </ProfessionalLayout>
   );
 }
+

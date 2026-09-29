@@ -1,8 +1,18 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { z } from "zod";
 import { httpClient } from "../../lib/http";
 import { toast } from "sonner";
 import posefit_logo from "../../assets/posefit_logo.png";
+
+const forgotPasswordSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .min(1, "Email is required.")
+    .max(254, "Email address is too long.")
+    .email("Please enter a valid email address."),
+});
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
@@ -12,12 +22,16 @@ const ForgotPassword = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const cleanEmail = email.trim().toLowerCase();
+    const validation = forgotPasswordSchema.safeParse({
+      email,
+    });
 
-    if (!cleanEmail) {
-      toast.error("Email is required");
+    if (!validation.success) {
+      toast.error(validation.error.issues[0].message);
       return;
     }
+
+    const cleanEmail = validation.data.email.toLowerCase();
 
     setLoading(true);
     setEmailSent(false);
@@ -54,7 +68,6 @@ const ForgotPassword = () => {
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-surface px-4 py-8 font-sans">
-
       <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-brand-light/50 blur-3xl" />
 
       <div className="pointer-events-none absolute -bottom-24 -right-24 h-80 w-80 rounded-full bg-accent-blue/60 blur-3xl" />
@@ -63,7 +76,6 @@ const ForgotPassword = () => {
 
       <div className="relative z-10 w-full max-w-md">
         <div className="rounded-card border border-brand-light/70 bg-surface/80 p-8 shadow-card-hover backdrop-blur-xl sm:p-10">
-
           <div className="mb-7 flex justify-center">
             <Link className="flex h-16 w-16 items-center justify-center rounded-card bg-white/70 p-2 shadow-card transition-transform duration-300 hover:-translate-y-1">
               <img
@@ -108,7 +120,6 @@ const ForgotPassword = () => {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
-
             <div>
               <label
                 htmlFor="email"
