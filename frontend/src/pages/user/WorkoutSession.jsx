@@ -59,9 +59,6 @@ const SAME_MESSAGE_COOLDOWN = 4000;
 const DIFFERENT_MESSAGE_COOLDOWN = 2500;
 const MIN_MESSAGE_LENGTH = 3;
 
-// The on-screen feedback text is also throttled (separately from voice),
-// so it does not flicker every ~50-90ms as raw frames arrive. A message
-// containing "counted" (a rep just completed) always shows immediately.
 const FEEDBACK_DISPLAY_MIN_GAP = 900;
 
 export default function WorkoutSession() {
@@ -101,9 +98,6 @@ export default function WorkoutSession() {
   const [progress, setProgress] = useState(0);
   const [feedback, setFeedback] = useState("Ready to start");
   const [warning, setWarning] = useState("");
-
-  // Debounced copies of feedback/warning, used only for the on-screen text
-  // box, so the message the user reads doesn't change every frame.
   const [displayFeedback, setDisplayFeedback] = useState("Ready to start");
   const [displayWarning, setDisplayWarning] = useState("");
   const feedbackDisplayRef = useRef({
@@ -142,10 +136,7 @@ export default function WorkoutSession() {
 
   useEffect(() => {
     if (isMuted) return;
-
-    // Warning and feedback are never both meaningful at once (the backend
-    // only fills "warning" when it's not already covered by "feedback"),
-    // so speaking just one of them at a time keeps voice guidance calm.
+    
     const msg = (warning || feedback || "").trim();
 
     if (BLOCKED_VOICE_MESSAGES.has(msg)) return;
@@ -226,11 +217,6 @@ export default function WorkoutSession() {
     };
   };
 
-  // Applies a new feedback/warning text to the on-screen box, but never
-  // sooner than FEEDBACK_DISPLAY_MIN_GAP after the last change - unless
-  // `isPriority` is set (used for "Rep counted!" so it always shows right
-  // away). This is what keeps the visible text calm even though the
-  // backend can send a new message every frame.
   const scheduleDisplayUpdate = (ref, setter, newText, isPriority) => {
     if (newText === ref.current.text) return;
 
@@ -315,11 +301,6 @@ export default function WorkoutSession() {
         const newFeedback = res.data.feedback || "Ready";
         const newWarning = res.data.warning || "";
         const isRepEvent = newFeedback.toLowerCase().includes("counted");
-
-        // Prefer the backend's exercise-aware progress_percent. Only if
-        // it's genuinely missing (older backend not yet redeployed) do we
-        // fall back to a rough angle-based guess, so the ring still shows
-        // *something* instead of staying invisible at 0%.
         const backendProgress = res.data.progress_percent;
         const fallbackProgress = Math.min(
           100,
@@ -615,11 +596,7 @@ export default function WorkoutSession() {
   };
 
   const absAngle = Math.abs(angle);
-
-  // Progress now comes straight from the backend (progress_percent), which
-  // already knows the correct target angle for each exercise (20° for side
-  // bend, etc). This is what makes the ring fill to 100% at the right spot
-  // instead of the old fixed "/90" guess.
+  
   const percentage = Math.min(100, Math.max(0, Math.round(progress)));
   const isPerfect = percentage >= 100 && !warning;
 
@@ -654,7 +631,7 @@ export default function WorkoutSession() {
             </button>
 
             <button
-              onClick={() => navigate("/posture-detection")}
+              onClick={() => navigate("/user/workout")}
               className="mt-4 text-xs font-semibold text-gray-400 transition-colors hover:text-brand-dark"
             >
               Back to exercises
