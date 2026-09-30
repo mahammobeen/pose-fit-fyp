@@ -1310,171 +1310,174 @@ export default function ProfessionalDetails() {
           </div>
         )}
 
-        <div className="mx-auto max-w-5xl space-y-6 px-4 sm:px-6 lg:px-8">
-          <div className="rounded-card border border-brand-light/50 bg-surface/85 p-5 shadow-card backdrop-blur-xl sm:p-8">
-            <div className="flex flex-wrap items-start justify-between gap-6">
-              <div className="flex items-start gap-5">
-                {profilePhoto ? (
-                  <img
-                    src={profilePhoto}
-                    alt={`${pro.firstName || ""} ${pro.lastName || ""}`}
-                    className="h-24 w-24 shrink-0 rounded-card border border-brand-light/60 object-cover shadow-sm"
-                    onError={(event) => {
-                      event.currentTarget.style.display =
-                        "none";
-                    }}
-                  />
-                ) : (
-                  <div
-                    className="flex h-24 w-24 shrink-0 items-center justify-center rounded-card text-3xl font-black text-white shadow-sm"
-                    style={{
-                      background:
-                        "linear-gradient(135deg, #53b889, #16845b)",
-                    }}
-                  >
-                    {pro.firstName
-                      ?.charAt(0)
-                      ?.toUpperCase() || "P"}
-                  </div>
-                )}
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+          <section className="rounded-card border border-brand-light/50 bg-surface/85 shadow-card backdrop-blur-xl">
+            <div className="p-6 sm:p-8">
+              <div className="flex flex-col gap-7 lg:flex-row lg:items-start lg:justify-between">
+                <div className="flex min-w-0 items-start gap-5">
+                  {profilePhoto ? (
+                    <img
+                      src={profilePhoto}
+                      alt={`${pro.firstName || ""} ${pro.lastName || ""}`}
+                      className="h-24 w-24 shrink-0 rounded-card border border-brand-light/60 object-cover shadow-sm sm:h-28 sm:w-28"
+                      onError={(event) => {
+                        event.currentTarget.style.display = "none";
+                      }}
+                    />
+                  ) : (
+                    <div
+                      className="flex h-24 w-24 shrink-0 items-center justify-center rounded-card text-3xl font-black text-white shadow-sm sm:h-28 sm:w-28"
+                      style={{
+                        background:
+                          "linear-gradient(135deg, #53b889, #16845b)",
+                      }}
+                    >
+                      {pro.firstName?.charAt(0)?.toUpperCase() || "P"}
+                    </div>
+                  )}
 
-                <div>
-                  <div className="flex flex-wrap items-center gap-3">
-                    <h1 className="text-2xl font-black tracking-tight text-gray-800">
-                      {pro.firstName} {pro.lastName}
-                    </h1>
+                  <div className="min-w-0 pt-1">
+                    <div className="flex flex-wrap items-center gap-2.5">
+                      <h1 className="text-2xl font-black tracking-tight text-gray-800 sm:text-3xl">
+                        {pro.firstName} {pro.lastName}
+                      </h1>
 
-                    <span className="flex items-center gap-1 rounded-full border border-brand-light bg-brand-light/30 px-3 py-1 text-xs font-bold text-brand-dark">
-                      <CheckCircle className="h-3.5 w-3.5 text-brand" />
-                      PoseFit Certified
-                    </span>
-                  </div>
+                      <span className="inline-flex items-center gap-1 rounded-full border border-brand-light bg-brand-light/30 px-2.5 py-1 text-[11px] font-bold text-brand-dark">
+                        <CheckCircle className="h-3.5 w-3.5 text-brand" />
+                        PoseFit Certified
+                      </span>
+                    </div>
 
-                  <p className="mt-1 text-sm font-bold text-gray-500">
-                    {pro.professionalType ||
-                      "Trainer"}{" "}
-                    •{" "}
-                    {pro.specialization ||
-                      "General Fitness"}
-                  </p>
+                    <p className="mt-1.5 text-sm font-semibold text-gray-500">
+                      {pro.professionalType || "Trainer"} •{" "}
+                      {pro.specialization || "General Fitness"}
+                    </p>
 
-                  <div className="mt-3 flex flex-wrap items-center gap-3">
-                    <div className="rounded-btn border border-brand-light/50 bg-brand-light/10 px-3.5 py-1.5 text-xs font-extrabold text-gray-800">
-                      {pro.rating?.count > 0 ? (
-                        <span>
-                          Rating:{" "}
-                          {Number(
-                            pro.rating?.average || 0,
-                          ).toFixed(1)}{" "}
-                          ({pro.rating.count})
+                    <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
+                      <span className="inline-flex items-center gap-1.5 font-semibold text-gray-700">
+                        <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                        {pro.rating?.count > 0
+                          ? `${Number(pro.rating?.average || 0).toFixed(1)}`
+                          : "New"}
+                        {pro.rating?.count > 0 && (
+                          <span className="font-normal text-gray-400">
+                            ({pro.rating.count}{" "}
+                            {pro.rating.count === 1 ? "review" : "reviews"})
+                          </span>
+                        )}
+                      </span>
+
+                      <span className="text-gray-300">•</span>
+
+                      <span className="font-semibold text-gray-700">
+                        Rs.{" "}
+                        {Number(pro.sessionFee || 0).toLocaleString()}
+                        <span className="font-normal text-gray-400">
+                          {" "}
+                          / session
                         </span>
-                      ) : (
-                        <span className="text-accent-orange-dark">
-                          New Professional
-                        </span>
+                      </span>
+
+                      {formatExperience(pro.experience) && (
+                        <>
+                          <span className="text-gray-300">•</span>
+                          <span className="font-semibold text-gray-700">
+                            {formatExperience(pro.experience)} experience
+                          </span>
+                        </>
                       )}
                     </div>
-
-                    <div className="rounded-btn border border-brand-light bg-brand-light/25 px-3.5 py-1.5 text-xs font-black text-brand-dark">
-                      Rs.{" "}
-                      {Number(
-                        pro.sessionFee || 0,
-                      ).toLocaleString()}{" "}
-                      / session
-                    </div>
-
-                    {formatExperience(
-                      pro.experience,
-                    ) && (
-                      <div className="rounded-btn border border-brand-light/50 bg-brand-light/10 px-3.5 py-1.5 text-xs font-extrabold text-gray-800">
-                        {formatExperience(
-                          pro.experience,
-                        )}{" "}
-                        Experience
-                      </div>
-                    )}
                   </div>
+                </div>
+
+                <div className="flex shrink-0 flex-wrap items-center gap-2.5 lg:pt-1">
+                  {myRating ? (
+                    <div className="flex items-center gap-1.5 rounded-btn border border-brand-light bg-brand-light/25 px-4 py-3 text-xs font-bold text-brand-dark">
+                      <Star className="h-4 w-4 fill-amber-400 text-amber-500" />
+                      You rated {Number(myRating.rating).toFixed(1)} ★
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setShowRatingModal(true)}
+                      className="flex items-center gap-2 rounded-btn border border-brand-light/60 bg-white/70 px-4 py-3 text-sm font-semibold text-gray-700 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-white hover:shadow-card"
+                    >
+                      <Star className="h-4 w-4 text-amber-400" />
+                      Rate Professional
+                    </button>
+                  )}
+
+                  <button
+                    onClick={openBooking}
+                    disabled={!pro.sessionFee || availability.length === 0}
+                    className="rounded-btn bg-gray-800 px-6 py-3 text-sm font-bold text-white shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:bg-gray-700 hover:shadow-card-hover disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Book a Session
+                  </button>
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-3">
-                {myRating ? (
-                  <div className="flex items-center gap-1.5 rounded-btn border border-brand-light bg-brand-light/25 px-4 py-3 text-xs font-black text-brand-dark shadow-sm">
-                    <Star className="h-4 w-4 fill-amber-400 text-amber-500" />
-                    You Rated:{" "}
-                    {Number(
-                      myRating.rating,
-                    ).toFixed(1)}{" "}
-                    ★
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setShowRatingModal(true)
-                    }
-                    className="flex items-center gap-2 rounded-btn border border-brand-light/60 bg-white/70 px-5 py-3.5 text-sm font-bold text-gray-700 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-white hover:shadow-card"
-                  >
-                    <Star className="h-4 w-4 text-amber-400" />
-                    Rate Professional
-                  </button>
-                )}
+              {pro.bio && (
+                <div className="mt-8 border-t border-brand-light/40 pt-6">
+                  <h2 className="text-xs font-extrabold uppercase tracking-wider text-gray-400">
+                    About
+                  </h2>
 
-                <button
-                  onClick={openBooking}
-                  disabled={
-                    !pro.sessionFee ||
-                    availability.length === 0
-                  }
-                  className="rounded-btn bg-gray-800 px-8 py-3.5 text-sm font-bold text-white shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:bg-gray-700 hover:shadow-card-hover disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  Book a Session
-                </button>
-              </div>
+                  <p className="mt-2 max-w-4xl text-sm leading-7 text-gray-600">
+                    {pro.bio}
+                  </p>
+                </div>
+              )}
             </div>
+          </section>
 
-            {pro.bio && (
-              <div className="mt-8 border-t border-brand-light/40 pt-6">
-                <h3 className="mb-2 text-xs font-extrabold uppercase tracking-wider text-gray-400">
-                  About & Philosophy
-                </h3>
+          <section className="mt-10">
+            <div className="mb-5 flex items-end justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-brand" />
+                  <h2 className="text-lg font-bold text-gray-800">
+                    Availability
+                  </h2>
+                </div>
 
-                <p className="text-sm font-medium leading-relaxed text-gray-700">
-                  {pro.bio}
+                <p className="mt-1 text-sm text-gray-500">
+                  Weekly schedule for upcoming sessions.
                 </p>
               </div>
-            )}
-          </div>
 
-          <div className="rounded-card border border-brand-light/50 bg-surface/85 p-6 shadow-card backdrop-blur-xl sm:p-8">
-            <h3 className="mb-4 flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-gray-400">
-              <Calendar className="h-4 w-4 text-brand-dark" />
-              Weekly Availability Schedule
-            </h3>
+              {availability.length > 0 && (
+                <span className="hidden text-xs font-semibold text-gray-400 sm:block">
+                  {availability.length}{" "}
+                  {availability.length === 1 ? "day" : "days"} available
+                </span>
+              )}
+            </div>
 
             {availability.length > 0 ? (
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {availability.map((item) => (
+              <div className="overflow-hidden rounded-card border border-brand-light/50 bg-surface/70 shadow-sm">
+                {availability.map((item, index) => (
                   <div
                     key={item.day}
-                    className="rounded-btn border border-brand-light/40 bg-brand-light/10 p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-brand-light hover:bg-surface hover:shadow-card"
+                    className={`flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center ${
+                      index !== availability.length - 1
+                        ? "border-b border-brand-light/30"
+                        : ""
+                    }`}
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-extrabold text-gray-800">
+                    <div className="w-28 shrink-0">
+                      <p className="text-sm font-bold text-gray-800">
                         {item.day}
-                      </span>
-
-                      <span className="rounded-full border border-brand-light bg-brand-light/30 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-brand-dark">
-                        Available
-                      </span>
+                      </p>
                     </div>
 
-                    <div className="mt-3 flex flex-wrap gap-1.5">
+                    <div className="flex flex-1 flex-wrap gap-x-5 gap-y-2">
                       {item.slots.map((slot) => (
                         <span
                           key={slot}
-                          className="rounded-btn border border-brand-light/40 bg-white/75 px-2.5 py-1 text-xs font-bold text-gray-700 shadow-sm"
+                          className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-600"
                         >
+                          <Clock className="h-3.5 w-3.5 text-brand" />
                           {slot}
                         </span>
                       ))}
@@ -1483,132 +1486,129 @@ export default function ProfessionalDetails() {
                 ))}
               </div>
             ) : (
-              <p className="text-xs font-medium text-gray-400">
+              <div className="rounded-card border border-gray-200 bg-surface/70 px-5 py-8 text-sm text-gray-500">
                 No availability schedule published yet.
-              </p>
+              </div>
             )}
-          </div>
+          </section>
 
-          <div className="rounded-card border border-brand-light/50 bg-surface/85 p-6 shadow-card backdrop-blur-xl sm:p-8">
-            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-brand-light/40 pb-5">
+          <section className="mt-10">
+            <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
               <div>
-                <h3 className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-gray-400">
-                  <Star className="h-4 w-4 text-amber-400" />
-                  Client Ratings
-                </h3>
+                <div className="flex items-center gap-2">
+                  <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                  <h2 className="text-lg font-bold text-gray-800">
+                    Client Reviews
+                  </h2>
+                </div>
 
-                <p className="mt-1 text-xl font-black text-gray-800">
-                  {pro.rating?.count > 0
-                    ? `${Number(
-                        pro.rating.average || 0,
-                      ).toFixed(1)} out of 5.0`
-                    : "No Ratings Yet"}
-                </p>
-              </div>
-
-                            <div className="flex items-center gap-3">
-                <p className="text-xs font-bold text-gray-500">
-                  {pro.rating?.count || 0} Total{" "}
-                  {pro.rating?.count === 1
-                    ? "Rating"
-                    : "Ratings"}
-                </p>
-
-                {myRating ? (
-                  <span className="inline-flex items-center gap-1 rounded-btn border border-brand-light bg-brand-light/25 px-3.5 py-2 text-xs font-bold text-brand-dark">
-                    <CheckCircle className="h-3.5 w-3.5 text-brand" />
-                    You Rated (
-                    {Number(
-                      myRating.rating,
-                    ).toFixed(1)}{" "}
-                    ★)
+                <div className="mt-1 flex items-center gap-2 text-sm">
+                  <span className="font-bold text-gray-800">
+                    {pro.rating?.count > 0
+                      ? Number(pro.rating.average || 0).toFixed(1)
+                      : "No ratings"}
                   </span>
-                ) : (
-                  <button
-                    onClick={() =>
-                      setShowRatingModal(true)
-                    }
-                    className="flex items-center gap-1.5 rounded-btn border border-brand-light bg-brand-light/25 px-4 py-2 text-xs font-bold text-brand-dark shadow-sm transition-all hover:bg-brand-light/40"
-                  >
-                    <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-500" />
-                    Rate Professional
-                  </button>
-                )}
+
+                  {pro.rating?.count > 0 && (
+                    <>
+                      <span className="text-gray-300">•</span>
+                      <span className="text-gray-500">
+                        {pro.rating.count}{" "}
+                        {pro.rating.count === 1 ? "rating" : "ratings"}
+                      </span>
+                    </>
+                  )}
+                </div>
               </div>
+
+              {myRating ? (
+                <span className="inline-flex items-center gap-1.5 rounded-btn border border-brand-light bg-brand-light/25 px-3.5 py-2 text-xs font-bold text-brand-dark">
+                  <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-500" />
+                  You rated {Number(myRating.rating).toFixed(1)} ★
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowRatingModal(true)}
+                  className="inline-flex items-center gap-1.5 rounded-btn border border-brand-light bg-brand-light/25 px-3.5 py-2 text-xs font-bold text-brand-dark transition-colors hover:bg-brand-light/40"
+                >
+                  <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-500" />
+                  Rate Professional
+                </button>
+              )}
             </div>
 
             {reviewsLoading ? (
-              <div className="flex h-36 items-center justify-center">
+              <div className="flex h-28 items-center justify-center">
                 <div className="h-7 w-7 animate-spin rounded-full border-4 border-brand-light border-t-brand" />
               </div>
             ) : proReviews.length === 0 ? (
-              <div className="py-10 text-center">
-                <p className="text-sm font-bold text-gray-700">
+              <div className="rounded-card border border-gray-200 bg-surface/70 px-5 py-10 text-center">
+                <p className="text-sm font-semibold text-gray-700">
                   No client ratings yet for this professional.
                 </p>
 
                 <p className="mt-1 text-xs text-gray-400">
-                  Ratings become available after scheduled client sessions have ended.
+                  Ratings become available after scheduled client sessions
+                  have ended.
                 </p>
               </div>
             ) : (
-              <div className="mt-6 divide-y divide-brand-light/30">
+              <div className="divide-y divide-brand-light/30 border-y border-brand-light/30">
                 {proReviews.map((review) => (
                   <div
                     key={review._id}
-                    className="py-4 first:pt-0 last:pb-0"
+                    className="flex flex-col gap-3 py-5 sm:flex-row sm:items-center sm:justify-between"
                   >
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-3">
-                        <div
-                          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-btn text-xs font-black text-white shadow-sm"
-                          style={{
-                            background:
-                              "linear-gradient(135deg, #53b889, #16845b)",
-                          }}
-                        >
-                          {review.user?.firstName?.[0]?.toUpperCase() ||
-                            "U"}
-                        </div>
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-btn text-xs font-black text-white shadow-sm"
+                        style={{
+                          background:
+                            "linear-gradient(135deg, #53b889, #16845b)",
+                        }}
+                      >
+                        {review.user?.firstName?.[0]?.toUpperCase() || "U"}
+                      </div>
 
-                                                <div>
-                          <p className="text-xs font-bold text-gray-800">
-                            {review.user
-                              ? `${review.user.firstName} ${review.user.lastName}`
-                              : "PoseFit User"}
+                      <div>
+                        <p className="text-sm font-semibold text-gray-800">
+                          {review.user
+                            ? `${review.user.firstName} ${review.user.lastName}`
+                            : "PoseFit User"}
+                        </p>
+
+                        {review.createdAt && (
+                          <p className="mt-0.5 text-xs text-gray-400">
+                            {new Date(review.createdAt).toLocaleDateString()}
                           </p>
-                        </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center">
+                        {[...Array(5)].map((_, i) => (
+                          <Star
+                            key={i}
+                            className={`h-4 w-4 ${
+                              i < review.rating
+                                ? "fill-amber-400 text-amber-400"
+                                : "fill-gray-100 text-gray-200"
+                            }`}
+                          />
+                        ))}
                       </div>
 
-                      <div className="flex items-center gap-2">
-                        <div className="flex text-sm">
-                          {[...Array(5)].map(
-                            (_, i) => (
-                              <span
-                                key={i}
-                                className={
-                                  i <
-                                  review.rating
-                                    ? "text-amber-400"
-                                    : "text-gray-200"
-                                }
-                              >
-                                ★
-                              </span>
-                            ),
-                          )}
-                        </div>
-
-                        <span className="text-xs font-black text-gray-800">
-                          {review.rating}.0
-                        </span>
-                      </div>
+                      <span className="text-xs font-bold text-gray-700">
+                        {review.rating}.0
+                      </span>
                     </div>
                   </div>
                 ))}
               </div>
             )}
-          </div>
+          </section>
         </div>
 
         {showBooking && (
@@ -2110,19 +2110,17 @@ export default function ProfessionalDetails() {
                               0,
                             )
                           }
-                          className="p-1 text-3xl transition-transform hover:scale-125 focus:outline-none"
+                          className="rounded-md p-1 transition-transform hover:scale-110 focus:outline-none"
                         >
-                          <span
-                            className={
+                          <Star
+                            className={`h-7 w-7 ${
                               star <=
                               (userHoverRating ||
                                 userRating)
-                                ? "text-amber-400 drop-shadow-sm"
-                                : "text-gray-200"
-                            }
-                          >
-                            ★
-                          </span>
+                                ? "fill-amber-400 text-amber-400"
+                                : "fill-gray-100 text-gray-200"
+                            }`}
+                          />
                         </button>
                       ),
                     )}
