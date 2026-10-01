@@ -1,50 +1,26 @@
 const mongoose = require("mongoose");
 
-// ============================================
-// MACROS SCHEMA
-// ============================================
-
 const macrosSchema = new mongoose.Schema(
   {
-    carbs: {
-      type: Number,
-      required: true,
-    },
-
-    protein: {
-      type: Number,
-      required: true,
-    },
-
-    fat: {
-      type: Number,
-      required: true,
-    },
+    carbs: { type: Number, required: true },
+    protein: { type: Number, required: true },
+    fat: { type: Number, required: true },
   },
-  {
-    _id: false,
-  },
+  { _id: false },
 );
-
-// ============================================
-// WATER INTAKE SCHEMA
-// ============================================
 
 const waterIntakeSchema = new mongoose.Schema(
   {
-    // Daily water in milliliters
     ml: {
       type: Number,
       required: true,
     },
 
-    // Daily water in liters
     liters: {
       type: Number,
       required: true,
     },
 
-    // Approximate 250ml glasses
     glasses: {
       type: Number,
       required: true,
@@ -53,18 +29,11 @@ const waterIntakeSchema = new mongoose.Schema(
   {
     _id: false,
   },
+  { _id: false },
 );
-
-// ============================================
-// USER METRICS SCHEMA
-// ============================================
 
 const UserMetricsSchema = new mongoose.Schema(
   {
-    // ------------------------------------------
-    // USER
-    // ------------------------------------------
-
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,
@@ -72,17 +41,12 @@ const UserMetricsSchema = new mongoose.Schema(
       ref: "User",
     },
 
-    // ------------------------------------------
-    // BASIC HEALTH INFORMATION
-    // ------------------------------------------
-
     weight: {
       type: Number,
       required: true,
       min: 1,
     },
 
-    // Height is stored in CENTIMETERS
     height: {
       type: Number,
       required: true,
@@ -101,10 +65,6 @@ const UserMetricsSchema = new mongoose.Schema(
       enum: ["male", "female"],
     },
 
-    // ------------------------------------------
-    // FITNESS INFORMATION
-    // ------------------------------------------
-
     goal: {
       type: String,
       required: true,
@@ -117,53 +77,47 @@ const UserMetricsSchema = new mongoose.Schema(
       enum: ["sedentary", "light", "moderate", "active", "very active"],
     },
 
-    // ------------------------------------------
-    // DIET PREFERENCES
-    // ------------------------------------------
+    bmiValue: {
+      type: Number,
+    },
 
-    dietPref: {
+    bmiCategory: {
       type: String,
-      required: true,
-      enum: ["veg", "non-veg"],
+      enum: ["Underweight", "Normal", "Overweight", "Obese", "Unknown"],
     },
 
-    diabetes: {
-      type: Boolean,
-      default: false,
-    },
+    bmr: { type: Number },
+    tdee: { type: Number },
+    goalCalories: { type: Number },
+    targetCalories: { type: Number },
 
-    allergiesNuts: {
-      type: Boolean,
-      default: false,
-    },
-
-    // ------------------------------------------
-    // BACKEND CALCULATED VALUES
-    // ------------------------------------------
-
-    bmi: {
-      type: Number,
-    },
-
-    bmr: {
-      type: Number,
-    },
-
-    tdee: {
-      type: Number,
-    },
+    protein: { type: Number },
+    carbs: { type: Number },
+    fats: { type: Number },
 
     goalCalories: {
+      type: Number,
+    },
+
+    targetCalories: {
+      type: Number,
+    },
+
+    protein: {
+      type: Number,
+    },
+
+    carbs: {
+      type: Number,
+    },
+
+    fats: {
       type: Number,
     },
 
     macros: {
       type: macrosSchema,
     },
-
-    // ------------------------------------------
-    // DAILY WATER INTAKE
-    // ------------------------------------------
 
     waterIntake: {
       type: waterIntakeSchema,

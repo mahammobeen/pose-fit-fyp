@@ -1,6 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
-// ==================== USER PAGES ====================
 import LandingPage from "../pages/user/LandingPage";
 import UserLogin from "../pages/user/UserLogin";
 import UserRegister from "../pages/user/UserRegister";
@@ -11,19 +10,18 @@ import DietPlan from "../pages/user/Dietplan";
 import PostureDetection from "../pages/user/Workout";
 import BrowseProfessionals from "../pages/user/BrowseProfessionals";
 import ProfessionalDetails from "../pages/user/ProfessionalDetails";
+import UserReviews from "../pages/user/UserReviews";
 
-// ==================== USER ROUTE ====================
 import UserPrivateRoute from "./user-private-route";
 
-// ==================== ADMIN PAGES ====================
 import AdminDashboard from "../pages/admin/AdminDashboard";
 import AdminUsers from "../pages/admin/AdminUsers";
 import AdminProfessionals from "../pages/admin/AdminProfessionals";
 import AdminProfessionalRequests from "../pages/admin/AdminProfessionalRequests";
 import AdminPayments from "../pages/admin/AdminPayments";
+import AdminReviews from "../pages/admin/AdminReviews";
 import AdminSettings from "../pages/admin/AdminSettings";
 
-// ==================== PROFESSIONAL PAGES ====================
 import ProfessionalDashboard from "../pages/professional/ProfessionalDashboard";
 import ProfessionalProfileSettings from "../pages/professional/ProfessionalProfileSettings";
 import ProfessionalBookings from "../pages/professional/ProfessionalBookings";
@@ -31,25 +29,18 @@ import ProfessionalAvailability from "../pages/professional/ProfessionalAvailabi
 import ProfessionalEarnings from "../pages/professional/ProfessionalEarnings";
 import CompleteProfessionalProfile from "../pages/professional/CompleteProfessionalProfile";
 
-// ==================== GENERAL PRIVATE ROUTE ====================
 import PrivateRoute from "./private-route";
 import ForgotPassword from "../pages/user/ForgotPassword";
 import ResetPassword from "../pages/user/ResetPassword";
 import WorkoutSession from "../pages/user/WorkoutSession";
+import GuestProfessionals from "../pages/user/GuestProfessional";
 
 const AppRoutes = () => {
   return (
     <BrowserRouter>
       <Routes>
-        {/* =====================================================
-            LANDING PAGE
-        ===================================================== */}
 
         <Route path="/" element={<LandingPage />} />
-
-        {/* =====================================================
-            USER AUTH
-        ===================================================== */}
 
         <Route path="/user/login" element={<UserLogin />} />
 
@@ -58,10 +49,7 @@ const AppRoutes = () => {
         <Route path="/forgot-password" element={<ForgotPassword />} />
 
         <Route path="/reset-password" element={<ResetPassword />} />
-
-        {/* =====================================================
-            USER PROTECTED ROUTES
-        ===================================================== */}
+        <Route path="/guest-professional" element={<GuestProfessionals />} />
 
         <Route
           path="/user/dashboard"
@@ -91,6 +79,15 @@ const AppRoutes = () => {
         />
 
         <Route
+          path="/user/review"
+          element={
+            <UserPrivateRoute>
+              <UserReviews />
+            </UserPrivateRoute>
+          }
+        />
+
+        <Route
           path="/user/workout"
           element={
             <UserPrivateRoute>
@@ -107,10 +104,6 @@ const AppRoutes = () => {
           }
         />
 
-        {/* =====================================================
-            BROWSE PROFESSIONALS
-        ===================================================== */}
-
         <Route
           path="/user/professionals"
           element={
@@ -119,10 +112,6 @@ const AppRoutes = () => {
             </UserPrivateRoute>
           }
         />
-
-        {/* =====================================================
-            PROFESSIONAL DETAILS
-        ===================================================== */}
 
         <Route
           path="/user/professionals/:id"
@@ -133,9 +122,14 @@ const AppRoutes = () => {
           }
         />
 
-        {/* =====================================================
-            ADMIN ROUTES
-        ===================================================== */}
+        <Route
+          path="/user/reviews"
+          element={
+            <UserPrivateRoute>
+              <UserReviews />
+            </UserPrivateRoute>
+          }
+        />
 
         <Route
           path="/admin/dashboard"
@@ -183,6 +177,15 @@ const AppRoutes = () => {
         />
 
         <Route
+          path="/admin/reviews"
+          element={
+            <PrivateRoute allowedRoles={["ADMIN"]}>
+              <AdminReviews />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
           path="/admin/settings"
           element={
             <PrivateRoute allowedRoles={["ADMIN"]}>
@@ -190,10 +193,6 @@ const AppRoutes = () => {
             </PrivateRoute>
           }
         />
-
-        {/* =====================================================
-            PROFESSIONAL ONBOARDING
-        ===================================================== */}
 
         <Route
           path="/professional/profile/complete"
@@ -203,10 +202,6 @@ const AppRoutes = () => {
             </PrivateRoute>
           }
         />
-
-        {/* =====================================================
-            PROFESSIONAL ROUTES
-        ===================================================== */}
 
         <Route
           path="/professional/dashboard"
@@ -252,10 +247,6 @@ const AppRoutes = () => {
             </PrivateRoute>
           }
         />
-
-        {/* =====================================================
-            FALLBACK
-        ===================================================== */}
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

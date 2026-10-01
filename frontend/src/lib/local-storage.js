@@ -12,13 +12,6 @@ export const deleteToken = () => {
   return localStorage.removeItem("pose-fit");
 };
 
-// export const getUser = () => {
-//   const token = localStorage.getItem("pose-fit");
-
-//   const data = jwtDecode(token);
-//   return data.userID._doc;
-// };
-
 export const getUser = () => {
   const token = getToken();
   if (!token) return null;
@@ -26,8 +19,6 @@ export const getUser = () => {
   try {
     const data = jwtDecode(token);
 
-    // Standardize user object structure
-    // Handling both backend structures: data.userID._doc (traditional) and data.userID/role (Google/New)
     if (data.userID?._doc) {
       return {
         ...data.userID._doc,

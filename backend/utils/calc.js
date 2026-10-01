@@ -1,8 +1,3 @@
-/**
- * Calculate BMI
- * weight = kg
- * heightCm = cm
- */
 function calculateBMI(weight, heightCm) {
   const heightM = heightCm / 100;
 
@@ -13,9 +8,6 @@ function calculateBMI(weight, heightCm) {
   return +(weight / (heightM * heightM)).toFixed(2);
 }
 
-/**
- * Mifflin-St Jeor BMR
- */
 function calculateBMR(weight, heightCm, age, gender) {
   const normalizedGender = gender.toLowerCase();
 
@@ -26,9 +18,6 @@ function calculateBMR(weight, heightCm, age, gender) {
   return +(10 * weight + 6.25 * heightCm - 5 * age - 161).toFixed(2);
 }
 
-/**
- * TDEE
- */
 function calculateTDEE(bmr, activityLevel) {
   const factors = {
     sedentary: 1.2,
@@ -45,13 +34,6 @@ function calculateTDEE(bmr, activityLevel) {
   return +(bmr * multiplier).toFixed(2);
 }
 
-/**
- * Goal Calories
- *
- * lose weight     -> 500 kcal deficit
- * gain weight     -> 500 kcal surplus
- * maintain weight -> same as TDEE
- */
 function calculateGoalCalories(tdee, goal) {
   const normalizedGoal = goal.toLowerCase();
 
@@ -66,51 +48,45 @@ function calculateGoalCalories(tdee, goal) {
   return +tdee.toFixed(2);
 }
 
-/**
- * Daily Macros
- *
- * 40% carbs
- * 30% protein
- * 30% fat
- */
-function calculateMacros(calories) {
+function calculateMacros(calories, goal = "") {
+  const normalizedGoal = String(goal || "")
+    .trim()
+    .toLowerCase();
+
+  let proteinRatio = 0.3;
+  let carbsRatio = 0.4;
+  let fatRatio = 0.3;
+
+  if (normalizedGoal === "lose weight") {
+    proteinRatio = 0.3;
+    carbsRatio = 0.4;
+    fatRatio = 0.3;
+  } else if (normalizedGoal === "gain weight") {
+    proteinRatio = 0.25;
+    carbsRatio = 0.5;
+    fatRatio = 0.25;
+  } else if (normalizedGoal === "maintain weight") {
+    proteinRatio = 0.25;
+    carbsRatio = 0.45;
+    fatRatio = 0.3;
+  }
+
   return {
-    carbs: +((calories * 0.4) / 4).toFixed(2),
-    protein: +((calories * 0.3) / 4).toFixed(2),
-    fat: +((calories * 0.3) / 9).toFixed(2),
+    carbs: +((calories * carbsRatio) / 4).toFixed(2),
+    protein: +((calories * proteinRatio) / 4).toFixed(2),
+    fat: +((calories * fatRatio) / 9).toFixed(2),
   };
 }
 
-/**
- * =========================================================
- * DAILY WATER INTAKE
- * =========================================================
- *
- * Base calculation:
- *
- * weight × 35 ml
- *
- * Then activity level adjustment:
- *
- * sedentary    -> +0 ml
- * light        -> +250 ml
- * moderate     -> +500 ml
- * active       -> +750 ml
- * very active  -> +1000 ml
- *
- * Glass size = 250 ml
- *
- * Example:
- *
- * weight = 70 kg
- * activity = moderate
- *
- * 70 × 35 = 2450 ml
- * + 500 = 2950 ml
- *
- * 2950 / 250 = 11.8
- * ≈ 12 glasses
- */
+function getBMICategory(bmi) {
+  const num = Number(bmi);
+  if (!Number.isFinite(num) || num <= 0) return "Unknown";
+  if (num < 18.5) return "Underweight";
+  if (num < 25) return "Normal";
+  if (num < 30) return "Overweight";
+  return "Obese";
+}
+
 function calculateWaterIntake(weight, activityLevel) {
   const baseWater = Number(weight) * 35;
 
@@ -145,5 +121,6 @@ module.exports = {
   calculateTDEE,
   calculateGoalCalories,
   calculateMacros,
+  getBMICategory,
   calculateWaterIntake,
 };

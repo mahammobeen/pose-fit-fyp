@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+
 import {
-  Search,
   Star,
   Award,
   Calendar,
@@ -9,25 +9,37 @@ import {
   ShieldCheck,
   UserRound,
 } from "lucide-react";
+
 import { useNavigate } from "react-router-dom";
+
 import { toast } from "sonner";
 
 import { httpClient } from "../../lib/http";
+
 import UserLayout from "../../components/user/UserLayout";
+
+function formatExperience(years) {
+  const n = Number(years);
+
+  if (
+    years === undefined ||
+    years === null ||
+    years === "" ||
+    isNaN(n) ||
+    n < 0
+  ) {
+    return "Not specified";
+  }
+
+  return n === 1 ? "1 Year" : `${n} Years`;
+}
 
 export default function PublicProfessionals() {
   const navigate = useNavigate();
 
   const [professionals, setProfessionals] = useState([]);
-  const [filteredProfessionals, setFilteredProfessionals] = useState([]);
-
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("all");
-
-  // =====================================================
-  // GET PUBLIC PROFESSIONALS
-  // =====================================================
+  const [selectedType, setSelectedType] = useState("All");
 
   const fetchPublicProfessionals = useCallback(async () => {
     try {
@@ -35,10 +47,7 @@ export default function PublicProfessionals() {
 
       const { data } = await httpClient.get("/user/public-professionals");
 
-      const professionalsData = data?.professionals || [];
-
-      setProfessionals(professionalsData);
-      setFilteredProfessionals(professionalsData);
+      setProfessionals(data?.professionals || []);
     } catch (error) {
       console.error("Fetch professionals error:", error);
 
@@ -53,57 +62,15 @@ export default function PublicProfessionals() {
     }
   }, []);
 
-  // =====================================================
-  // FETCH ON LOAD
-  // =====================================================
-
   useEffect(() => {
     fetchPublicProfessionals();
   }, [fetchPublicProfessionals]);
-
-  // =====================================================
-  // SEARCH + FILTER
-  // =====================================================
-
-  useEffect(() => {
-    let result = [...professionals];
-
-    // Filter by professional type
-    if (filter !== "all") {
-      result = result.filter(
-        (professional) =>
-          professional.professionalType?.toLowerCase() === filter.toLowerCase(),
-      );
-    }
-
-    // Search
-    if (search.trim()) {
-      const searchValue = search.trim().toLowerCase();
-
-      result = result.filter((professional) => {
-        const fullName = `${professional.firstName || ""} ${
-          professional.lastName || ""
-        }`.toLowerCase();
-
-        const type = professional.professionalType?.toLowerCase() || "";
-
-        return fullName.includes(searchValue) || type.includes(searchValue);
-      });
-    }
-
-    setFilteredProfessionals(result);
-  }, [professionals, search, filter]);
-
-  // =====================================================
-  // PROFILE IMAGE
-  // =====================================================
 
   const getProfileImage = (profilePhoto) => {
     if (!profilePhoto) {
       return null;
     }
 
-    // Full URL
     if (
       profilePhoto.startsWith("http://") ||
       profilePhoto.startsWith("https://")
@@ -114,7 +81,6 @@ export default function PublicProfessionals() {
     const baseURL =
       import.meta.env.VITE_BASE_URL || "http://localhost:4000/api";
 
-    // Remove /api from backend URL
     const backendURL = baseURL.replace(/\/api\/?$/, "");
 
     if (profilePhoto.startsWith("/")) {
@@ -124,25 +90,18 @@ export default function PublicProfessionals() {
     return `${backendURL}/${profilePhoto}`;
   };
 
-  // =====================================================
-  // IMAGE ERROR
-  // =====================================================
-
   const handleImageError = (event) => {
     event.currentTarget.style.display = "none";
 
-    const fallback = event.currentTarget.parentElement?.querySelector(
-      ".profile-image-fallback",
-    );
+    const fallback =
+      event.currentTarget.parentElement?.querySelector(
+        ".profile-image-fallback",
+      );
 
     if (fallback) {
       fallback.classList.remove("hidden");
     }
   };
-
-  // =====================================================
-  // VIEW PROFILE
-  // =====================================================
 
   const handleViewProfile = (id) => {
     if (!id) {
@@ -153,167 +112,174 @@ export default function PublicProfessionals() {
     navigate(`/user/professionals/${id}`);
   };
 
-  // =====================================================
-  // LOADING
-  // =====================================================
+  const filteredProfessionals = useMemo(() => {
+    if (selectedType === "All") {
+      return professionals;
+    }
+
+    return professionals.filter((professional) => {
+      const type = String(
+        professional.professionalType || "",
+      ).trim().toLowerCase();
+
+      if (selectedType === "Trainer") {
+        return type === "trainer" || type === "fitness trainer";
+      }
+
+      if (selectedType === "Nutritionist") {
+        return (
+          type === "nutritionist" ||
+          type === "nutritionist/dietitian" ||
+          type === "dietitian"
+        );
+      }
+
+      return true;
+    });
+  }, [professionals, selectedType]);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-stone-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+      <UserLayout>
+        <div className="flex min-h-full items-center justify-center bg-transparent p-6">
+          <div className="text-center">
+            <div className="mx-auto mb-4 h-9 w-9 animate-spin rounded-full border-4 border-brand border-t-transparent" />
 
-          <p className="text-gray-500 font-medium">
-            Loading certified professionals...
-          </p>
+            <p className="text-sm font-medium text-gray-500">
+              Loading certified professionals...
+            </p>
+          </div>
         </div>
-      </div>
+      </UserLayout>
     );
   }
 
-  // =====================================================
-  // UI
-  // =====================================================
-
   return (
     <UserLayout>
-      <div className="min-h-screen bg-stone-50">
-        {/* =====================================================
-            HEADER
-        ===================================================== */}
+      <div className="min-h-full bg-transparent font-sans">
+        <section className="border-b border-gray-200 bg-surface/60 backdrop-blur-xl">
+          <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+            <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <div className="mb-3 flex items-center gap-2">
+                  <ShieldCheck className="h-4 w-4 text-brand" />
 
-        <section className="bg-white border-b border-stone-200">
-          <div className="max-w-7xl mx-auto px-6 py-12">
-            <div className="max-w-3xl">
-              <div className="flex items-center gap-2 mb-4">
-                <ShieldCheck className="w-5 h-5 text-emerald-600" />
+                  <span className="text-xs font-bold uppercase tracking-wider text-gray-500">
+                    Certified Professionals
+                  </span>
+                </div>
 
-                <span className="text-sm font-bold text-emerald-600 uppercase tracking-wide">
-                  Certified Professionals
-                </span>
+                <h1 className="text-2xl font-bold tracking-tight text-gray-800 sm:text-3xl">
+                  Find a Fitness Professional
+                </h1>
+
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-gray-500 sm:text-base">
+                  Explore certified professionals and find the right person
+                  for your fitness and wellness goals.
+                </p>
               </div>
 
-              <h1 className="text-4xl md:text-5xl font-black text-gray-900">
-                Find Your Perfect
-                <span className="text-emerald-600"> Fitness Professional</span>
-              </h1>
-
-              <p className="mt-4 text-gray-500 text-lg">
-                Connect with certified trainers and fitness professionals who
-                can help you achieve your goals.
-              </p>
-            </div>
-
-            {/* =================================================
-                SEARCH + FILTER
-            ================================================= */}
-
-            <div className="mt-8 flex flex-col md:flex-row gap-4">
-              {/* Search */}
-              <div className="relative flex-1">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search professionals..."
-                  className="w-full pl-12 pr-4 py-4 bg-stone-50 border border-stone-200 rounded-2xl outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
-                />
+              <div className="shrink-0 text-sm text-gray-500">
+                <span className="font-semibold text-gray-800">
+                  {filteredProfessionals.length}
+                </span>{" "}
+                professional
+                {filteredProfessionals.length !== 1 ? "s" : ""} available
               </div>
-
-              {/* Filter */}
-              <select
-                value={filter}
-                onChange={(e) => setFilter(e.target.value)}
-                className="px-5 py-4 bg-stone-50 border border-stone-200 rounded-2xl outline-none focus:border-emerald-500"
-              >
-                <option value="all">All Professionals</option>
-
-                <option value="trainer">Trainer</option>
-
-                <option value="coach">Coach</option>
-              </select>
             </div>
           </div>
         </section>
 
-        {/* =====================================================
-            PROFESSIONALS
-        ===================================================== */}
-
-        <main className="max-w-7xl mx-auto px-6 py-10">
-          {/* Results Header */}
-
-          <div className="flex items-center justify-between mb-6">
+        <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
+          <div className="mb-7 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="text-2xl font-black text-gray-900">
-                Certified Professionals
+              <h2 className="text-sm font-bold text-gray-800">
+                Browse by Professional Type
               </h2>
 
-              <p className="text-sm text-gray-500 mt-1">
-                {filteredProfessionals.length} professional
-                {filteredProfessionals.length !== 1 ? "s" : ""} available
+              <p className="mt-1 text-xs text-gray-500">
+                Choose a category to view matching professionals.
               </p>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {["All", "Trainer", "Nutritionist"].map((type) => (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => setSelectedType(type)}
+                  className={`rounded-btn border px-4 py-2.5 text-xs font-bold transition-all ${
+                    selectedType === type
+                      ? "border-brand-dark bg-brand-dark text-white shadow-card"
+                      : "border-brand-light/50 bg-surface/70 text-gray-700 hover:border-brand hover:bg-brand-light/20"
+                  }`}
+                >
+                  {type === "All"
+                    ? "All Professionals"
+                    : `${type}s`}
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* =================================================
-              EMPTY STATE
-          ================================================= */}
-
           {filteredProfessionals.length === 0 ? (
-            <div className="bg-white rounded-3xl border border-stone-200 p-16 text-center">
-              <UserRound className="w-14 h-14 text-gray-300 mx-auto mb-4" />
+            <div className="rounded-card border border-gray-200 bg-surface/70 px-6 py-16 text-center shadow-sm">
+              <UserRound className="mx-auto mb-4 h-12 w-12 text-gray-300" />
 
-              <h3 className="text-xl font-bold text-gray-900">
+              <h3 className="text-lg font-bold text-gray-800">
                 No professionals found
               </h3>
 
-              <p className="text-gray-500 mt-2">
-                Try changing your search or filter.
+              <p className="mx-auto mt-2 max-w-md text-sm text-gray-500">
+                {selectedType === "All"
+                  ? "There are currently no certified professionals available."
+                  : `There are currently no certified ${selectedType.toLowerCase()}s available.`}
               </p>
+
+              {selectedType !== "All" && professionals.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedType("All")}
+                  className="mt-5 rounded-btn bg-gray-800 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-gray-700"
+                >
+                  View All Professionals
+                </button>
+              )}
             </div>
           ) : (
-            /* =================================================
-               PROFESSIONAL CARDS
-            ================================================= */
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
               {filteredProfessionals.map((professional) => {
-                const imageUrl = getProfileImage(professional.profilePhoto);
+                const imageUrl = getProfileImage(
+                  professional.profilePhoto,
+                );
 
-                const initials = `${professional.firstName?.[0] || ""}${
-                  professional.lastName?.[0] || ""
-                }`.toUpperCase();
+                const initials =
+                  `${professional.firstName?.[0] || ""}${
+                    professional.lastName?.[0] || ""
+                  }`.toUpperCase();
+
+                const rating = professional.rating?.average
+                  ? Number(professional.rating.average).toFixed(1)
+                  : "5.0";
+
+                const reviewCount =
+                  professional.rating?.count || 0;
 
                 return (
-                  <div
+                  <article
                     key={professional._id}
-                    className="bg-white rounded-3xl border border-stone-200 overflow-hidden hover:shadow-lg transition-shadow"
+                    className="group flex h-full flex-col overflow-hidden rounded-card border border-brand-light/50 bg-surface/80 shadow-card backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-brand-light hover:shadow-card-hover"
                   >
-                    {/* =================================================
-                        CARD CONTENT
-                    ================================================= */}
-
                     <div className="p-6">
-                      {/* Profile Header */}
-
-                      <div className="flex items-start gap-4">
-                        {/* Profile Image */}
-
-                        <div className="relative w-16 h-16 shrink-0">
-                          {/* Fallback */}
-
+                      <div className="flex items-center gap-4">
+                        <div className="relative h-16 w-16 shrink-0">
                           <div
                             className={`profile-image-fallback ${
                               imageUrl ? "hidden" : ""
-                            } w-16 h-16 rounded-2xl flex items-center justify-center bg-emerald-100 text-emerald-700 font-black text-xl`}
+                            } flex h-16 w-16 items-center justify-center rounded-card bg-brand-light/40 text-xl font-black text-brand-dark`}
                           >
                             {initials || "U"}
                           </div>
-
-                          {/* Image */}
 
                           {imageUrl && (
                             <img
@@ -321,100 +287,91 @@ export default function PublicProfessionals() {
                               alt={`${professional.firstName || ""} ${
                                 professional.lastName || ""
                               }`}
-                              className="w-16 h-16 rounded-2xl object-cover border border-stone-200 shadow-sm"
+                              className="h-16 w-16 rounded-card border border-brand-light/60 object-cover shadow-sm"
                               onError={handleImageError}
                             />
                           )}
                         </div>
 
-                        {/* Name */}
-
                         <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
-                            <h3 className="font-black text-gray-900 truncate">
-                              {professional.firstName} {professional.lastName}
-                            </h3>
+                          <div className="flex items-center gap-1.5">
+                            <h2 className="truncate text-base font-bold text-gray-800">
+                              {professional.firstName}{" "}
+                              {professional.lastName}
+                            </h2>
 
                             {professional.isVerified && (
-                              <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
+                              <ShieldCheck className="h-4 w-4 shrink-0 text-brand" />
                             )}
                           </div>
 
-                          <p className="text-sm text-emerald-600 font-semibold mt-1">
+                          <p className="mt-1 truncate text-sm text-gray-500">
                             {professional.professionalType ||
                               "Fitness Professional"}
                           </p>
+
+                          <div className="mt-2 flex items-center gap-1.5">
+                            <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
+
+                            <span className="text-sm font-semibold text-gray-800">
+                              {rating}
+                            </span>
+
+                            <span className="text-xs text-gray-400">
+                              ({reviewCount}{" "}
+                              {reviewCount === 1
+                                ? "review"
+                                : "reviews"}
+                              )
+                            </span>
+                          </div>
                         </div>
                       </div>
 
-                      {/* =================================================
-                          RATING
-                      ================================================= */}
+                      <div className="mt-7 grid grid-cols-2 rounded-btn border-y border-gray-100 py-4">
+                        <div className="flex items-center gap-3 border-r border-gray-100 pr-4">
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-btn bg-brand-light/30">
+                            <Award className="h-4 w-4 text-brand-dark" />
+                          </div>
 
-                      <div className="flex items-center gap-2 mt-5">
-                        <div className="flex items-center gap-1">
-                          <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-
-                          <span className="font-bold text-gray-900">
-                            {professional.rating?.average
-                              ? Number(professional.rating.average).toFixed(1)
-                              : "5.0"}
-                          </span>
-                        </div>
-
-                        <span className="text-gray-400 text-sm">
-                          ({professional.rating?.count || 0} reviews)
-                        </span>
-                      </div>
-
-                      {/* =================================================
-                          INFO
-                      ================================================= */}
-
-                      <div className="grid grid-cols-2 gap-3 mt-5">
-                        {/* Experience */}
-
-                        <div className="bg-stone-50 rounded-2xl p-3">
-                          <div className="flex items-center gap-2 text-gray-400">
-                            <Award className="w-4 h-4" />
-
-                            <span className="text-xs font-semibold">
+                          <div className="min-w-0">
+                            <p className="text-[11px] font-medium uppercase tracking-wide text-gray-400">
                               Experience
-                            </span>
-                          </div>
+                            </p>
 
-                          <p className="font-bold text-gray-900 mt-1">
-                            {professional.experience || "Professional"}
-                          </p>
+                            <p className="mt-0.5 truncate text-sm font-semibold text-gray-800">
+                              {formatExperience(
+                                professional.experience,
+                              )}
+                            </p>
+                          </div>
                         </div>
 
-                        {/* Session */}
-
-                        <div className="bg-stone-50 rounded-2xl p-3">
-                          <div className="flex items-center gap-2 text-gray-400">
-                            <Clock className="w-4 h-4" />
-
-                            <span className="text-xs font-semibold">
-                              Session
-                            </span>
+                        <div className="flex items-center gap-3 pl-4">
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-btn bg-brand-light/30">
+                            <Clock className="h-4 w-4 text-brand-dark" />
                           </div>
 
-                          <p className="font-bold text-gray-900 mt-1">
-                            {professional.sessionFee
-                              ? `$${professional.sessionFee}`
-                              : "Free"}
-                          </p>
+                          <div className="min-w-0">
+                            <p className="text-[11px] font-medium uppercase tracking-wide text-gray-400">
+                              Session Fee
+                            </p>
+
+                            <p className="mt-0.5 truncate text-sm font-semibold text-gray-800">
+                              {professional.sessionFee
+                                ? `Rs. ${Number(
+                                    professional.sessionFee,
+                                  ).toLocaleString()}`
+                                : "Free"}
+                            </p>
+                          </div>
                         </div>
                       </div>
 
-                      {/* =================================================
-                          AVAILABILITY
-                      ================================================= */}
+                      <div className="mt-5 flex items-center gap-2">
+                        <Calendar className="h-4 w-4 shrink-0 text-brand" />
 
-                      <div className="flex items-center gap-2 mt-5 text-sm text-gray-500">
-                        <Calendar className="w-4 h-4 text-emerald-500" />
-
-                        <span>
+                        <span className="text-sm text-gray-500">
                           {professional.availability?.length
                             ? "Available for sessions"
                             : "Availability not set"}
@@ -422,20 +379,19 @@ export default function PublicProfessionals() {
                       </div>
                     </div>
 
-                    {/* =================================================
-                        VIEW PROFILE BUTTON
-                    ================================================= */}
-
-                    <div className="border-t border-stone-100 p-4">
+                    <div className="mt-auto border-t border-brand-light/40 p-4">
                       <button
-                        onClick={() => handleViewProfile(professional._id)}
-                        className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-2xl bg-gray-900 text-white font-bold text-sm hover:bg-emerald-600 transition-colors"
+                        onClick={() =>
+                          handleViewProfile(professional._id)
+                        }
+                        className="flex w-full items-center justify-center gap-2 rounded-btn bg-gray-800 px-4 py-3 text-sm font-bold text-white shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:bg-gray-700 hover:shadow-card-hover"
                       >
                         View Profile
-                        <ChevronRight className="w-4 h-4" />
+
+                        <ChevronRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
                       </button>
                     </div>
-                  </div>
+                  </article>
                 );
               })}
             </div>
@@ -445,3 +401,4 @@ export default function PublicProfessionals() {
     </UserLayout>
   );
 }
+

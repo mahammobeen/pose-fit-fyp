@@ -1,27 +1,37 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { z } from "zod";
 import { httpClient } from "../../lib/http";
 import { toast } from "sonner";
+import posefit_logo from "../../assets/posefit_logo.png";
+
+const forgotPasswordSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .min(1, "Email is required.")
+    .max(254, "Email address is too long.")
+    .email("Please enter a valid email address."),
+});
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
 
-  // =========================================================
-  // SUBMIT FORGOT PASSWORD
-  // =========================================================
-
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const cleanEmail = email.trim().toLowerCase();
+    const validation = forgotPasswordSchema.safeParse({
+      email,
+    });
 
-    // Validation
-    if (!cleanEmail) {
-      toast.error("Email is required");
+    if (!validation.success) {
+      toast.error(validation.error.issues[0].message);
       return;
     }
+
+    const cleanEmail = validation.data.email.toLowerCase();
 
     setLoading(true);
     setEmailSent(false);
@@ -45,7 +55,6 @@ const ForgotPassword = () => {
       console.error("Status:", error?.response?.status);
       console.error("Backend error:", error?.response?.data);
 
-      // Backend ka actual message user ko show hoga
       const errorMessage =
         error?.response?.data?.message ||
         error?.response?.data?.error ||
@@ -57,90 +66,117 @@ const ForgotPassword = () => {
     }
   };
 
-  // =========================================================
-  // UI
-  // =========================================================
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-stone-50 px-4">
-      <div className="w-full max-w-md bg-white border border-stone-200 rounded-2xl p-8 shadow-sm">
-        {/* ===================================================
-            HEADER
-        =================================================== */}
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-surface px-4 py-8 font-sans">
+      <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-brand-light/50 blur-3xl" />
 
-        <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold text-stone-800">
-            Forgot Password?
-          </h1>
+      <div className="pointer-events-none absolute -bottom-24 -right-24 h-80 w-80 rounded-full bg-accent-blue/60 blur-3xl" />
 
-          <p className="text-sm text-stone-500 mt-2">
-            Enter your email address and we will send you a password reset link.
-          </p>
-        </div>
+      <div className="pointer-events-none absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent-orange/20 blur-3xl" />
 
-        {/* ===================================================
-            SUCCESS MESSAGE
-        =================================================== */}
+      <div className="relative z-10 w-full max-w-md">
+        <div className="rounded-card border border-brand-light/70 bg-surface/80 p-8 shadow-card-hover backdrop-blur-xl sm:p-10">
+          <div className="mb-7 flex justify-center">
+            <Link className="flex h-16 w-16 items-center justify-center rounded-card bg-white/70 p-2 shadow-card transition-transform duration-300 hover:-translate-y-1">
+              <img
+                src={posefit_logo}
+                alt="PoseFit Logo"
+                className="h-full w-full object-contain"
+              />
+            </Link>
+          </div>
 
-        {emailSent && (
-          <div className="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-4">
-            <p className="text-sm font-semibold text-emerald-700">
-              Email sent successfully!
-            </p>
+          <div className="mb-8 text-center">
+            <h1 className="text-3xl font-extrabold tracking-tight text-gray-800">
+              Forgot Password?
+            </h1>
 
-            <p className="text-sm text-emerald-600 mt-1">
-              Please check your email inbox for the password reset link. Also
-              check your spam or junk folder.
+            <p className="mt-2 text-sm leading-relaxed text-gray-500">
+              Enter your email address and we'll send you a password reset link.
             </p>
           </div>
-        )}
 
-        {/* ===================================================
-            FORM
-        =================================================== */}
+          {emailSent && (
+            <div className="mb-5 rounded-btn border border-brand-light bg-brand-light/30 px-4 py-4">
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand text-white">
+                  <span className="material-symbols-outlined text-[16px]">
+                    check
+                  </span>
+                </div>
 
-        <form onSubmit={handleSubmit}>
-          <label className="block text-sm font-semibold text-stone-700 mb-2">
-            Email Address
-          </label>
+                <div>
+                  <p className="text-sm font-bold text-brand-dark">
+                    Email sent successfully!
+                  </p>
 
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => {
-              setEmail(e.target.value);
-              setEmailSent(false);
-            }}
-            placeholder="Enter your email address"
-            disabled={loading}
-            className="w-full px-4 py-3 rounded-xl border border-stone-300 text-stone-800 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 disabled:bg-stone-100"
-          />
+                  <p className="mt-1 text-xs leading-relaxed text-brand-dark/80">
+                    Please check your email inbox for the password reset link.
+                    Also check your spam or junk folder.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
-          {/* =================================================
-              SUBMIT BUTTON
-          ================================================= */}
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <label
+                htmlFor="email"
+                className="mb-2 block text-sm font-semibold text-gray-700"
+              >
+                Email Address
+              </label>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full mt-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? "Sending..." : "Send Reset Link"}
-          </button>
-        </form>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setEmailSent(false);
+                }}
+                placeholder="Enter your email"
+                autoComplete="email"
+                disabled={loading}
+                className="w-full rounded-btn border border-gray-200 bg-white/70 px-4 py-3.5 text-sm text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand-light/60 disabled:cursor-not-allowed disabled:opacity-60"
+              />
+            </div>
 
-        {/* ===================================================
-            LOGIN LINK
-        =================================================== */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full rounded-btn bg-gray-800 px-6 py-3.5 text-sm font-bold text-white shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:bg-gray-700 hover:shadow-card-hover disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                  Sending...
+                </span>
+              ) : (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="material-symbols-outlined text-[19px]">
+                    mail
+                  </span>
+                  Send Reset Link
+                </span>
+              )}
+            </button>
+          </form>
 
-        <p className="text-sm text-center text-stone-500 mt-5">
-          Go back to{" "}
-          <Link
-            to="/user/login"
-            className="font-semibold text-emerald-600 hover:text-emerald-700 hover:underline"
-          >
-            Login
-          </Link>
+          <div className="mt-7 text-center text-sm text-gray-500">
+            Remember your password?{" "}
+            <Link
+              to="/user/login"
+              className="font-bold text-brand-dark transition-colors hover:text-brand"
+            >
+              Login
+            </Link>
+          </div>
+        </div>
+
+        <p className="mt-5 text-center text-xs text-gray-400">
+          Your fitness journey starts with PoseFit.
         </p>
       </div>
     </div>

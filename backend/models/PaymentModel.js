@@ -34,10 +34,10 @@ const paymentSchema = new mongoose.Schema(
 
     currency: {
       type: String,
-      default: "usd",
+      default: "pkr",
+      lowercase: true,
     },
 
-    // Appointment Schedule Details
     appointmentDay: {
       type: String,
       trim: true,
@@ -50,6 +50,13 @@ const paymentSchema = new mongoose.Schema(
 
     appointmentDate: {
       type: Date,
+    },
+
+    sessionDuration: {
+      type: Number,
+      required: true,
+      min: 1,
+      max: 1,
     },
 
     notes: {
@@ -74,9 +81,39 @@ const paymentSchema = new mongoose.Schema(
       sparse: true,
     },
 
+    meetingLink: {
+      type: String,
+      trim: true,
+    },
+
+    meetingEventId: {
+      type: String,
+      trim: true,
+    },
+
+    meetingReminderSent: {
+      type: Boolean,
+      default: false,
+    },
+
+    confirmationEmailSent: {
+      type: Boolean,
+      default: false,
+    },
+
+    adminDeleted: {
+      type: Boolean,
+      default: false,
+    },
+
+    professionalDeleted: {
+      type: Boolean,
+      default: false,
+    },
+
     status: {
       type: String,
-      enum: ["pending", "completed", "failed", "refunded", "cancelled"],
+      enum: ["pending", "completed", "failed"],
       default: "pending",
     },
 
@@ -94,16 +131,32 @@ const paymentSchema = new mongoose.Schema(
     paidAt: {
       type: Date,
     },
-
-    refundedAt: {
-      type: Date,
-    },
   },
   {
     timestamps: true,
-  }
+  },
 );
 
-const PaymentModel = mongoose.model("Payment", paymentSchema);
+paymentSchema.index(
+  {
+    professional: 1,
+    appointmentDate: 1,
+    appointmentSlot: 1,
+  },
+  {
+    unique: true,
+    partialFilterExpression: {
+      status: {
+        $in: ["pending", "completed"],
+      },
+      professionalDeleted: false,
+    },
+  },
+);
+
+const PaymentModel = mongoose.model(
+  "Payment",
+  paymentSchema,
+);
 
 module.exports = PaymentModel;

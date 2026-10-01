@@ -1,13 +1,47 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { z } from "zod";
 import { httpClient } from "../../lib/http";
 import { toast } from "sonner";
+import posefit_logo from "../../assets/posefit_logo.png";
+
+const resetPasswordSchema = z
+  .object({
+    password: z
+      .string()
+      .min(1, "Password is required.")
+      .min(8, "Password must be at least 8 characters.")
+      .max(64, "Password must not exceed 64 characters.")
+      .refine((value) => !/\s/.test(value), {
+        message: "Password must not contain spaces.",
+      })
+      .refine((value) => /[a-z]/.test(value), {
+        message: "Password must contain a lowercase letter.",
+      })
+      .refine((value) => /[A-Z]/.test(value), {
+        message: "Password must contain an uppercase letter.",
+      })
+      .refine((value) => /[0-9]/.test(value), {
+        message: "Password must contain a number.",
+      })
+      .refine((value) => /[^A-Za-z0-9]/.test(value), {
+        message: "Password must contain a special character.",
+      }),
+    confirmPassword: z.string().min(1, "Please confirm your password."),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords do not match.",
+    path: ["confirmPassword"],
+  });
 
 const ResetPassword = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  const email = searchParams.get("email");
+  // Secure password reset token from URL
+  // Example:
+  // /reset-password?token=abc123...
+  const token = searchParams.get("token");
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -22,14 +56,14 @@ const ResetPassword = () => {
   // =====================================================
 
   useEffect(() => {
-    // Agar URL mein email nahi hai
-    // to page show nahi hoga
-    if (!email || !email.trim()) {
+    if (!token || !token.trim()) {
+      toast.error("Invalid or missing password reset link.");
+
       navigate("/user/login", {
         replace: true,
       });
     }
-  }, [email, navigate]);
+  }, [token, navigate]);
 
   // =====================================================
   // SUBMIT
@@ -38,43 +72,30 @@ const ResetPassword = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const cleanEmail = email?.trim().toLowerCase();
+    const cleanToken = token?.trim();
     const cleanPassword = password.trim();
     const cleanConfirmPassword = confirmPassword.trim();
 
     // =====================================================
-    // EMAIL
+    // TOKEN
     // =====================================================
 
-    if (!cleanEmail) {
+    if (!cleanToken) {
+      toast.error("Invalid or missing password reset link.");
       return;
     }
 
-    // =====================================================
-    // PASSWORD
-    // =====================================================
+    const validationResult = resetPasswordSchema.safeParse({
+      password: cleanPassword,
+      confirmPassword: cleanConfirmPassword,
+    });
 
-    if (!cleanPassword) {
-      toast.error("Password is required.");
-      return;
-    }
+    if (!validationResult.success) {
+      const firstError =
+        validationResult.error.issues?.[0]?.message ||
+        "Please enter a valid password.";
 
-    if (cleanPassword.length < 6) {
-      toast.error("Password must be at least 6 characters.");
-      return;
-    }
-
-    // =====================================================
-    // CONFIRM PASSWORD
-    // =====================================================
-
-    if (!cleanConfirmPassword) {
-      toast.error("Please confirm your password.");
-      return;
-    }
-
-    if (cleanPassword !== cleanConfirmPassword) {
-      toast.error("Passwords do not match.");
+      toast.error(firstError);
       return;
     }
 
@@ -85,12 +106,10 @@ const ResetPassword = () => {
       // RESET PASSWORD
       // =====================================================
 
-      const { data } = await httpClient.put(
-        `/auth/reset-password/${encodeURIComponent(cleanEmail)}`,
-        {
-          password: cleanPassword,
-        },
-      );
+      const { data } = await httpClient.put("/auth/reset-password", {
+        token: cleanToken,
+        password: cleanPassword,
+      });
 
       // =====================================================
       // SUCCESS
@@ -113,6 +132,8 @@ const ResetPassword = () => {
 
       if (error?.response?.data?.message) {
         errorMessage = error.response.data.message;
+      } else if (error?.response?.data?.error) {
+        errorMessage = error.response.data.error;
       } else if (error?.message === "Network Error") {
         errorMessage = "Unable to connect to the server. Please try again.";
       }
@@ -126,10 +147,8 @@ const ResetPassword = () => {
   // =====================================================
   // IMPORTANT
   // =====================================================
-  // Jab email nahi hai to kuch render nahi hoga.
-  // useEffect user ko login par redirect karega.
 
-  if (!email || !email.trim()) {
+  if (!token || !token.trim()) {
     return null;
   }
 
@@ -138,119 +157,183 @@ const ResetPassword = () => {
   // =====================================================
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-stone-50 px-4">
-      <div className="w-full max-w-md bg-white border border-stone-200 rounded-2xl p-8 shadow-sm">
-        {/* HEADING */}
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-surface px-4 py-8 font-sans">
+      {/* =================================================
+          BACKGROUND DECORATIONS
+      ================================================= */}
 
-        <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold text-stone-800">Reset Password</h1>
+      <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-brand-light/50 blur-3xl" />
 
-          <p className="text-sm text-stone-500 mt-2">
-            Create a new password for your account.
-          </p>
-        </div>
+      <div className="pointer-events-none absolute -bottom-24 -right-24 h-80 w-80 rounded-full bg-accent-blue/60 blur-3xl" />
 
-        {/* EMAIL */}
+      <div className="pointer-events-none absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent-orange/20 blur-3xl" />
 
-        <div className="mb-5">
-          <label className="block text-sm font-semibold text-stone-700 mb-2">
-            Email Address
-          </label>
+      {/* =================================================
+          RESET PASSWORD CARD
+      ================================================= */}
 
-          <input
-            type="email"
-            value={email}
-            disabled
-            className="w-full px-4 py-3 rounded-xl border border-stone-300 bg-stone-100 text-stone-500 cursor-not-allowed outline-none"
-          />
-        </div>
+      <div className="relative z-10 w-full max-w-md">
+        <div className="rounded-card border border-brand-light/70 bg-surface/80 p-8 shadow-card-hover backdrop-blur-xl sm:p-10">
+          {/* =================================================
+              LOGO
+          ================================================= */}
 
-        {/* FORM */}
-
-        <form onSubmit={handleSubmit}>
-          {/* NEW PASSWORD */}
-
-          <div className="mb-4">
-            <label className="block text-sm font-semibold text-stone-700 mb-2">
-              New Password
-            </label>
-
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter new password"
-                disabled={loading}
-                autoComplete="new-password"
-                className="w-full px-4 py-3 pr-16 rounded-xl border border-stone-300 text-stone-800 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 disabled:bg-stone-100"
+          <div className="mb-7 flex justify-center">
+            <Link
+              to="/"
+              className="flex h-16 w-16 items-center justify-center rounded-card bg-white/70 p-2 shadow-card transition-transform duration-300 hover:-translate-y-1"
+            >
+              <img
+                src={posefit_logo}
+                alt="PoseFit Logo"
+                className="h-full w-full object-contain"
               />
+            </Link>
+          </div>
 
-              <button
-                type="button"
-                onClick={() => setShowPassword((prev) => !prev)}
-                disabled={loading}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-stone-500 hover:text-emerald-600"
-              >
-                {showPassword ? "Hide" : "Show"}
-              </button>
-            </div>
+          {/* =================================================
+              HEADING
+          ================================================= */}
 
-            <p className="text-xs text-stone-400 mt-2">
-              Password must be at least 6 characters.
+          <div className="mb-8 text-center">
+            <h1 className="text-3xl font-extrabold tracking-tight text-gray-800">
+              Reset Password
+            </h1>
+
+            <p className="mt-2 text-sm text-gray-500">
+              Create a new password for your PoseFit account.
             </p>
           </div>
 
-          {/* CONFIRM PASSWORD */}
+          {/* =================================================
+              FORM
+          ================================================= */}
 
-          <div className="mb-5">
-            <label className="block text-sm font-semibold text-stone-700 mb-2">
-              Confirm Password
-            </label>
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {/* =================================================
+                NEW PASSWORD
+            ================================================= */}
 
-            <div className="relative">
-              <input
-                type={showConfirmPassword ? "text" : "password"}
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Confirm new password"
-                disabled={loading}
-                autoComplete="new-password"
-                className="w-full px-4 py-3 pr-16 rounded-xl border border-stone-300 text-stone-800 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 disabled:bg-stone-100"
-              />
-
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword((prev) => !prev)}
-                disabled={loading}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-stone-500 hover:text-emerald-600"
+            <div>
+              <label
+                htmlFor="password"
+                className="mb-2 block text-sm font-semibold text-gray-700"
               >
-                {showConfirmPassword ? "Hide" : "Show"}
-              </button>
+                New Password
+              </label>
+
+              <div className="relative">
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter new password"
+                  disabled={loading}
+                  autoComplete="new-password"
+                  className="w-full rounded-btn border border-gray-200 bg-white/70 px-4 py-3.5 pr-12 text-sm text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand-light/60 disabled:cursor-not-allowed disabled:opacity-60"
+                />
+
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  disabled={loading}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 transition-colors hover:text-brand-dark disabled:cursor-not-allowed"
+                >
+                  <span className="material-symbols-outlined text-[22px]">
+                    {showPassword ? "visibility_off" : "visibility"}
+                  </span>
+                </button>
+              </div>
+
+              <p className="mt-1.5 text-xs text-gray-400">
+                Password must be 8 to 64 characters with uppercase, lowercase,
+                number, and special character.
+              </p>
             </div>
+
+            {/* =================================================
+                CONFIRM PASSWORD
+            ================================================= */}
+
+            <div>
+              <label
+                htmlFor="confirmPassword"
+                className="mb-2 block text-sm font-semibold text-gray-700"
+              >
+                Confirm Password
+              </label>
+
+              <div className="relative">
+                <input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Confirm new password"
+                  disabled={loading}
+                  autoComplete="new-password"
+                  className="w-full rounded-btn border border-gray-200 bg-white/70 px-4 py-3.5 pr-12 text-sm text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand-light/60 disabled:cursor-not-allowed disabled:opacity-60"
+                />
+
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword((prev) => !prev)}
+                  disabled={loading}
+                  aria-label={
+                    showConfirmPassword ? "Hide password" : "Show password"
+                  }
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 transition-colors hover:text-brand-dark disabled:cursor-not-allowed"
+                >
+                  <span className="material-symbols-outlined text-[22px]">
+                    {showConfirmPassword ? "visibility_off" : "visibility"}
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            {/* =================================================
+                RESET BUTTON
+            ================================================= */}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full rounded-btn bg-gray-800 px-6 py-3.5 text-sm font-bold text-white shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:bg-gray-700 hover:shadow-card-hover disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                  Resetting...
+                </span>
+              ) : (
+                "Reset Password"
+              )}
+            </button>
+          </form>
+
+          {/* =================================================
+              LOGIN LINK
+          ================================================= */}
+
+          <div className="mt-7 text-center text-sm text-gray-500">
+            Remember your password?{" "}
+            <Link
+              to="/user/login"
+              className="font-bold text-brand-dark transition-colors hover:text-brand"
+            >
+              Login
+            </Link>
           </div>
+        </div>
 
-          {/* SUBMIT */}
+        {/* ===================================================
+            BOTTOM TEXT
+        =================================================== */}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? "Resetting..." : "Reset Password"}
-          </button>
-        </form>
-
-        {/* LOGIN */}
-
-        <p className="text-sm text-center text-stone-500 mt-5">
-          Go back to{" "}
-          <Link
-            to="/user/login"
-            className="font-semibold text-emerald-600 hover:text-emerald-700 hover:underline"
-          >
-            Login
-          </Link>
+        <p className="mt-5 text-center text-xs text-gray-400">
+          Your fitness journey starts with PoseFit.
         </p>
       </div>
     </div>
@@ -258,3 +341,4 @@ const ResetPassword = () => {
 };
 
 export default ResetPassword;
+

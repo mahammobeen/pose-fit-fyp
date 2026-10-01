@@ -1,0 +1,496 @@
+food_id,dish_name,meal_type,serving_basis,calories_kcal,protein_g,carbs_g,fats_g
+1,"Roti (Whole Wheat, Plain)",Breakfast/Lunch/Dinner,100g,265.8,8.7,51.0,3.0
+2,Naan (Plain),Lunch/Dinner,100g,314.5,9.0,55.0,6.5
+3,Roghni Naan,Breakfast/Dinner,100g,323.0,8.5,52.0,9.0
+4,Paratha (Plain),Breakfast,100g,354.0,7.5,45.0,16.0
+5,Aloo Paratha,Breakfast,100g,312.0,6.5,40.0,14.0
+6,Anda Paratha,Breakfast,100g,340.0,9.5,35.0,18.0
+7,Paneer Paratha,Breakfast,100g,345.0,10.0,38.0,17.0
+8,Sheermal,Breakfast,100g,341.0,7.0,58.0,9.0
+9,Kulcha,Lunch/Dinner,100g,298.0,8.0,53.0,6.0
+10,Chapati (Thin),Breakfast/Lunch/Dinner,100g,237.5,8.0,48.0,1.5
+11,Tandoori Roti,Lunch/Dinner,100g,254.0,9.0,50.0,2.0
+12,Rusk (Bread Toast),Breakfast/Snack,100g,380.0,9.0,68.0,8.0
+13,White Bread,Breakfast,100g,260.8,9.0,49.0,3.2
+14,Brown Bread,Breakfast,100g,251.5,10.0,45.0,3.5
+15,Bun (Plain),Breakfast/Snack,100g,287.0,8.5,52.0,5.0
+16,Puri,Breakfast,100g,378.0,6.5,43.0,20.0
+17,Plain Boiled Rice,Lunch/Dinner,100g,125.5,2.7,28.0,0.3
+18,Chicken Biryani,Lunch/Dinner,100g,164.5,8.5,18.0,6.5
+19,Mutton Biryani,Lunch/Dinner,100g,178.0,9.5,17.0,8.0
+20,Beef Biryani,Lunch/Dinner,100g,171.5,9.0,17.0,7.5
+21,Vegetable Biryani,Lunch/Dinner,100g,145.5,4.0,20.0,5.5
+22,Chicken Pulao,Lunch/Dinner,100g,153.0,7.0,20.0,5.0
+23,Beef Pulao,Lunch/Dinner,100g,155.5,7.5,19.0,5.5
+24,Matar Pulao (Peas Rice),Lunch/Dinner,100g,138.0,3.5,22.0,4.0
+25,Chana Pulao,Lunch/Dinner,100g,154.5,4.5,24.0,4.5
+26,Zarda (Sweet Rice),Dessert,100g,195.0,2.5,35.0,5.0
+27,Khichdi (Rice & Lentil),Lunch/Dinner,100g,120.5,4.5,20.0,2.5
+28,Kabuli Pulao,Lunch/Dinner,100g,172.0,6.5,23.0,6.0
+29,Daal Chana (Chickpea Lentil),Lunch/Dinner,100g,116.5,7.5,16.0,2.5
+30,Daal Masoor (Red Lentil),Lunch/Dinner,100g,104.2,7.0,15.0,1.8
+31,Daal Maash (White Lentil),Lunch/Dinner,100g,113.0,7.5,14.0,3.0
+32,Daal Moong (Green Gram),Lunch/Dinner,100g,104.7,7.8,15.0,1.5
+33,Daal Makhani,Lunch/Dinner,100g,136.0,6.5,14.0,6.0
+34,Sabut Masoor,Lunch/Dinner,100g,114.0,8.0,16.0,2.0
+35,Rajma (Kidney Beans Curry),Lunch/Dinner,100g,127.0,7.0,18.0,3.0
+36,Chana Masala (Chickpea Curry),Lunch/Dinner,100g,134.0,7.5,17.0,4.0
+37,Lobia (Black Eyed Peas Curry),Lunch/Dinner,100g,126.7,6.8,17.0,3.5
+38,Sprouted Moong Salad,Snack,100g,83.2,7.0,12.0,0.8
+39,Chicken Karahi,Lunch/Dinner,100g,198.0,18.0,4.5,12.0
+40,Chicken Curry (Home Style),Lunch/Dinner,100g,178.0,17.0,5.0,10.0
+41,Chicken Handi,Lunch/Dinner,100g,195.5,17.5,5.5,11.5
+42,Chicken Qorma,Lunch/Dinner,100g,203.0,16.5,5.0,13.0
+43,Chicken Jalfrezi,Lunch/Dinner,100g,183.5,18.5,6.0,9.5
+44,Chicken Tikka (Grilled),Lunch/Dinner/Snack,100g,166.5,25.0,2.0,6.5
+45,Chicken Boti,Lunch/Dinner/Snack,100g,178.0,24.0,2.5,8.0
+46,Chicken Malai Boti,Lunch/Dinner/Snack,100g,222.0,21.0,3.0,14.0
+47,Chicken Seekh Kabab,Lunch/Dinner,100g,227.0,19.0,4.0,15.0
+48,Chicken Reshmi Kabab,Lunch/Dinner,100g,209.0,20.0,3.0,13.0
+49,Grilled Chicken Breast (Plain),Lunch/Dinner,100g,156.4,31.0,0.0,3.6
+50,Boiled Chicken Breast,Lunch/Dinner,100g,138.5,29.0,0.0,2.5
+51,Chicken Shami Kabab,Lunch/Dinner/Snack,100g,204.0,16.0,8.0,12.0
+52,Chicken Achari,Lunch/Dinner,100g,185.0,17.0,4.5,11.0
+53,Chicken White Karahi,Lunch/Dinner,100g,205.5,17.5,3.5,13.5
+54,Chicken Chargha (Roasted),Lunch/Dinner,100g,229.0,22.0,1.5,15.0
+55,Chicken Soup,Lunch/Dinner,100g,62.5,6.0,4.0,2.5
+56,Beef Karahi,Lunch/Dinner,100g,218.0,19.0,4.0,14.0
+57,Beef Curry (Home Style),Lunch/Dinner,100g,202.5,18.0,4.5,12.5
+58,Beef Nihari,Breakfast/Lunch/Dinner,100g,201.0,15.0,6.0,13.0
+59,Mutton Karahi,Lunch/Dinner,100g,234.0,18.5,4.0,16.0
+60,Mutton Curry,Lunch/Dinner,100g,223.0,17.5,4.5,15.0
+61,Haleem,Lunch/Dinner,100g,159.0,10.0,14.0,7.0
+62,Beef Seekh Kabab,Lunch/Dinner,100g,239.0,18.0,3.5,17.0
+63,Chapli Kabab (Beef),Lunch/Dinner,100g,254.0,17.0,6.0,18.0
+64,Beef Nalli Nihari,Breakfast/Lunch,100g,213.0,14.0,5.5,15.0
+65,Kofta Curry (Meatball Curry),Lunch/Dinner,100g,201.0,15.0,6.0,13.0
+66,Mutton Qorma,Lunch/Dinner,100g,237.0,16.5,4.5,17.0
+67,Paya (Trotters Curry),Breakfast/Lunch,100g,172.0,13.0,3.0,12.0
+68,Beef Boti (Grilled),Lunch/Dinner,100g,191.0,26.0,1.5,9.0
+69,Aloo Gosht (Meat & Potato Curry),Lunch/Dinner,100g,165.0,12.0,9.0,9.0
+70,Bihari Kabab,Lunch/Dinner,100g,234.0,19.0,3.5,16.0
+71,Fried Fish (Rahu),Lunch/Dinner,100g,238.0,20.0,8.0,14.0
+72,Fish Curry,Lunch/Dinner,100g,164.0,18.0,5.0,8.0
+73,Grilled Fish (Plain),Lunch/Dinner,100g,124.0,22.0,0.0,4.0
+74,Fish Tikka,Lunch/Dinner/Snack,100g,148.0,21.0,2.5,6.0
+75,Shrimp Curry,Lunch/Dinner,100g,165.5,19.0,5.5,7.5
+76,Fried Prawns,Lunch/Dinner/Snack,100g,216.0,18.0,9.0,12.0
+77,Boiled Egg,Breakfast/Snack,100g,155.4,13.0,1.1,11.0
+78,Fried Egg (Half Fry),Breakfast,100g,192.2,13.5,0.8,15.0
+79,Omelette (Plain),Breakfast,100g,195.5,12.5,1.5,15.5
+80,Anda Bhurji (Scrambled Egg),Breakfast,100g,186.0,12.0,3.0,14.0
+81,"Yogurt (Plain, Full Fat)",Lunch/Dinner/Snack,100g,68.8,3.5,4.7,4.0
+82,Low Fat Yogurt,Snack,100g,49.5,4.0,5.0,1.5
+83,Paneer (Cottage Cheese),Lunch/Dinner,100g,266.0,18.0,3.5,20.0
+84,Cheese (Cheddar),Snack,100g,402.2,25.0,1.3,33.0
+85,Doodh Patti (Milk Tea),Breakfast/Snack,100g,59.0,2.0,6.0,3.0
+86,Green Tea (Plain),Breakfast/Snack,100g,1.2,0.0,0.3,0.0
+87,Black Tea (No Sugar),Breakfast/Snack,100g,0.8,0.0,0.2,0.0
+88,Black Tea (With Sugar),Breakfast/Snack,100g,24.0,0.0,6.0,0.0
+89,Milk Tea (With Sugar),Breakfast/Snack,100g,64.4,1.8,8.0,2.8
+90,"Kahwa (Green Tea with Spices, No Sugar)",Breakfast/Snack,100g,4.0,0.0,1.0,0.0
+91,Black Coffee (No Sugar),Breakfast/Snack,100g,0.4,0.1,0.0,0.0
+92,Black Coffee (With Sugar),Breakfast/Snack,100g,22.4,0.1,5.5,0.0
+93,Milk Coffee (With Sugar),Breakfast/Snack,100g,69.0,2.5,8.0,3.0
+94,"Lemon Water (Plain, No Sugar)",Breakfast/Snack,100g,3.2,0.0,0.8,0.0
+95,Lemon Water with Honey,Breakfast/Snack,100g,24.0,0.0,6.0,0.0
+96,Plain Water,Breakfast/Lunch/Dinner/Snack,100g,0.0,0.0,0.0,0.0
+97,"Milk (Full Cream, Plain)",Breakfast/Snack,100g,64.4,3.2,4.8,3.6
+98,"Milk (Skimmed, Plain)",Breakfast/Snack,100g,35.4,3.4,5.0,0.2
+99,"Banana Milkshake (Milk & Banana, No Sugar Added)",Breakfast/Snack,100g,82.5,3.0,12.0,2.5
+100,"Mango Milkshake (Milk & Mango, Sweetened)",Snack,100g,103.0,3.0,16.0,3.0
+101,Chocolate Milkshake (Sweetened),Snack,100g,126.5,3.5,18.0,4.5
+102,Lassi (Sweet),Breakfast/Snack,100g,87.0,3.0,12.0,3.0
+103,Lassi (Salted),Breakfast/Snack,100g,60.3,3.2,4.0,3.5
+104,Fresh Lime Soda (Sweetened),Snack,100g,40.0,0.0,10.0,0.0
+105,Sugarcane Juice (Fresh),Snack,100g,68.8,0.2,17.0,0.0
+106,Fresh Orange Juice (No Sugar Added),Breakfast/Snack,100g,44.6,0.7,10.0,0.2
+107,Coconut Water (Fresh),Snack,100g,20.6,0.7,4.0,0.2
+108,"Cumin Water (Jeera Water, Plain)",Breakfast/Snack,100g,1.2,0.0,0.3,0.0
+109,"Ajwain Water (Carom Seed Water, Plain)",Breakfast/Snack,100g,0.8,0.0,0.2,0.0
+110,Bhindi Masala (Okra Curry),Lunch/Dinner,100g,86.5,2.5,9.0,4.5
+111,Aloo Bhujia (Dry Potato),Lunch/Dinner,100g,136.0,2.5,18.0,6.0
+112,Baingan Bharta (Eggplant),Lunch/Dinner,100g,80.5,2.0,8.0,4.5
+113,Palak (Spinach Curry),Lunch/Dinner,100g,68.0,3.0,5.0,4.0
+114,Palak Paneer,Lunch/Dinner,100g,140.0,7.0,5.5,10.0
+115,Mixed Vegetable Curry,Lunch/Dinner,100g,78.0,2.5,8.0,4.0
+116,Karela (Bitter Gourd Curry),Lunch/Dinner,100g,76.5,2.0,7.0,4.5
+117,Tori (Ridge Gourd Curry),Lunch/Dinner,100g,64.7,1.8,6.5,3.5
+118,Gobhi Aloo (Cauliflower Potato),Lunch/Dinner,100g,95.0,2.5,10.0,5.0
+119,Shimla Mirch (Capsicum Curry),Lunch/Dinner,100g,67.2,1.8,6.0,4.0
+120,Matar Paneer (Peas & Cottage Cheese),Lunch/Dinner,100g,145.0,8.0,8.0,9.0
+121,"Boiled Vegetables (Mixed, Plain)",Lunch/Dinner,100g,50.5,2.5,9.0,0.5
+122,Cucumber Salad,Snack/Lunch/Dinner,100g,18.1,0.7,3.6,0.1
+123,"Green Salad (Onion, Tomato, Cucumber)",Lunch/Dinner,100g,21.8,1.0,4.0,0.2
+124,Raita (Cucumber Yogurt),Lunch/Dinner,100g,49.7,2.8,4.0,2.5
+125,Boiled Potato,Lunch/Dinner,100g,76.9,2.0,17.0,0.1
+126,Sarson Ka Saag,Lunch/Dinner,100g,81.5,3.0,5.0,5.5
+127,Kaddu (Pumpkin Curry),Lunch/Dinner,100g,68.3,1.2,8.0,3.5
+128,Tinday (Round Gourd Curry),Lunch/Dinner,100g,62.7,1.8,6.0,3.5
+129,Turai (Sponge Gourd Curry),Lunch/Dinner,100g,55.4,1.6,5.5,3.0
+130,Boiled Carrots (Plain),Lunch/Dinner/Snack,100g,37.4,0.9,8.0,0.2
+131,Boiled Green Peas (Plain),Lunch/Dinner/Snack,100g,81.2,5.4,14.0,0.4
+132,Steamed Broccoli (Plain),Lunch/Dinner,100g,42.8,2.8,7.0,0.4
+133,"Grilled Vegetables (Plain, No Oil)",Lunch/Dinner,100g,40.5,2.0,7.0,0.5
+134,Lauki (Bottle Gourd Curry),Lunch/Dinner,100g,53.0,1.5,5.0,3.0
+135,Boiled Corn (Plain),Snack,100g,111.1,3.4,21.0,1.5
+136,"Kachumber Salad (Onion, Tomato, Cucumber, Lemon)",Lunch/Dinner,100g,23.8,1.0,4.5,0.2
+137,"Boiled Chickpea Salad (Chana Salad, Plain)",Lunch/Dinner/Snack,100g,134.5,8.0,20.0,2.5
+138,Sprouted Moong Salad (Plain),Lunch/Dinner/Snack,100g,83.2,7.0,12.0,0.8
+139,Tomato Cucumber Onion Salad with Lemon,Lunch/Dinner,100g,22.2,1.1,4.0,0.2
+140,"Boiled Egg Salad (Egg, Cucumber, Tomato, No Dressing)",Lunch/Dinner,100g,98.0,8.0,3.0,6.0
+141,"Carrot & Cabbage Salad (Plain, Lemon)",Lunch/Dinner,100g,30.6,1.2,6.0,0.2
+142,"Boiled Vegetable Salad (Carrot, Peas, Beans, Plain)",Lunch/Dinner,100g,48.7,2.5,9.0,0.3
+143,Chickpea & Cucumber Salad (Plain),Lunch/Dinner,100g,99.5,6.5,15.0,1.5
+144,"Grilled Chicken Salad (Plain, No Dressing)",Lunch/Dinner,100g,123.5,20.0,3.0,3.5
+145,"Plain Green Salad (Lettuce, Cucumber, Tomato)",Lunch/Dinner,100g,17.4,0.9,3.0,0.2
+146,"Radish Salad (Mooli, Plain)",Lunch/Dinner,100g,17.3,0.7,3.4,0.1
+147,"Beetroot Salad (Boiled, Plain)",Lunch/Dinner,100g,40.2,1.6,8.0,0.2
+148,"Chicken Soup (Clear, No Cream)",Lunch/Dinner,100g,56.0,6.0,3.5,2.0
+149,"Vegetable Soup (Clear, Plain)",Lunch/Dinner,100g,34.5,1.5,6.0,0.5
+150,"Daal Soup (Thin, Plain)",Lunch/Dinner,100g,57.2,4.5,8.0,0.8
+151,"Tomato Soup (Plain, No Cream)",Lunch/Dinner,100g,41.3,1.2,8.0,0.5
+152,"Boiled Chicken (Plain, No Oil)",Lunch/Dinner,100g,135.0,27.0,0.0,3.0
+153,"Grilled Chicken (Plain, No Oil)",Lunch/Dinner,100g,147.5,29.0,0.0,3.5
+154,Boiled Egg Whites (Plain),Breakfast/Snack,100g,48.6,11.0,0.7,0.2
+155,Plain Chicken Soup Shorba (No Oil),Lunch/Dinner,100g,37.0,5.0,2.0,1.0
+156,"Grilled Fish (Plain, No Oil)",Lunch/Dinner,100g,110.0,23.0,0.0,2.0
+157,Samosa (Vegetable),Snack,100g,232.0,4.0,27.0,12.0
+158,Samosa (Chicken/Keema),Snack,100g,246.0,8.0,22.0,14.0
+159,"Pakora (Vegetable, Mixed)",Snack,100g,235.0,5.0,20.0,15.0
+160,Aloo Tikki,Snack,100g,183.0,3.5,22.0,9.0
+161,Dahi Bhalla,Snack,100g,134.0,5.0,15.0,6.0
+162,Chana Chaat,Snack,100g,135.0,7.0,20.0,3.0
+163,Fruit Chaat,Snack,100g,80.4,1.2,18.0,0.4
+164,Roasted Chana (Chickpeas),Snack,100g,374.0,19.0,61.0,6.0
+165,"Peanuts (Roasted, Salted)",Snack,100g,605.0,25.0,16.0,49.0
+166,Almonds (Raw),Snack,100g,613.0,21.0,22.0,49.0
+167,Walnuts,Snack,100g,701.0,15.0,14.0,65.0
+168,Cashews (Roasted),Snack,100g,588.0,18.0,30.0,44.0
+169,Dates (Khajoor),Snack,100g,313.6,2.5,75.0,0.4
+170,Boiled Chickpeas Chaat,Snack,100g,167.0,8.9,27.0,2.6
+171,"Popcorn (Plain, Air Popped)",Snack,100g,384.5,12.0,74.0,4.5
+172,Rusk (Toast Biscuit),Snack,100g,380.0,9.0,68.0,8.0
+173,Bhel Puri,Snack,100g,190.0,4.0,30.0,6.0
+174,Banana,Snack/Breakfast,100g,99.1,1.1,23.0,0.3
+175,Apple,Snack,100g,59.0,0.3,14.0,0.2
+176,Mango,Snack,100g,66.8,0.8,15.0,0.4
+177,Guava,Snack,100g,75.4,2.6,14.0,1.0
+178,Papaya,Snack/Breakfast,100g,46.9,0.5,11.0,0.1
+179,Orange,Snack,100g,52.5,0.9,12.0,0.1
+180,Watermelon,Snack,100g,36.2,0.6,8.0,0.2
+181,Grapes,Snack,100g,76.6,0.7,18.0,0.2
+182,Pomegranate,Snack,100g,93.6,1.7,19.0,1.2
+183,Melon (Sweet),Snack,100g,37.0,0.8,8.0,0.2
+184,Pear,Snack,100g,62.5,0.4,15.0,0.1
+185,Strawberries,Snack,100g,37.5,0.7,8.0,0.3
+186,Peach,Snack,100g,46.3,0.9,10.0,0.3
+187,Plum,Snack,100g,49.5,0.7,11.0,0.3
+188,Dates (Fresh),Snack,100g,133.0,1.8,31.0,0.2
+189,Sapodilla (Chiku),Snack,100g,91.5,0.4,20.0,1.1
+190,Kinu (Pakistani Mandarin),Snack,100g,57.0,0.8,13.0,0.2
+191,Litchi,Snack,100g,74.8,0.8,17.0,0.4
+192,Jamun (Java Plum),Snack,100g,60.6,0.7,14.0,0.2
+193,Falsa,Snack,100g,69.7,1.4,14.0,0.9
+194,Apricot,Snack,100g,53.2,1.4,11.0,0.4
+195,"Fig (Anjeer, Fresh)",Snack,100g,81.9,0.8,19.0,0.3
+196,Missi Roti (Gram Flour Roti),Breakfast/Lunch/Dinner,100g,260.0,10.0,46.0,4.0
+197,Makai Ki Roti (Corn Flour Roti),Lunch/Dinner,100g,249.5,7.5,47.0,3.5
+198,"Vermicelli (Seviyan, Plain)",Breakfast,100g,127.0,3.0,22.0,3.0
+199,Sweet Seviyan (Milk Vermicelli),Breakfast/Dessert,100g,168.0,3.5,25.0,6.0
+200,"Daliya (Broken Wheat Porridge, Plain)",Breakfast,100g,109.0,4.0,21.0,1.0
+201,"Oats Porridge (Plain, No Sugar)",Breakfast,100g,122.5,5.0,20.0,2.5
+202,Corn Flakes with Milk (No Sugar),Breakfast,100g,124.0,4.5,22.0,2.0
+203,Yakhni Pulao,Lunch/Dinner,100g,159.5,7.5,20.0,5.5
+204,Sindhi Biryani,Lunch/Dinner,100g,172.2,8.8,18.5,7.0
+205,Tehri (Vegetable Rice with Turmeric),Lunch/Dinner,100g,146.5,3.5,23.0,4.5
+206,Prawn Biryani,Lunch/Dinner,100g,162.5,8.0,18.0,6.5
+207,Plain Steamed Rice (Basmati),Lunch/Dinner,100g,125.5,2.7,28.0,0.3
+208,Mix Daal (Combination Lentils),Lunch/Dinner,100g,114.5,7.5,15.5,2.5
+209,"Daal Chawal Combo (Lentil & Rice, per 100g mix)",Lunch/Dinner,100g,120.0,5.5,20.0,2.0
+210,"Haleem (Wheat & Lentil, Light)",Lunch/Dinner,100g,154.5,9.0,15.0,6.5
+211,Chicken Keema (Mince Curry),Lunch/Dinner,100g,196.0,17.0,5.0,12.0
+212,Chicken Drumsticks (Curry),Lunch/Dinner,100g,200.5,18.0,4.0,12.5
+213,Chicken Wings (Grilled),Lunch/Dinner/Snack,100g,194.0,20.0,1.5,12.0
+214,Chicken Cutlet,Snack,100g,221.0,14.0,12.0,13.0
+215,"Chicken Roll (Paratha Roll, per 100g)",Lunch/Dinner/Snack,100g,236.0,12.0,20.0,12.0
+216,Chicken Bun Kabab,Snack,100g,227.0,10.0,22.0,11.0
+217,Beef Keema (Mince Curry),Lunch/Dinner,100g,227.0,18.0,5.0,15.0
+218,Mutton Chops,Lunch/Dinner,100g,250.0,19.0,3.0,18.0
+219,Beef Chops,Lunch/Dinner,100g,241.0,18.5,3.5,17.0
+220,Aloo Qeema (Mince & Potato Curry),Lunch/Dinner,100g,187.0,13.0,9.0,11.0
+221,Karela Gosht (Bitter Gourd & Meat Curry),Lunch/Dinner,100g,166.0,13.0,6.0,10.0
+222,Bhindi Gosht (Okra & Meat Curry),Lunch/Dinner,100g,174.5,13.5,6.5,10.5
+223,Fish Pulao,Lunch/Dinner,100g,165.0,8.0,22.0,5.0
+224,Fried Fish Fillet,Lunch/Dinner,100g,225.0,21.0,6.0,13.0
+225,Aloo Matar (Potato & Peas Curry),Lunch/Dinner,100g,104.5,3.0,13.0,4.5
+226,Aloo Palak (Potato & Spinach Curry),Lunch/Dinner,100g,94.0,2.5,12.0,4.0
+227,Methi Sabzi (Fenugreek Curry),Lunch/Dinner,100g,72.0,3.0,6.0,4.0
+228,Arvi Curry (Taro Root Curry),Lunch/Dinner,100g,104.5,2.0,14.0,4.5
+229,Cabbage Curry (Bandh Gobi),Lunch/Dinner,100g,66.7,1.8,7.0,3.5
+230,Shalgam Curry (Turnip Curry),Lunch/Dinner,100g,63.5,1.5,6.5,3.5
+231,Mooli Sabzi (Radish Curry),Lunch/Dinner,100g,57.0,1.5,6.0,3.0
+232,Dahi Puri,Snack,100g,178.0,4.5,22.0,8.0
+233,Papdi Chaat,Snack,100g,210.0,4.0,26.0,10.0
+234,Gol Gappay / Pani Puri,Snack,100g,126.0,2.5,20.0,4.0
+235,Vegetable Cutlet,Snack,100g,202.0,4.0,24.0,10.0
+236,Spring Roll (Vegetable),Snack,100g,205.0,4.5,22.0,11.0
+237,Bread Pakora,Snack,100g,246.0,6.0,24.0,14.0
+238,Pistachios (Raw),Snack,100g,597.0,20.0,28.0,45.0
+239,Chia Seeds (Plain),Snack,100g,515.0,17.0,42.0,31.0
+240,Flax Seeds (Plain),Snack,100g,566.0,18.0,29.0,42.0
+241,Boiled Sweet Corn (Plain),Snack,100g,108.9,3.3,21.0,1.3
+242,Firni (Rice Flour Pudding),Dessert,100g,140.5,3.0,22.0,4.5
+243,Sheer Khurma,Dessert,100g,144.5,3.5,18.0,6.5
+244,Rasgulla,Dessert,100g,163.0,4.0,30.0,3.0
+245,Imarti,Dessert,100g,355.0,1.5,58.0,13.0
+246,Mutton Yakhni (Clear Meat Broth),Lunch/Dinner,100g,65.0,7.0,2.5,3.0
+247,Corn Soup (Plain),Lunch/Dinner,100g,57.0,2.0,10.0,1.0
+248,"Fruit Salad (Plain, No Sugar/Cream)",Breakfast/Snack,100g,65.9,0.8,15.0,0.3
+249,Boiled Egg & Vegetable Salad (Plain),Lunch/Dinner,100g,97.5,7.0,5.0,5.5
+250,Roasted Chickpea Salad (No Oil),Lunch/Dinner/Snack,100g,140.0,8.5,22.0,2.0
+251,Boiled Kidney Beans (Plain),Lunch/Dinner,100g,127.3,8.7,22.0,0.5
+252,"Boiled Lentils Mix (Plain, High Protein)",Lunch/Dinner,100g,123.2,9.0,20.0,0.8
+253,Whole Egg + Milk Shake (Weight Gain),Breakfast/Snack,100g,138.0,8.5,8.0,8.0
+254,"Chicken & Chickpea Bowl (Combo, per 100g mix)",Lunch/Dinner,100g,174.0,18.0,12.0,6.0
+255,Roti with Boiled Egg,Breakfast,100g,186.5,10.5,26.0,4.5
+256,Roti with Fried Egg,Breakfast,100g,212.7,10.8,25.5,7.5
+257,Paratha with Boiled Egg,Breakfast,100g,286.5,9.5,34.0,12.5
+258,Paratha with Omelette,Breakfast,100g,303.0,10.0,32.0,15.0
+259,Bread with Boiled Egg,Breakfast,100g,192.0,10.5,24.0,6.0
+260,Toast with Fried Egg,Breakfast,100g,237.5,11.0,27.0,9.5
+261,Toast with Omelette,Breakfast,100g,243.2,10.8,27.5,10.0
+262,Naan with Anda Bhurji,Breakfast,100g,293.0,10.5,38.0,11.0
+263,Roti with Anda Bhurji,Breakfast,100g,225.3,10.2,27.0,8.5
+264,Chapati with Fried Egg,Breakfast,100g,212.0,10.5,24.5,8.0
+265,Paratha with Chana Masala,Breakfast,100g,349.0,7.0,42.0,17.0
+266,Roti with Chana Masala,Breakfast,100g,213.5,8.0,33.0,5.5
+267,"Halwa Puri Combo (Puri, Halwa, Chana)",Breakfast,100g,464.0,6.5,60.0,22.0
+268,Doodh Patti with Rusk,Breakfast,100g,203.5,4.5,34.0,5.5
+269,Milk Tea with Biscuit,Breakfast/Snack,100g,106.0,2.5,15.0,4.0
+270,Oats Porridge with Banana,Breakfast,100g,148.5,4.5,27.0,2.5
+271,Daliya with Milk (No Sugar),Breakfast,100g,118.0,5.0,20.0,2.0
+272,Paratha with Yogurt,Breakfast,100g,324.5,8.5,40.0,14.5
+273,Roti with Yogurt,Breakfast,100g,180.2,6.5,30.0,3.8
+274,Egg Bhurji with Roti,Breakfast,100g,225.3,10.2,27.0,8.5
+275,Boiled Egg with Fruit (Banana/Apple),Breakfast,100g,129.3,7.5,12.0,5.7
+276,Toast with Peanut Butter (Plain),Breakfast,100g,330.0,12.0,30.0,18.0
+277,"Chicken Salad (Grilled Chicken, Lettuce, Tomato, Cucumber)",Lunch/Dinner,100g,128.0,19.0,4.0,4.0
+278,Chicken Salad with Boiled Egg,Lunch/Dinner,100g,152.5,20.0,3.5,6.5
+279,Chicken & Chickpea Salad (Plain),Lunch/Dinner,100g,144.0,15.0,12.0,4.0
+280,Boiled Chicken with Green Salad,Lunch/Dinner,100g,127.5,21.0,3.0,3.5
+281,Grilled Chicken with Boiled Vegetables,Lunch/Dinner,100g,135.5,20.0,6.0,3.5
+282,Chicken Tikka Salad (No Dressing),Lunch/Dinner,100g,151.5,22.0,3.5,5.5
+283,Boiled Fish with Salad,Lunch/Dinner,100g,112.5,19.0,3.5,2.5
+284,Boiled Egg White Salad (High Protein),Lunch/Dinner,100g,64.5,12.0,3.0,0.5
+285,Chana & Boiled Egg Salad,Lunch/Dinner,100g,131.5,10.0,15.0,3.5
+286,Sprouted Moong & Chicken Salad,Lunch/Dinner,100g,127.0,16.0,9.0,3.0
+287,Roti with Daal Chana,Lunch/Dinner,100g,191.0,8.0,33.0,3.0
+288,Roti with Daal Masoor,Lunch/Dinner,100g,181.7,7.8,32.0,2.5
+289,Roti with Bhindi Masala,Lunch/Dinner,100g,176.2,5.5,30.0,3.8
+290,Roti with Mixed Vegetable Curry,Lunch/Dinner,100g,175.3,5.5,30.0,3.7
+291,Roti with Aloo Palak,Lunch/Dinner,100g,182.4,5.5,32.0,3.6
+292,Roti with Chicken Karahi,Lunch/Dinner,100g,236.0,13.0,28.0,8.0
+293,Naan with Chicken Karahi,Lunch/Dinner,100g,259.5,13.5,30.0,9.5
+294,Naan with Beef Karahi,Lunch/Dinner,100g,270.5,14.0,30.0,10.5
+295,Rice with Daal Chana,Lunch/Dinner,100g,121.5,5.0,22.0,1.5
+296,Rice with Chicken Curry,Lunch/Dinner,100g,153.0,10.0,17.0,5.0
+297,Rice with Rajma (Kidney Bean Curry),Lunch/Dinner,100g,125.6,4.8,23.0,1.6
+298,Biryani with Raita,Lunch/Dinner,100g,154.0,8.0,17.0,6.0
+299,Chicken Qorma with Naan,Lunch/Dinner,100g,260.0,12.5,30.0,10.0
+300,Roti with Karela Sabzi,Lunch/Dinner,100g,169.3,5.0,29.0,3.7
+301,Roti with Tori Sabzi,Lunch/Dinner,100g,165.5,5.0,28.5,3.5
+302,Roti with Palak Paneer,Lunch/Dinner,100g,208.5,8.5,29.0,6.5
+303,Roti with Matar Paneer,Lunch/Dinner,100g,204.0,8.5,29.0,6.0
+304,Grilled Chicken with Roti,Lunch/Dinner,100g,201.5,18.0,24.5,3.5
+305,Boiled Chicken with Rice (Plain),Lunch/Dinner,100g,132.2,15.0,14.0,1.8
+306,Fish Curry with Rice,Lunch/Dinner,100g,142.0,10.0,16.5,4.0
+307,Daal Chawal with Salad,Lunch/Dinner,100g,119.5,5.5,21.0,1.5
+308,Roti with Sarson Ka Saag,Lunch/Dinner,100g,174.7,5.5,28.5,4.3
+309,Roti with Gobhi Aloo,Lunch/Dinner,100g,182.0,5.5,31.0,4.0
+310,Chicken Boti with Salad,Lunch/Dinner,100g,134.0,16.5,3.5,6.0
+311,Beef Boti with Salad,Lunch/Dinner,100g,133.5,18.0,3.0,5.5
+312,Boiled Egg with Cucumber & Tomato,Lunch/Dinner/Snack,100g,97.3,9.0,2.5,5.7
+313,Grilled Chicken with Steamed Vegetables,Lunch/Dinner,100g,127.0,20.0,5.0,3.0
+314,Boiled Chana with Cucumber Salad,Lunch/Dinner/Snack,100g,95.5,6.5,14.0,1.5
+315,Roti (Half) with Boiled Vegetables,Lunch/Dinner,100g,128.4,4.5,24.0,1.6
+316,Vegetable Soup with Boiled Egg,Lunch/Dinner,100g,97.3,7.5,4.0,5.7
+317,Grilled Fish with Green Salad,Lunch/Dinner,100g,111.0,18.5,2.5,3.0
+318,Sprouted Moong with Boiled Egg,Lunch/Dinner/Snack,100g,127.7,12.0,8.0,5.3
+319,Paratha with Chicken Karahi,Lunch/Dinner,100g,312.0,12.5,25.0,18.0
+320,Naan with Nihari,Breakfast/Lunch,100g,267.0,12.0,30.0,11.0
+321,Rice with Beef Karahi,Lunch/Dinner,100g,175.5,11.0,16.0,7.5
+322,Chicken Biryani with Boiled Egg,Lunch/Dinner,100g,195.0,10.0,18.5,9.0
+323,Paratha with Keema,Lunch/Dinner,100g,290.5,12.5,23.0,16.5
+324,Milk with Banana and Dates,Breakfast/Snack,100g,121.0,3.5,20.0,3.0
+325,Peanut Butter Toast with Banana,Breakfast/Snack,100g,298.5,10.0,32.0,14.5
+326,Tea with Rusk,Snack,100g,136.0,3.0,22.0,4.0
+327,Green Tea with Almonds,Snack,100g,206.5,7.0,7.5,16.5
+328,Roasted Chana with Salad,Snack,100g,122.2,8.5,18.0,1.8
+329,Fruit Chaat with Yogurt,Snack,100g,90.0,3.0,15.0,2.0
+330,Boiled Egg with Roasted Chana,Snack,100g,166.0,12.0,16.0,6.0
+331,Gulab Jamun,Dessert,100g,334.0,4.5,52.0,12.0
+332,Ras Malai,Dessert,100g,196.0,6.0,25.0,8.0
+333,Kheer (Rice Pudding),Dessert,100g,130.0,3.5,20.0,4.0
+334,Suji Halwa,Dessert/Breakfast,100g,260.0,3.0,35.0,12.0
+335,Gajar Halwa (Carrot Halwa),Dessert,100g,224.0,3.5,30.0,10.0
+336,Jalebi,Dessert,100g,332.0,1.0,55.0,12.0
+337,Barfi,Dessert,100g,375.0,5.0,55.0,15.0
+338,Kulfi,Dessert,100g,194.0,4.0,22.0,10.0
+339,Peanut Butter (Natural),Breakfast/Snack,100g,630.0,25.0,20.0,50.0
+340,Whole Milk with Banana Shake,Breakfast/Snack,100g,105.5,3.5,15.0,3.5
+341,"Chicken Breast + Rice (Combo, per 100g mix)",Lunch/Dinner,100g,147.0,15.0,15.0,3.0
+342,Boiled Chickpeas (Plain),Lunch/Dinner/Snack,100g,167.0,8.9,27.0,2.6
+343,Soya Chunks (Cooked),Lunch/Dinner,100g,105.0,16.0,8.0,1.0
+344,Mixed Nuts (Unsalted),Snack,100g,610.0,20.0,20.0,50.0
+345,Naan (Zeera/Cumin),Lunch/Dinner,100g,318.0,9.0,55.0,7.0
+346,Garlic Naan,Lunch/Dinner,100g,322.0,9.0,54.0,7.5
+347,Cheese Naan,Lunch/Dinner,100g,355.0,11.0,50.0,13.0
+348,Chapati with Ghee,Breakfast/Lunch/Dinner,100g,290.0,8.2,48.0,8.0
+349,Phulka (Oil-Free Roti),Breakfast/Lunch/Dinner,100g,220.0,7.5,46.0,0.8
+350,Bakarkhani,Breakfast/Snack,100g,398.0,7.0,50.0,19.0
+351,Khameeri Roti,Lunch/Dinner,100g,270.0,8.5,52.0,3.0
+352,Lachha Paratha,Breakfast,100g,360.0,7.0,44.0,17.5
+353,Mooli Paratha (Stuffed Radish),Breakfast,100g,298.0,6.5,38.0,13.0
+354,Qeema Paratha (Stuffed Mince),Breakfast/Lunch,100g,335.0,12.0,32.0,17.5
+355,Chicken Tikka Biryani,Lunch/Dinner,100g,168.0,9.0,18.0,6.8
+356,Aloo Biryani (Potato Rice),Lunch/Dinner,100g,150.0,3.5,24.0,5.0
+357,Bhuna Pulao,Lunch/Dinner,100g,160.0,6.5,21.0,5.5
+358,Zafrani Pulao (Saffron Rice),Lunch/Dinner,100g,158.0,3.0,26.0,4.5
+359,Chicken Yakhni Pulao,Lunch/Dinner,100g,162.0,8.0,19.0,6.0
+360,Mash Daal Chawal (Lentil Rice Mix),Lunch/Dinner,100g,118.0,5.0,19.0,2.5
+361,Egg Fried Rice,Lunch/Dinner,100g,172.0,5.5,24.0,6.0
+362,Vegetable Fried Rice,Lunch/Dinner,100g,155.0,3.5,26.0,4.5
+363,Chicken Chinese Rice (Pakistani-Chinese Style),Lunch/Dinner,100g,176.0,7.5,23.0,6.5
+364,Plain Brown Rice (Boiled),Lunch/Dinner,100g,111.0,2.6,23.0,0.9
+365,Daal Fry (Tarka Daal),Lunch/Dinner,100g,128.0,6.8,15.0,4.5
+366,Daal Palak (Lentil & Spinach),Lunch/Dinner,100g,108.0,6.5,14.0,3.0
+367,Chana Daal (Split Chickpea Lentil),Lunch/Dinner,100g,118.0,7.2,17.0,2.8
+368,Arhar Daal (Toor Lentil),Lunch/Dinner,100g,112.0,7.0,16.0,2.2
+369,Urad Daal (Split Black Gram),Lunch/Dinner,100g,115.0,7.6,15.0,2.8
+370,Daal Gosht (Lentil & Meat Curry),Lunch/Dinner,100g,158.0,11.5,10.0,8.5
+371,Panjeeri (Whole Wheat & Nut Mix),Breakfast/Snack,100g,420.0,9.0,45.0,22.0
+372,Sabut Moong Daal (Whole Green Gram),Lunch/Dinner,100g,106.0,7.5,16.0,1.2
+373,Chicken Do Pyaza,Lunch/Dinner,100g,190.0,17.5,6.0,10.5
+374,Chicken Bhuna,Lunch/Dinner,100g,194.0,18.0,4.5,11.5
+375,Chicken 65 (Pakistani-Chinese Style),Snack/Lunch/Dinner,100g,235.0,19.0,10.0,13.5
+376,Chicken Manchurian,Lunch/Dinner,100g,188.0,15.0,14.0,8.0
+377,"Chicken Sajji (Whole Roasted, Balochi Style)",Lunch/Dinner,100g,216.0,23.0,1.5,13.0
+378,Chicken Tikka Boti Roll,Lunch/Dinner/Snack,100g,245.0,14.0,22.0,11.0
+379,Chicken Chapli Kabab,Lunch/Dinner,100g,232.0,17.0,7.0,14.5
+380,Chicken Nihari,Breakfast/Lunch/Dinner,100g,192.0,15.5,6.5,11.5
+381,"Chicken Corn Soup (Thick, Pakistani-Chinese)",Lunch/Dinner,100g,68.0,5.5,7.0,2.0
+382,Chicken Pasanda,Lunch/Dinner,100g,210.0,17.0,5.5,13.0
+383,Beef Rara (Minced & Chunk Meat Curry),Lunch/Dinner,100g,222.0,17.5,5.0,15.0
+384,Mutton Rara,Lunch/Dinner,100g,231.0,17.0,4.5,16.5
+385,Kunna Gosht (Clay Pot Slow-Cooked Beef),Lunch/Dinner,100g,214.0,16.5,4.0,15.0
+386,Mutton Sajji (Balochi Style),Lunch/Dinner,100g,228.0,21.0,1.5,15.5
+387,Mutton Tikka Boti,Lunch/Dinner/Snack,100g,219.0,22.0,2.0,14.0
+388,Beef Bihari Boti,Lunch/Dinner,100g,229.0,20.0,3.0,15.5
+389,Mutton Haleem (Rich),Lunch/Dinner,100g,172.0,11.0,15.0,8.0
+390,Kaleji (Liver Curry),Lunch/Dinner,100g,188.0,19.0,4.0,10.5
+391,Fried Fish (Pomfret),Lunch/Dinner,100g,228.0,21.0,6.0,13.5
+392,Fish Fry (Sole/Sole Fish),Lunch/Dinner,100g,219.0,20.5,6.5,12.5
+393,Fish Curry (Sindhi Style),Lunch/Dinner,100g,158.0,17.5,5.5,7.0
+394,Fish Biryani,Lunch/Dinner,100g,166.0,8.5,19.0,6.0
+395,Fish Cutlet,Snack,100g,210.0,15.0,14.0,11.0
+396,Fish Pakora,Snack,100g,240.0,14.0,18.0,13.5
+397,Boiled Fish Curry (Light),Lunch/Dinner,100g,132.0,18.0,5.0,4.0
+398,Rahu Fish Salan,Lunch/Dinner,100g,172.0,18.5,6.0,8.5
+399,Khageena (Spicy Scrambled Egg),Breakfast,100g,190.0,12.5,3.5,14.5
+400,Anda Curry (Egg Curry),Lunch/Dinner,100g,172.0,10.5,5.5,12.0
+401,Boiled Milk (Plain),Breakfast/Snack,100g,61.0,3.2,4.7,3.3
+402,Desi Ghee (Clarified Butter),Lunch/Dinner,10g,90.0,0.0,0.0,10.0
+403,Makhan (Desi Butter),Breakfast,10g,72.0,0.1,0.1,8.0
+404,Malai (Fresh Cream),Breakfast/Snack,100g,290.0,2.5,3.0,30.0
+405,Khoya (Milk Solids),Dessert,100g,421.0,15.0,25.0,30.0
+406,Paneer Bhurji (Scrambled Cottage Cheese),Breakfast/Lunch/Dinner,100g,235.0,15.0,5.0,17.0
+407,Dahi Bhalla Raita (Yogurt Based),Lunch/Dinner,100g,95.0,4.0,10.0,4.5
+408,Cream Cheese (Spread),Breakfast/Snack,100g,342.0,6.0,4.0,34.0
+409,"Rooh Afza (Sharbat, Diluted)",Snack,100g,68.0,0.0,17.0,0.0
+410,Sattu Drink (Roasted Gram Flour),Breakfast/Snack,100g,96.0,4.5,17.0,1.0
+411,"Falooda (Milk, Vermicelli, Basil Seeds)",Dessert/Snack,100g,142.0,3.0,24.0,3.5
+412,Jaljeera (Cumin-Mint Drink),Breakfast/Snack,100g,12.0,0.2,3.0,0.0
+413,Aam Panna (Raw Mango Drink),Snack,100g,38.0,0.2,9.5,0.1
+414,Tamarind Sharbat (Imli Drink),Snack,100g,44.0,0.2,11.0,0.0
+415,Rose Milk (Sweetened),Snack,100g,92.0,3.0,14.0,2.5
+416,Doodh Soda (Milk & Soda Drink),Snack,100g,56.0,2.0,9.0,1.5
+417,Bhindi Fry (Dry Okra),Lunch/Dinner,100g,95.0,2.5,8.0,5.5
+418,Aloo Fry (Dry Fried Potato),Lunch/Dinner,100g,148.0,2.2,20.0,6.5
+419,"Gobi Manchurian (Dry, Pakistani-Chinese)",Snack/Lunch/Dinner,100g,165.0,3.5,20.0,7.5
+420,Chana Saag (Chickpea Leaves Curry),Lunch/Dinner,100g,78.0,4.0,7.0,4.0
+421,Kali Mirch Aloo (Black Pepper Potato),Lunch/Dinner,100g,112.0,2.2,17.0,4.0
+422,Mix Sabzi with Desi Ghee,Lunch/Dinner,100g,95.0,2.8,9.0,5.5
+423,Bhindi Aloo (Okra & Potato Curry),Lunch/Dinner,100g,98.0,2.4,12.0,4.5
+424,Simple Boiled Chana (Whole Chickpeas),Lunch/Dinner/Snack,100g,164.0,8.9,27.0,2.6
+425,Dahi Baingan (Eggplant in Yogurt),Lunch/Dinner,100g,84.0,3.0,7.0,4.5
+426,Karele Aloo (Bitter Gourd & Potato),Lunch/Dinner,100g,92.0,2.2,10.0,4.5
+427,Onion Salad (Sirka Pyaz),Lunch/Dinner,100g,25.0,0.8,5.5,0.1
+428,Mint & Onion Chutney Salad,Lunch/Dinner,100g,20.0,0.6,4.0,0.1
+429,Fruit & Nut Salad (Light Dressing),Snack,100g,112.0,2.5,18.0,3.5
+430,Chicken & Chickpea Power Salad,Lunch/Dinner,100g,148.0,17.0,10.0,4.5
+431,Boiled Egg & Sprout Bowl,Lunch/Dinner/Snack,100g,118.0,11.0,8.0,4.5
+432,Hot & Sour Soup (Pakistani-Chinese),Lunch/Dinner,100g,48.0,2.5,7.0,1.0
+433,Chicken Manchow Soup,Lunch/Dinner,100g,60.0,4.5,7.5,1.5
+434,Mixed Vegetable Clear Soup,Lunch/Dinner,100g,32.0,1.4,5.5,0.4
+435,Chicken Sweet Corn Soup,Lunch/Dinner,100g,65.0,5.0,8.0,1.8
+436,Beef Yakhni Soup (Clear),Lunch/Dinner,100g,60.0,7.0,2.0,2.5
+437,Chicken Chutney Sandwich,Snack,100g,228.0,10.0,26.0,9.0
+438,Vegetable Sandwich,Snack,100g,192.0,5.0,28.0,6.5
+439,Club Sandwich (Chicken & Egg),Snack,100g,245.0,13.0,22.0,12.0
+440,Papri Chaat,Snack,100g,205.0,4.5,25.0,10.0
+441,Channa Zor Garam (Spiced Chickpea Snack),Snack,100g,158.0,7.5,24.0,3.5
+442,Reshmi Paratha Roll,Snack/Lunch,100g,280.0,12.0,24.0,15.0
+443,Chicken Malai Boti Roll,Snack/Lunch,100g,265.0,14.0,23.0,13.0
+444,Vegetable Roll (Paratha Wrap),Snack,100g,235.0,5.5,26.0,11.5
+445,Bun Kabab (Vegetable),Snack,100g,212.0,5.0,26.0,9.5
+446,Chicken Corn Cheese Roll,Snack,100g,255.0,10.0,24.0,13.5
+447,Loquat (Loquat Fruit),Snack,100g,47.0,0.4,12.0,0.2
+448,Ber (Jujube),Snack,100g,79.0,0.8,20.0,0.2
+449,Toot (Mulberry),Snack,100g,43.0,1.4,9.8,0.4
+450,Sharifa (Custard Apple),Snack,100g,94.0,1.6,24.0,0.3
+451,"Amrud (Guava, Ripe)",Snack,100g,68.0,2.5,14.0,0.9
+452,Shahi Tukray (Bread Pudding),Dessert,100g,312.0,4.5,38.0,16.0
+453,Custard (Plain),Dessert,100g,122.0,3.0,18.0,4.0
+454,Sevaiyan Kheer (Vermicelli Milk Pudding),Dessert,100g,165.0,3.5,24.0,6.0
+455,Malpora (Sweet Fried Pancake),Dessert,100g,345.0,4.5,45.0,16.0
+456,Kalakand,Dessert,100g,380.0,8.0,42.0,20.0
+457,Besan Ladoo,Dessert,100g,425.0,8.0,45.0,24.0
+458,Petha (Sweetened Ash Gourd),Dessert,100g,228.0,0.3,58.0,0.1
+459,Boiled Soybeans (Plain),Lunch/Dinner/Snack,100g,173.0,16.6,10.0,9.0
+460,Whey Protein Shake (Milk-Based),Breakfast/Snack,100g,112.0,20.0,4.0,1.5
+461,Egg White Protein Shake,Breakfast/Snack,100g,52.0,11.0,1.0,0.2
+462,Chicken Mince Protein Bowl (Plain),Lunch/Dinner,100g,168.0,20.0,3.0,8.0
+463,Sattu Protein Drink (High Protein),Breakfast/Snack,100g,108.0,6.5,16.0,1.5
+464,Grilled Paneer Cubes (Plain),Lunch/Dinner/Snack,100g,258.0,17.5,3.5,19.5
+465,Chicken Sajji with Rice,Lunch/Dinner,100g,188.0,15.5,15.0,7.5
+466,Mutton Karahi with Naan,Lunch/Dinner,100g,274.0,14.0,29.0,12.5
+467,Halwa Puri with Lassi,Breakfast,100g,398.0,6.0,55.0,18.0
+468,Paye with Naan,Breakfast/Lunch,100g,232.0,10.5,26.0,9.5
+469,Sindhi Biryani with Raita,Lunch/Dinner,100g,160.0,8.5,17.5,6.5
+470,Chana Chaat with Yogurt,Snack,100g,125.0,6.5,17.0,3.5
+471,Daal Fry with Rice,Lunch/Dinner,100g,123.0,4.8,20.0,3.0
+472,Chicken Sajji Combo (with Naan),Lunch/Dinner,100g,210.0,16.0,17.5,9.5
+473,Fish Fry with Rice and Salad,Lunch/Dinner,100g,158.0,12.5,17.0,6.0
+474,Chicken Karahi with Roti (Half Portion),Lunch/Dinner,100g,214.0,15.0,19.0,9.5
+475,Taftan (Leavened Bread),Breakfast/Lunch/Dinner,100g,350.0,7.0,55.0,12.0
+476,Beef Qorma,Lunch/Dinner,100g,268.0,17.0,4.5,19.5
+477,Bottled Soft Drink (Cola),Snack,100g,42.0,0.0,10.6,0.0
+478,Boiled Egg with 2 Toast and Green Tea,Breakfast,100g,202.5,11.0,25.0,6.5
+479,Boiled Egg with Toast (No Butter),Breakfast,100g,174.5,11.5,22.0,4.5
+480,Egg White Omelette with Toast,Breakfast,100g,163.0,13.0,21.0,3.0
+481,2 Boiled Eggs with Black Tea (No Sugar),Breakfast,100g,163.5,13.5,1.5,11.5
+482,Toast with Boiled Egg and Green Tea,Breakfast,100g,179.0,11.0,22.5,5.0
+483,Roti with Boiled Egg and Green Tea,Breakfast,100g,186.6,10.8,25.5,4.6
+484,Omelette with Toast,Breakfast,100g,222.5,11.0,21.0,10.5
+485,Omelette with Toast and Tea,Breakfast,100g,209.5,10.5,20.5,9.5
+486,Fried Egg with 2 Toast,Breakfast,100g,217.0,11.0,23.0,9.0
+487,Paratha with Tea (Milk Tea),Breakfast,100g,226.5,6.0,27.0,10.5
+488,Anda Paratha with Tea,Breakfast,100g,232.0,8.0,23.0,12.0
+489,Bun with Omelette,Breakfast,100g,217.0,9.5,24.5,9.0
+490,Toast with Butter and Tea,Breakfast,100g,166.5,5.0,22.0,6.5
+491,Roti with Fried Egg and Tea,Breakfast,100g,170.5,8.0,20.0,6.5
+492,Paratha with 2 Fried Eggs,Breakfast,100g,340.0,12.0,28.0,20.0
+493,Anda Paratha with Lassi,Breakfast,100g,296.0,8.0,30.0,16.0
+494,2 Paratha with Omelette and Tea,Breakfast,100g,324.0,8.5,32.0,18.0
+495,Naan with Omelette,Breakfast,100g,262.0,9.5,29.0,12.0

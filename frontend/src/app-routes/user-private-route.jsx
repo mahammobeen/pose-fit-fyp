@@ -6,31 +6,25 @@ const UserPrivateRoute = ({ children }) => {
   const token = localStorage.getItem("pose-fit");
   const userData = localStorage.getItem("pose-fit-user");
 
-  // =====================================================
-  // NOT LOGGED IN
-  // =====================================================
-
   if (!token || !userData) {
     return <Navigate to="/user/login" replace state={{ from: location }} />;
   }
 
-  // =====================================================
-  // VALIDATE USER DATA
-  // =====================================================
-
   try {
     const user = JSON.parse(userData);
 
-    // Only USER can access user routes
     if (user?.role !== "USER") {
       if (user?.role === "ADMIN") {
+        // eslint-disable-next-line react-hooks/error-boundaries
         return <Navigate to="/admin/dashboard" replace />;
       }
 
       if (user?.role === "PROFESSIONAL") {
+        // eslint-disable-next-line react-hooks/error-boundaries
         return <Navigate to="/professional/dashboard" replace />;
       }
 
+      // eslint-disable-next-line react-hooks/error-boundaries
       return <Navigate to="/user/login" replace state={{ from: location }} />;
     }
   } catch (error) {

@@ -7,12 +7,11 @@ const transporter = nodemailer.createTransport({
   port: 465,
   secure: true,
   auth: {
-    user: process.env.USER_EMAIL,
-    pass: process.env.USER_PASS,
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASSWORD,
   },
 });
 
-// 1. Get total user count
 const getAllUsers = async (req, res) => {
   try {
     const totalUsers = await UserModel.countDocuments({
@@ -33,11 +32,11 @@ const getAllUsers = async (req, res) => {
   }
 };
 
-// 2. Get list of all users
 const userDetails = async (req, res) => {
   try {
-    const users = await UserModel.find({ role: "USER" })
-      .select("-password -verificationCode");
+    const users = await UserModel.find({ role: "USER" }).select(
+      "-password -verificationCode",
+    );
 
     return res.status(200).json({
       success: true,
@@ -53,7 +52,6 @@ const userDetails = async (req, res) => {
   }
 };
 
-// 3. Delete user by ID
 const deleteUser = async (req, res) => {
   try {
     const userId = req.params.id;
@@ -81,11 +79,10 @@ const deleteUser = async (req, res) => {
   }
 };
 
-// 4. Update user details
 const updateUser = async (req, res) => {
   try {
     const userId = req.params.id;
-    const { firstName, lastName, email } = req.body;
+    const { firstName, lastName } = req.body;
 
     const user = await UserModel.findById(userId);
 
@@ -95,32 +92,14 @@ const updateUser = async (req, res) => {
         message: "User not found",
       });
     }
-
-    if (email) {
-      const existingUser = await UserModel.findOne({
-        email: email.toLowerCase(),
-        _id: { $ne: userId },
-      });
-
-      if (existingUser) {
-        return res.status(400).json({
-          success: false,
-          message: "Email is already in use by another user",
-        });
-      }
-    }
-
     const updatedData = {};
 
     if (firstName) updatedData.firstName = firstName;
     if (lastName) updatedData.lastName = lastName;
-    if (email) updatedData.email = email.toLowerCase();
 
-    const updatedUser = await UserModel.findByIdAndUpdate(
-      userId,
-      updatedData,
-      { new: true }
-    ).select("-password -verificationCode");
+    const updatedUser = await UserModel.findByIdAndUpdate(userId, updatedData, {
+      new: true,
+    }).select("-password -verificationCode");
 
     return res.status(200).json({
       success: true,
@@ -137,7 +116,6 @@ const updateUser = async (req, res) => {
   }
 };
 
-// 5. Get dashboard stats
 const getStats = async (req, res) => {
   try {
     const totalUsers = await UserModel.countDocuments({
@@ -168,9 +146,7 @@ const getStats = async (req, res) => {
     });
 
     const conversionRate =
-      totalUsers > 0
-        ? Math.round((verifiedUsers / totalUsers) * 100)
-        : 0;
+      totalUsers > 0 ? Math.round((verifiedUsers / totalUsers) * 100) : 0;
 
     return res.status(200).json({
       success: true,
@@ -192,7 +168,6 @@ const getStats = async (req, res) => {
   }
 };
 
-// 6. Get all professionals for admin
 const getProfessionals = async (req, res) => {
   try {
     const professionals = await UserModel.find({
@@ -214,7 +189,6 @@ const getProfessionals = async (req, res) => {
   }
 };
 
-// 9. Admin invites / adds a new professional
 const addProfessional = async (req, res) => {
   try {
     const {
@@ -245,7 +219,8 @@ const addProfessional = async (req, res) => {
       });
     }
 
-    const tempPassword = password || `PoseFit@${Math.floor(1000 + Math.random() * 9000)}`;
+    const tempPassword =
+      password || `PoseFit@${Math.floor(1000 + Math.random() * 9000)}`;
     const hashedPassword = await bcrypt.hash(tempPassword, 10);
 
     const newProfessional = new UserModel({
@@ -266,7 +241,7 @@ const addProfessional = async (req, res) => {
 
     try {
       await transporter.sendMail({
-        from: `"PoseFit Admin" <${process.env.USER_EMAIL}>`,
+        from: `"PoseFit Admin" <${process.env.EMAIL_USER}>`,
         to: email.toLowerCase(),
         subject: "Welcome to PoseFit - Professional Onboarding Credentials",
         text: `Hi ${firstName} ${lastName},
@@ -291,8 +266,8 @@ PoseFit Team`,
 
     return res.status(201).json({
       success: true,
-      message: "Professional invited & account created successfully. Credentials emailed to professional.",
-      tempPassword,
+      message:
+        "Professional invited & account created successfully. Credentials emailed to professional.",
       professional: {
         _id: newProfessional._id,
         firstName: newProfessional.firstName,
@@ -316,7 +291,6 @@ PoseFit Team`,
   }
 };
 
-// 10. Delete a professional by ID
 const deleteProfessional = async (req, res) => {
   try {
     const { id } = req.params;
@@ -347,7 +321,6 @@ const deleteProfessional = async (req, res) => {
   }
 };
 
-// 11. Get admin registration analytics (past 7 days)
 const getAnalytics = async (req, res) => {
   try {
     const dates = [];
@@ -420,7 +393,6 @@ const getAnalytics = async (req, res) => {
   }
 };
 
-// 12. Get pending professional applications for verification
 const getPendingProfessionals = async (req, res) => {
   try {
     const professionals = await UserModel.find({
@@ -430,7 +402,7 @@ const getPendingProfessionals = async (req, res) => {
       },
     })
       .select(
-        "firstName lastName email role professionalType specialization bio profilePhoto sessionFee credentialDocs bankDetails availability professionalStatus rejectionReason appliedAt verificationNotes"
+        "firstName lastName email role professionalType specialization experience bio profilePhoto sessionFee credentialDocs bankDetails availability professionalStatus rejectionReason appliedAt ",
       )
       .sort({ updatedAt: -1 });
 
@@ -448,10 +420,9 @@ const getPendingProfessionals = async (req, res) => {
   }
 };
 
-// 13. Admin approves or rejects professional application
 const updateProfessionalStatus = async (req, res) => {
   try {
-    const { status, rejectionReason, verificationNotes } = req.body;
+    const { status, rejectionReason } = req.body;
 
     const normalizedStatus = (status || "").toLowerCase();
 
@@ -479,12 +450,13 @@ const updateProfessionalStatus = async (req, res) => {
       professional.rejectionReason = undefined;
     } else {
       professional.professionalStatus = "rejected";
-      professional.rejectionReason = rejectionReason || verificationNotes || "Application requirements not met.";
+      professional.rejectionReason =
+        rejectionReason || "Application rejected by Admin.";
     }
 
-    if (verificationNotes) {
-      professional.verificationNotes = verificationNotes;
-    }
+    // if (verificationNotes) {
+    //   professional.verificationNotes = verificationNotes;
+    // }
 
     await professional.save();
 
@@ -515,7 +487,7 @@ PoseFit Team`;
 
     try {
       await transporter.sendMail({
-        from: process.env.USER_EMAIL,
+        from: process.env.EMAIL_USER,
         to: professional.email,
         subject,
         text,
@@ -547,68 +519,54 @@ PoseFit Team`;
   }
 };
 
-// 14. Change admin password
 const changeAdminPassword = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
-
     if (!currentPassword || !newPassword) {
-      return res.status(400).json({
-        success: false,
-        message: "Current password and new password are required",
-      });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "Current password and new password are required",
+        });
     }
-
     const admin = await UserModel.findOne({
       _id: req.user.userId,
       role: "ADMIN",
     });
-
     if (!admin) {
-      return res.status(404).json({
-        success: false,
-        message: "Admin not found",
-      });
+      return res
+        .status(404)
+        .json({ success: false, message: "Admin not found" });
     }
-
     const isPasswordCorrect = await bcrypt.compare(
       currentPassword,
-      admin.password
+      admin.password,
     );
-
     if (!isPasswordCorrect) {
-      return res.status(400).json({
-        success: false,
-        message: "Current password is incorrect",
-      });
+      return res
+        .status(400)
+        .json({ success: false, message: "Current password is incorrect" });
     }
-
-    const isSamePassword = await bcrypt.compare(
-      newPassword,
-      admin.password
-    );
-
+    const isSamePassword = await bcrypt.compare(newPassword, admin.password);
     if (isSamePassword) {
-      return res.status(400).json({
-        success: false,
-        message: "New password must be different",
-      });
+      return res
+        .status(400)
+        .json({ success: false, message: "New password must be different" });
     }
-
     admin.password = await bcrypt.hash(newPassword, 10);
-
     await admin.save();
-
-    return res.status(200).json({
-      success: true,
-      message: "Admin password changed successfully",
-    });
+    return res
+      .status(200)
+      .json({ success: true, message: "Admin password changed successfully" });
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: "Failed to change admin password",
-      error: error.message,
-    });
+    return res
+      .status(500)
+      .json({
+        success: false,
+        message: "Failed to change admin password",
+        error: error.message,
+      });
   }
 };
 

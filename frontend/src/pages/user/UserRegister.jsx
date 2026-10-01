@@ -1,52 +1,89 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
+import { z } from "zod";
 import { httpClient } from "../../lib/http";
-import { IconAlertTriangle, IconCheck } from "../../components/admin/Icons";
+import { AlertTriangle, Check } from "lucide-react";
+import posefit_logo from "../../assets/posefit_logo.png";
+
+const registerSchema = z.object({
+  firstName: z
+    .string()
+    .trim()
+    .min(2, "First name must be at least 2 characters.")
+    .max(50, "First name must not exceed 50 characters.")
+    .regex(
+      /^[A-Za-z][A-Za-z\s'.-]*$/,
+      "First name contains invalid characters.",
+    ),
+
+  lastName: z
+    .string()
+    .trim()
+    .min(2, "Last name must be at least 2 characters.")
+    .max(50, "Last name must not exceed 50 characters.")
+    .regex(
+      /^[A-Za-z][A-Za-z\s'.-]*$/,
+      "Last name contains invalid characters.",
+    ),
+
+  email: z
+    .string()
+    .trim()
+    .min(1, "Email is required.")
+    .max(254, "Email address is too long.")
+    .email("Please enter a valid email address."),
+
+  password: z
+    .string()
+    .min(1, "Password is required.")
+    .min(8, "Password must be at least 8 characters.")
+    .max(64, "Password must not exceed 64 characters.")
+    .refine((value) => !/\s/.test(value), {
+      message: "Password must not contain spaces.",
+    })
+    .refine((value) => /[a-z]/.test(value), {
+      message: "Password must contain a lowercase letter.",
+    })
+    .refine((value) => /[A-Z]/.test(value), {
+      message: "Password must contain an uppercase letter.",
+    })
+    .refine((value) => /[0-9]/.test(value), {
+      message: "Password must contain a number.",
+    })
+    .refine((value) => /[^A-Za-z0-9]/.test(value), {
+      message: "Password must contain a special character.",
+    }),
+});
+
+const verificationSchema = z.object({
+  code: z
+    .string()
+    .trim()
+    .length(6, "Please enter the 6-digit verification code.")
+    .regex(/^\d{6}$/, "Please enter the 6-digit verification code."),
+});
 
 export default function UserRegister() {
   const navigate = useNavigate();
   const location = useLocation();
 
   const [step, setStep] = useState(1);
-
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
     email: "",
     password: "",
   });
-
+  const [showPassword, setShowPassword] = useState(false);
   const [userId, setUserId] = useState("");
   const [code, setCode] = useState("");
-
   const [loading, setLoading] = useState(false);
-
-  // =====================================================
-  // TOAST
-  // =====================================================
-
   const [toast, setToast] = useState(null);
 
-  const showToast = useCallback((message, type = "success") => {
-    setToast({
-      msg: message,
-      type,
-    });
+  const showToast = useCallback((type, message) => {
+    setToast({ type, message });
+    setTimeout(() => setToast(null), 4000);
   }, []);
-
-  useEffect(() => {
-    if (!toast) return;
-
-    const timer = setTimeout(() => {
-      setToast(null);
-    }, 4000);
-
-    return () => clearTimeout(timer);
-  }, [toast]);
-
-  // =====================================================
-  // INPUT CHANGE
-  // =====================================================
 
   const handleChange = (e) => {
     setForm((prev) => ({
@@ -55,286 +92,162 @@ export default function UserRegister() {
     }));
   };
 
-  // =====================================================
-  // REGISTER
-  // =====================================================
-
   const handleRegisterSubmit = async (e) => {
     e.preventDefault();
 
-    if (
-      !form.firstName.trim() ||
-      !form.lastName.trim() ||
-      !form.email.trim() ||
-      !form.password
-    ) {
-      showToast("All fields are required.", "error");
-      return;
-    }
+    const validation = registerSchema.safeParse(form);
 
-    if (form.password.length < 6) {
-      showToast("Password must be at least 6 characters.", "error");
+    if (!validation.success) {
+      showToast("error", validation.error.issues[0].message);
       return;
     }
 
     try {
       setLoading(true);
 
+      const { firstName, lastName, email, password } = validation.data;
+
       const res = await httpClient.post("/auth/register", {
-        firstName: form.firstName.trim(),
-        lastName: form.lastName.trim(),
-        email: form.email.trim().toLowerCase(),
-        password: form.password,
+        firstName,
+        lastName,
+        email: email.toLowerCase(),
+        password,
         role: "USER",
       });
 
       if (!res.data?.success) {
         showToast(
-          res.data?.message || "Registration failed. Please try again.",
           "error",
+          res.data?.message || "Registration failed. Please try again.",
         );
         return;
       }
 
-      // =================================================
-      // SAVE USER ID FOR VERIFICATION
-      // =================================================
+      if (!res.data?.userId) {
+        showToast(
+          "error",
+          "Registration succeeded, but verification session could not be created.",
+        );
+        return;
+      }
 
       setUserId(res.data.userId);
+      setStep(2);
 
       showToast(
+        "success",
         res.data.message ||
           "Registration successful. Verification code sent to your email.",
-        "success",
       );
-
-      setStep(2);
     } catch (err) {
-      console.error("Registration error:", err);
-
       showToast(
+        "error",
         err?.response?.data?.message ||
           err?.response?.data?.error ||
           "Registration failed. Please verify your details.",
-        "error",
       );
     } finally {
       setLoading(false);
     }
   };
 
-  // =====================================================
-  // VERIFY EMAIL
-  // =====================================================
-
   const handleVerifySubmit = async (e) => {
     e.preventDefault();
 
-    const trimmedCode = code.trim();
+    const validation = verificationSchema.safeParse({ code });
 
-    // =================================================
-    // VALIDATION
-    // =================================================
+    if (!validation.success) {
+      showToast("error", validation.error.issues[0].message);
+      return;
+    }
 
     if (!userId) {
       showToast(
-        "Registration session expired. Please register again.",
         "error",
+        "Registration session expired. Please register again.",
       );
-
       setStep(1);
-      return;
-    }
-
-    if (!trimmedCode) {
-      showToast("Verification code is required.", "error");
-      return;
-    }
-
-    if (!/^\d{6}$/.test(trimmedCode)) {
-      showToast("Please enter the 6-digit verification code.", "error");
+      setCode("");
       return;
     }
 
     try {
       setLoading(true);
 
-      // =================================================
-      // VERIFY EMAIL
-      // =================================================
-
-      const verifyRes = await httpClient.post("/auth/verify-email", {
+      const res = await httpClient.post("/auth/verify-email", {
         userId,
-        code: trimmedCode,
+        code: validation.data.code,
       });
 
-      if (!verifyRes.data?.success) {
+      if (!res.data?.success) {
         showToast(
-          verifyRes.data?.message ||
-            "Verification failed. Please check the code.",
           "error",
+          res.data?.message || "Verification failed. Please check the code.",
         );
         return;
       }
-
-      showToast("Email verified successfully. Logging you in...", "success");
-
-      // =================================================
-      // AUTO LOGIN
-      // =================================================
-
-      const loginRes = await httpClient.post("/auth/login", {
-        email: form.email.trim().toLowerCase(),
-        password: form.password,
-      });
-
-      const { success, token, user } = loginRes.data;
-
-      // =================================================
-      // LOGIN RESPONSE VALIDATION
-      // =================================================
-
-      if (!success || !token || !user) {
-        showToast(
-          "Email verified successfully, but automatic login failed. Please login manually.",
-          "error",
-        );
-
-        setTimeout(() => {
-          navigate("/login", {
-            state: {
-              from: location.state?.from,
-            },
-          });
-        }, 1500);
-
-        return;
-      }
-
-      // =================================================
-      // ROLE CHECK
-      // =================================================
-
-      if (user.role !== "USER") {
-        showToast(
-          "Invalid account role. Please use the appropriate portal.",
-          "error",
-        );
-        return;
-      }
-
-      // =================================================
-      // NORMALIZE USER
-      // =================================================
-
-      const normalizedUser = {
-        ...user,
-        _id: user._id || user.id || user.userId,
-      };
-
-      const userIdFromResponse = user?._id || user?.id || user?.userId;
-
-      if (!userIdFromResponse) {
-        showToast("User ID was not received from server.", "error");
-        return;
-      }
-
-      // =================================================
-      // CLEAR OLD LOGIN DATA
-      // =================================================
-
-      localStorage.removeItem("pose-fit");
-      localStorage.removeItem("pose-fit-user");
-
-      // =================================================
-      // SAVE AUTH DATA
-      // =================================================
-
-      localStorage.setItem("pose-fit", token);
-
-      localStorage.setItem("pose-fit-user", JSON.stringify(normalizedUser));
-
-      // =================================================
-      // DEBUG
-      // =================================================
-
-      console.log("REGISTER LOGIN RESPONSE:", loginRes.data);
-      console.log("SAVED TOKEN:", token);
-      console.log("SAVED USER:", normalizedUser);
-      console.log("SAVED USER ID:", normalizedUser._id);
-
-      // =================================================
-      // REDIRECT
-      // =================================================
-
-      const from = location.state?.from?.pathname || "/user/dashboard";
-
-      navigate(from, {
-        replace: true,
-      });
-    } catch (err) {
-      console.error("Verification/Login error:", err);
 
       showToast(
+        "success",
+        "Email verified successfully. Please login to continue.",
+      );
+
+      setTimeout(() => {
+        navigate("/user/login", {
+          replace: true,
+          state: {
+            email: form.email.trim().toLowerCase(),
+            from: location.state?.from,
+          },
+        });
+      }, 1200);
+    } catch (err) {
+      showToast(
+        "error",
         err?.response?.data?.message ||
           err?.response?.data?.error ||
           "Verification failed. Please check the code and try again.",
-        "error",
       );
     } finally {
       setLoading(false);
     }
   };
 
-  // =====================================================
-  // BACK TO REGISTER
-  // =====================================================
-
   const handleBack = () => {
+    if (loading) return;
+
     setStep(1);
     setCode("");
   };
 
-  // =====================================================
-  // TOAST ICON
-  // =====================================================
-
-  const ToastIcon = () => {
-    if (toast?.type === "error") {
-      return <IconAlertTriangle className="w-5 h-5 text-white shrink-0" />;
-    }
-
-    return <IconCheck className="w-5 h-5 text-white shrink-0" />;
-  };
-
   return (
-    <div
-      className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
-      style={{
-        background:
-          "linear-gradient(135deg, #f0fdf4 0%, #f8fafc 40%, #e0f2fe 100%)",
-      }}
-    >
-      {/* =====================================================
-          TOAST
-      ===================================================== */}
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-surface px-4 py-8 font-sans">
+      <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-brand-light/50 blur-3xl" />
+
+      <div className="pointer-events-none absolute -bottom-24 -right-24 h-80 w-80 rounded-full bg-accent-blue/60 blur-3xl" />
+
+      <div className="pointer-events-none absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent-orange/20 blur-3xl" />
 
       {toast && (
         <div
-          className={`fixed top-5 right-5 z-[100] max-w-sm px-5 py-3.5 rounded-2xl shadow-xl text-white text-sm font-bold border flex items-center gap-3 ${
+          className={`fixed right-5 top-5 z-[100] flex max-w-sm items-center gap-3 rounded-card border px-5 py-4 text-sm font-medium shadow-card-hover ${
             toast.type === "error"
-              ? "bg-rose-500 border-rose-600"
-              : "bg-emerald-600 border-emerald-700"
+              ? "border-red-200 bg-red-50 text-red-700"
+              : "border-brand-light bg-brand-light/60 text-brand-dark"
           }`}
         >
-          <ToastIcon />
+          {toast.type === "error" ? (
+            <AlertTriangle className="h-5 w-5 shrink-0" />
+          ) : (
+            <Check className="h-5 w-5 shrink-0" />
+          )}
 
-          <span className="leading-relaxed">{toast.msg}</span>
+          <span>{toast.message}</span>
 
           <button
             type="button"
             onClick={() => setToast(null)}
-            className="ml-2 text-white/80 hover:text-white text-lg leading-none"
+            className="ml-1 text-current opacity-60 transition-opacity hover:opacity-100"
             aria-label="Close notification"
           >
             ✕
@@ -342,178 +255,184 @@ export default function UserRegister() {
         </div>
       )}
 
-      {/* =====================================================
-          BACKGROUND
-      ===================================================== */}
-
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div
-          className="absolute -top-32 -left-32 w-96 h-96 rounded-full opacity-40 blur-3xl"
-          style={{
-            background: "#bbf7d0",
-          }}
-        />
-
-        <div
-          className="absolute -bottom-32 -right-32 w-96 h-96 rounded-full opacity-40 blur-3xl"
-          style={{
-            background: "#bae6fd",
-          }}
-        />
-      </div>
-
-      {/* =====================================================
-          REGISTER CARD
-      ===================================================== */}
-
-      <div className="w-full max-w-md relative z-10">
-        <div className="bg-white/90 backdrop-blur-xl rounded-3xl p-8 border border-stone-200/80 shadow-xl">
-          {/* =================================================
-              HEADER
-          ================================================= */}
-
-          <div className="text-center mb-8">
-            <div
-              className="w-16 h-16 rounded-3xl mx-auto flex items-center justify-center text-white font-black text-2xl shadow-sm mb-4"
-              style={{
-                background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-              }}
+      <div className="relative z-10 w-full max-w-md">
+        <div className="rounded-card border border-brand-light/70 bg-surface/80 p-8 shadow-card-hover backdrop-blur-xl sm:p-10">
+          <div className="mb-7 flex justify-center">
+            <Link
+              to="/"
+              className="flex h-16 w-16 items-center justify-center rounded-card bg-white/70 p-2 shadow-card transition-transform duration-300 hover:-translate-y-1"
             >
-              P
-            </div>
+              <img
+                src={posefit_logo}
+                alt="PoseFit Logo"
+                className="h-full w-full object-contain"
+              />
+            </Link>
+          </div>
 
-            <h1 className="text-2xl font-black text-stone-800 tracking-tight">
-              PoseFit Sign Up
+          <div className="mb-8 text-center">
+            <h1 className="text-3xl font-extrabold tracking-tight text-gray-800">
+              {step === 1 ? "Create Account" : "Verify Your Email"}
             </h1>
 
-            <p className="text-xs text-stone-500 font-medium mt-1">
+            <p className="mt-2 text-sm text-gray-500">
               {step === 1
-                ? "Create your customer account to start booking"
-                : "Verify your email to complete registration"}
+                ? "Create your account to start your PoseFit journey"
+                : "Enter the verification code sent to your email"}
             </p>
           </div>
 
-          {/* =================================================
-              STEP 1 - REGISTER
-          ================================================= */}
-
           {step === 1 ? (
-            <form onSubmit={handleRegisterSubmit} className="space-y-4">
-              {/* First + Last Name */}
-
-              <div className="grid grid-cols-2 gap-4">
+            <form
+              onSubmit={handleRegisterSubmit}
+              className="space-y-5"
+              autoComplete="on"
+            >
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-stone-600 mb-1.5">
+                  <label
+                    htmlFor="firstName"
+                    className="mb-2 block text-sm font-semibold text-gray-700"
+                  >
                     First Name
                   </label>
 
                   <input
+                    id="firstName"
                     type="text"
                     name="firstName"
                     required
                     autoComplete="given-name"
-                    placeholder="John"
+                    placeholder="Enter first name"
                     value={form.firstName}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 rounded-2xl border border-stone-200 text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-300 text-stone-800 transition-all bg-stone-50/50 focus:bg-white"
+                    disabled={loading}
+                    className="w-full rounded-btn border border-gray-200 bg-white/70 px-4 py-3.5 text-sm text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand-light/60 disabled:cursor-not-allowed disabled:opacity-60"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-stone-600 mb-1.5">
+                  <label
+                    htmlFor="lastName"
+                    className="mb-2 block text-sm font-semibold text-gray-700"
+                  >
                     Last Name
                   </label>
 
                   <input
+                    id="lastName"
                     type="text"
                     name="lastName"
                     required
                     autoComplete="family-name"
-                    placeholder="Doe"
+                    placeholder="Enter last name"
                     value={form.lastName}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 rounded-2xl border border-stone-200 text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-300 text-stone-800 transition-all bg-stone-50/50 focus:bg-white"
+                    disabled={loading}
+                    className="w-full rounded-btn border border-gray-200 bg-white/70 px-4 py-3.5 text-sm text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand-light/60 disabled:cursor-not-allowed disabled:opacity-60"
                   />
                 </div>
               </div>
 
-              {/* Email */}
-
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-stone-600 mb-1.5">
+                <label
+                  htmlFor="email"
+                  className="mb-2 block text-sm font-semibold text-gray-700"
+                >
                   Email Address
                 </label>
 
                 <input
+                  id="email"
                   type="email"
                   name="email"
                   required
                   autoComplete="email"
-                  placeholder="john.doe@example.com"
+                  placeholder="Enter your email"
                   value={form.email}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 rounded-2xl border border-stone-200 text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-300 text-stone-800 transition-all bg-stone-50/50 focus:bg-white"
+                  disabled={loading}
+                  className="w-full rounded-btn border border-gray-200 bg-white/70 px-4 py-3.5 text-sm text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand-light/60 disabled:cursor-not-allowed disabled:opacity-60"
                 />
               </div>
 
-              {/* Password */}
-
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-stone-600 mb-1.5">
+                <label
+                  htmlFor="password"
+                  className="mb-2 block text-sm font-semibold text-gray-700"
+                >
                   Password
                 </label>
 
-                <input
-                  type="password"
-                  name="password"
-                  required
-                  minLength={6}
-                  autoComplete="new-password"
-                  placeholder="••••••••"
-                  value={form.password}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 rounded-2xl border border-stone-200 text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-300 text-stone-800 transition-all bg-stone-50/50 focus:bg-white"
-                />
+                <div className="relative">
+                  <input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    required
+                    minLength={8}
+                    maxLength={64}
+                    autoComplete="new-password"
+                    placeholder="Enter your password"
+                    value={form.password}
+                    onChange={(e) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        password: e.target.value.slice(0, 64),
+                      }))
+                    }
+                    disabled={loading}
+                    className="w-full rounded-btn border border-gray-200 bg-white/70 px-4 py-3.5 pr-12 text-sm text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand-light/60 disabled:cursor-not-allowed disabled:opacity-60"
+                  />
 
-                <p className="text-[11px] text-stone-400 mt-1.5">
-                  Password must be at least 6 characters.
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    disabled={loading}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 transition-colors hover:text-brand-dark disabled:cursor-not-allowed"
+                    aria-label={
+                      showPassword ? "Hide password" : "Show password"
+                    }
+                  >
+                    <span className="material-symbols-outlined text-[22px]">
+                      {showPassword ? "visibility_off" : "visibility"}
+                    </span>
+                  </button>
+                </div>
+
+                <p className="mt-1.5 text-xs text-gray-400">
+                  Password must be 8 to 64 characters with uppercase, lowercase,
+                  number, and special character.
                 </p>
               </div>
-
-              {/* Register Button */}
 
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3.5 rounded-2xl font-bold text-white text-sm shadow-md hover:opacity-95 active:scale-95 disabled:opacity-60 transition-all duration-200 flex items-center justify-center gap-2 mt-2"
-                style={{
-                  background:
-                    "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-                }}
+                className="w-full rounded-btn bg-gray-800 px-6 py-3.5 text-sm font-bold text-white shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:bg-gray-700 hover:shadow-card-hover disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
               >
                 {loading ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-
-                    <span>Signing up...</span>
-                  </>
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                    Signing up...
+                  </span>
                 ) : (
-                  <span>Register Account</span>
+                  "Create Account"
                 )}
               </button>
             </form>
           ) : (
-            /* =================================================
-               STEP 2 - VERIFY EMAIL
-            ================================================= */
-
             <form onSubmit={handleVerifySubmit} className="space-y-5">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-stone-600 mb-2 text-center">
-                  Enter 6-Digit Code
+                <label
+                  htmlFor="verificationCode"
+                  className="mb-2 block text-center text-sm font-semibold text-gray-700"
+                >
+                  Verification Code
                 </label>
 
                 <input
+                  id="verificationCode"
                   type="text"
                   inputMode="numeric"
                   autoComplete="one-time-code"
@@ -521,69 +440,59 @@ export default function UserRegister() {
                   maxLength={6}
                   placeholder="123456"
                   value={code}
-                  onChange={(e) => {
-                    const value = e.target.value.replace(/\D/g, "").slice(0, 6);
-
-                    setCode(value);
-                  }}
-                  className="w-full text-center px-4 py-3 rounded-2xl border border-stone-200 text-lg font-black tracking-widest outline-none focus:ring-2 focus:ring-emerald-300 text-stone-800 transition-all bg-stone-50/50 focus:bg-white"
+                  onChange={(e) =>
+                    setCode(e.target.value.replace(/\D/g, "").slice(0, 6))
+                  }
+                  disabled={loading}
+                  className="w-full rounded-btn border border-gray-200 bg-white/70 px-4 py-3.5 text-center text-lg font-bold tracking-[0.35em] text-gray-800 outline-none transition-all placeholder:tracking-normal placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand-light/60 disabled:cursor-not-allowed disabled:opacity-60"
                 />
 
-                <p className="text-center text-[11px] text-stone-400 mt-2">
-                  Check your email for the verification code.
+                <p className="mt-2 text-center text-xs text-gray-400">
+                  Check your email for the 6-digit verification code.
                 </p>
               </div>
-
-              {/* Verify Button */}
 
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3.5 rounded-2xl font-bold text-white text-sm shadow-md hover:opacity-95 active:scale-95 disabled:opacity-60 transition-all duration-200 flex items-center justify-center gap-2"
-                style={{
-                  background:
-                    "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-                }}
+                className="w-full rounded-btn bg-gray-800 px-6 py-3.5 text-sm font-bold text-white shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:bg-gray-700 hover:shadow-card-hover disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
               >
                 {loading ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-
-                    <span>Verifying...</span>
-                  </>
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                    Verifying...
+                  </span>
                 ) : (
-                  <span>Verify Code & Log In</span>
+                  "Verify Email & Continue"
                 )}
               </button>
-
-              {/* Back */}
 
               <button
                 type="button"
                 onClick={handleBack}
                 disabled={loading}
-                className="w-full text-xs font-bold text-stone-500 hover:text-stone-700 disabled:opacity-50 transition-colors"
+                className="w-full text-sm font-semibold text-gray-500 transition-colors hover:text-brand-dark disabled:cursor-not-allowed disabled:opacity-50"
               >
                 ← Back to Registration
               </button>
             </form>
           )}
 
-          {/* =================================================
-              FOOTER
-          ================================================= */}
-
-          <div className="mt-6 text-center text-xs font-bold text-stone-600">
+          <div className="mt-7 text-center text-sm text-gray-500">
             Already have an account?{" "}
             <Link
               to="/user/login"
               state={location.state}
-              className="text-emerald-600 hover:text-emerald-700 underline transition-colors"
+              className="font-bold text-brand-dark transition-colors hover:text-brand"
             >
-              Sign In
+              Login
             </Link>
           </div>
         </div>
+
+        <p className="mt-5 text-center text-xs text-gray-400">
+          Your fitness journey starts with PoseFit.
+        </p>
       </div>
     </div>
   );

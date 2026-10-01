@@ -11,64 +11,60 @@ export function AdminSectionCards({ dbStats = {} }) {
       title: "Total Users",
       value: dbStats.totalUsers ?? 0,
       description: "Lifetime registered users",
-      icon: <IconUsers className="size-6 text-indigo-600" />,
+      icon: <IconUsers className="size-6 text-brand-dark" />,
       trend: "+12.5%",
-      color: "from-indigo-50/50 to-white",
     },
     {
       title: "Active Today",
       value: dbStats.activeToday ?? 0,
       description: "Users active in last 24h",
-      icon: <IconActivity className="size-6 text-emerald-600" />,
+      icon: <IconActivity className="size-6 text-brand-dark" />,
       trend: "+5.2%",
-      color: "from-emerald-50/50 to-white",
     },
     {
       title: "New Users",
       value: dbStats.newUsers ?? 0,
       description: "Joined this week",
-      icon: <IconUserPlus className="size-6 text-blue-600" />,
+      icon: <IconUserPlus className="size-6 text-brand-dark" />,
       trend: "+18%",
-      color: "from-blue-50/50 to-white",
     },
     {
       title: "Conversion",
       value: dbStats.conversionRate ?? "0%",
       description: "Free to Premium",
-      icon: <IconChartBar className="size-6 text-amber-600" />,
+      icon: <IconChartBar className="size-6 text-brand-dark" />,
       trend: "+2.4%",
-      color: "from-amber-50/50 to-white",
     },
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 px-6 py-8">
+    <div className="grid grid-cols-1 gap-5 px-4 py-6 font-sans sm:px-6 lg:grid-cols-4 lg:px-8">
       {stats.map((stat, index) => (
         <div
           key={index}
-          className={`overflow-hidden border-none shadow-sm bg-linear-to-br ${stat.color} hover:shadow-md transition-all duration-300 rounded-3xl bg-white`}
+          className="group overflow-hidden rounded-card border border-brand-light/50 bg-surface/80 shadow-card backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover"
         >
-          <div className="p-6">
-            <div className="flex items-center justify-between mb-4">
+          <div className="p-5 sm:p-6">
+            <div className="mb-5 flex items-center justify-between">
 
-              <div className="p-3 bg-white rounded-2xl shadow-xs">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-brand-light/70 bg-brand-light/30 transition-transform duration-300 group-hover:-translate-y-0.5">
                 {stat.icon}
               </div>
 
-              <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">
+              <span className="rounded-full border border-brand-light/70 bg-brand-light/30 px-2.5 py-1 text-xs font-bold text-brand-dark">
                 {stat.trend}
               </span>
             </div>
 
-            <p className="text-gray-500 font-medium text-sm mb-1">
+            <p className="mb-1 text-sm font-semibold text-gray-500">
               {stat.title}
             </p>
 
-            <h2 className="text-3xl font-black text-gray-900 tracking-tight">
+            <h2 className="text-3xl font-extrabold tracking-tight text-gray-800">
               {stat.value}
             </h2>
 
-            <p className="text-[10px] text-gray-400 mt-2 font-medium uppercase tracking-wider">
+            <p className="mt-2 text-[10px] font-bold uppercase tracking-wider text-gray-400">
               {stat.description}
             </p>
           </div>

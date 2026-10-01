@@ -2,30 +2,31 @@ import {
   Flame,
   Droplets,
   Target,
-  TrendingUp,
   Lock,
   Activity,
   Scale,
   HeartPulse,
-  Moon,
+  X,
+  AlertCircle,
 } from "lucide-react";
 
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
 import UserLayout from "../../components/user/UserLayout";
 import { httpClient } from "../../lib/http";
 
-// =====================================================
-// DUMMY DIET DATA
-// =====================================================
+import breakfastImg from "../../assets/breakfast.jpg";
+import lunchImg from "../../assets/lunch.jpg";
+import dinnerImg from "../../assets/dinner.jpg";
+import snackImg from "../../assets/snack.jpg";
 
 const dietData = [
   {
     id: 1,
     name: "Breakfast",
-    image:
-      "https://images.unsplash.com/photo-1494390248081-4e521a5940db?q=80&w=2606&auto=format&fit=crop",
+    image: breakfastImg,
     calories: "350 kcal",
     time: "8:00 AM",
     status: "Scheduled",
@@ -33,8 +34,7 @@ const dietData = [
   {
     id: 2,
     name: "Lunch",
-    image:
-      "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=2680&auto=format&fit=crop",
+    image: lunchImg,
     calories: "600 kcal",
     time: "1:30 PM",
     status: "Scheduled",
@@ -42,8 +42,7 @@ const dietData = [
   {
     id: 3,
     name: "Snack",
-    image:
-      "https://images.unsplash.com/photo-1543339308-43e59d6b73a6?q=80&w=2670&auto=format&fit=crop",
+    image: snackImg,
     calories: "200 kcal",
     time: "4:00 PM",
     status: "Scheduled",
@@ -51,25 +50,131 @@ const dietData = [
   {
     id: 4,
     name: "Dinner",
-    image:
-      "https://images.unsplash.com/photo-1490645935967-10de6ba17061?q=80&w=1153&auto=format&fit=crop",
+    image: dinnerImg,
     calories: "500 kcal",
     time: "8:30 PM",
     status: "Scheduled",
   },
 ];
 
-// =====================================================
-// USER DASHBOARD
-// =====================================================
-
 export default function UserDashboard() {
   const [metrics, setMetrics] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // ===================================================
-  // GET LOGGED-IN USER
-  // ===================================================
+  const [activeRatingSession, setActiveRatingSession] = useState(null);
+
+  const [selectedRating, setSelectedRating] = useState(5);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [submittingRating, setSubmittingRating] = useState(false);
+
+  const getDismissedProIds = () => {
+    try {
+      const stored = localStorage.getItem("posefit_dismissed_pro_ratings");
+
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const markProDismissed = (proId) => {
+    try {
+      if (!proId) return;
+
+      const dismissed = getDismissedProIds();
+
+      if (!dismissed.includes(proId.toString())) {
+        dismissed.push(proId.toString());
+
+        localStorage.setItem(
+          "posefit_dismissed_pro_ratings",
+          JSON.stringify(dismissed),
+        );
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const fetchPendingRatings = async () => {
+    try {
+      const res = await httpClient.get("/reviews/pending-ratings");
+
+      const sessions = res.data?.pendingSessions || [];
+
+      const dismissedProIds = getDismissedProIds();
+
+      const eligibleToPrompt = sessions.filter((s) => {
+        const proId = s.professional?._id || s.professional;
+
+        return proId && !dismissedProIds.includes(proId.toString());
+      });
+
+      if (eligibleToPrompt.length > 0) {
+        setActiveRatingSession(eligibleToPrompt[0]);
+        setSelectedRating(5);
+        setHoverRating(0);
+      } else {
+        setActiveRatingSession(null);
+      }
+    } catch (err) {
+      console.error("Fetch pending ratings error:", err);
+    }
+  };
+
+  const handleDismissDialog = () => {
+    if (activeRatingSession) {
+      const proId =
+        activeRatingSession.professional?._id ||
+        activeRatingSession.professional;
+
+      markProDismissed(proId);
+    }
+
+    setActiveRatingSession(null);
+  };
+
+  const handleSubmitRating = async (e) => {
+    if (e) e.preventDefault();
+
+    if (!activeRatingSession) return;
+
+    if (!selectedRating || selectedRating < 1 || selectedRating > 5) {
+      toast.error("Please select a rating between 1 and 5 stars.");
+
+      return;
+    }
+
+    try {
+      setSubmittingRating(true);
+
+      const res = await httpClient.post("/reviews/professional", {
+        reviewType: "PROFESSIONAL",
+        paymentId: activeRatingSession._id,
+        rating: selectedRating,
+      });
+
+      toast.success(res.data?.message || "Rating submitted successfully!");
+
+      const proId =
+        activeRatingSession.professional?._id ||
+        activeRatingSession.professional;
+
+      markProDismissed(proId);
+
+      setActiveRatingSession(null);
+    } catch (err) {
+      console.error("Submit session rating error:", err);
+
+      toast.error(err?.response?.data?.message || "Failed to submit rating.");
+    } finally {
+      setSubmittingRating(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPendingRatings();
+  }, []);
 
   const getLoggedInUser = () => {
     const storedUser = localStorage.getItem("pose-fit-user");
@@ -91,22 +196,10 @@ export default function UserDashboard() {
 
   const user = getLoggedInUser();
 
-  // ===================================================
-  // USER ID
-  // ===================================================
-
   const userId = user?._id || user?.id || user?.userId || user?.user_id;
-
-  // ===================================================
-  // FETCH USER METRICS
-  // ===================================================
 
   useEffect(() => {
     const fetchMetrics = async () => {
-      // -----------------------------------------------
-      // USER NOT FOUND
-      // -----------------------------------------------
-
       if (!userId) {
         setLoading(false);
 
@@ -122,10 +215,6 @@ export default function UserDashboard() {
 
         const metricsData = response?.data?.data;
 
-        // ---------------------------------------------
-        // NO METRICS
-        // ---------------------------------------------
-
         if (!metricsData) {
           setMetrics(null);
 
@@ -133,10 +222,6 @@ export default function UserDashboard() {
 
           return;
         }
-
-        // ---------------------------------------------
-        // SUCCESS
-        // ---------------------------------------------
 
         setMetrics(metricsData);
       } catch (error) {
@@ -157,16 +242,46 @@ export default function UserDashboard() {
     fetchMetrics();
   }, [userId]);
 
-  // ===================================================
-  // LOADING
-  // ===================================================
+  const [todayDiet, setTodayDiet] = useState(null);
+
+  useEffect(() => {
+    const fetchTodayDiet = async () => {
+      if (!userId) return;
+
+      try {
+        const res = await httpClient.get(`/user/diet-plan/${userId}/today`);
+
+        if (res.data?.success) {
+          setTodayDiet(res.data);
+        }
+      } catch (err) {
+        if (err?.response?.status !== 404) {
+          console.error("Fetch today diet error:", err);
+        }
+
+        setTodayDiet(null);
+      }
+    };
+
+    fetchTodayDiet();
+
+    const handleDietUpdated = () => {
+      fetchTodayDiet();
+    };
+
+    window.addEventListener("diet-plan-updated", handleDietUpdated);
+
+    return () => {
+      window.removeEventListener("diet-plan-updated", handleDietUpdated);
+    };
+  }, [userId]);
 
   if (loading) {
     return (
       <UserLayout>
-        <div className="min-h-full flex items-center justify-center">
+        <div className="min-h-full flex items-center justify-center bg-stone-50">
           <div className="text-center">
-            <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+            <div className="w-10 h-10 border-4 border-brand border-t-transparent rounded-full animate-spin mx-auto mb-4" />
 
             <p className="text-gray-500 font-medium">
               Loading your fitness dashboard...
@@ -177,19 +292,15 @@ export default function UserDashboard() {
     );
   }
 
-  // ===================================================
-  // STATS
-  // ===================================================
-
   const stats = [
     {
       label: "Daily Calorie Target",
       value: metrics?.tdee ? Math.round(metrics.tdee) : "--",
       unit: "kcal",
       icon: Flame,
-      iconColor: "text-orange-500",
-      bgColor: "from-orange-50 to-orange-100",
-      textColor: "text-orange-700",
+      iconColor: "text-accent-orange-dark",
+      bgColor: "from-accent-orange/70 to-accent-orange/30",
+      textColor: "text-accent-orange-dark",
     },
     {
       label: "Protein Target",
@@ -198,9 +309,9 @@ export default function UserDashboard() {
         : "--",
       unit: "g",
       icon: Target,
-      iconColor: "text-indigo-500",
-      bgColor: "from-indigo-50 to-indigo-100",
-      textColor: "text-indigo-700",
+      iconColor: "text-brand-dark",
+      bgColor: "from-brand-light/70 to-brand-light/30",
+      textColor: "text-brand-dark",
     },
     {
       label: "Daily Water Target",
@@ -208,25 +319,18 @@ export default function UserDashboard() {
       unit: "L",
       icon: Droplets,
       iconColor: "text-blue-500",
-      bgColor: "from-blue-50 to-blue-100",
+      bgColor: "from-accent-blue/70 to-accent-blue/30",
       textColor: "text-blue-700",
     },
   ];
 
-  // ===================================================
-  // MAIN UI
-  // ===================================================
-
   return (
     <UserLayout>
-      <main className="p-6 md:p-8 space-y-10">
-        {/* =================================================
-            HEADER
-        ================================================= */}
+      <main className="relative p-4 sm:p-6 lg:p-8 space-y-8 sm:space-y-10 font-sans bg-stone-50 min-h-full">
 
         <section className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl md:text-4xl font-black text-gray-900">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-gray-800">
               Daily Progress
             </h1>
 
@@ -235,18 +339,14 @@ export default function UserDashboard() {
             </p>
           </div>
 
-          <div className="bg-white px-4 py-2.5 rounded-xl border border-gray-200 flex items-center gap-2 w-fit">
-            <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+          <div className="flex items-center gap-2">
+  <div className="h-2 w-2 rounded-full bg-brand animate-pulse" />
 
-            <span className="text-sm font-medium text-gray-600">
-              Metrics Available
-            </span>
-          </div>
+  <span className="text-sm font-medium text-gray-600">
+    Metrics Available
+  </span>
+</div>
         </section>
-
-        {/* =================================================
-            MAIN STATS
-        ================================================= */}
 
         <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {stats.map((stat) => {
@@ -255,24 +355,24 @@ export default function UserDashboard() {
             return (
               <div
                 key={stat.label}
-                className={`relative overflow-hidden bg-gradient-to-br ${stat.bgColor} p-6 md:p-8 rounded-3xl border border-white shadow-sm`}
+                className={`relative overflow-hidden bg-gradient-to-br ${stat.bgColor} p-6 md:p-8 rounded-card border border-brand-light/40 shadow-card transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover`}
               >
                 <div className="absolute -right-5 -top-5 opacity-10">
                   <Icon className="w-32 h-32" />
                 </div>
 
-                <div className="flex items-center gap-3 mb-5">
-                  <div className="p-2.5 bg-white rounded-xl">
+                <div className="flex items-center gap-3 mb-5 relative">
+                  <div className="p-2.5 bg-surface/80 rounded-btn shadow-xs border border-white/60">
                     <Icon className={`h-5 w-5 ${stat.iconColor}`} />
                   </div>
 
-                  <h2 className="text-gray-600 font-bold text-xs uppercase tracking-wide">
+                  <h2 className="text-gray-600 font-extrabold text-xs uppercase tracking-wide">
                     {stat.label}
                   </h2>
                 </div>
 
-                <div className="flex items-baseline gap-2">
-                  <p className="text-4xl font-black text-gray-900">
+                <div className="flex items-baseline gap-2 relative">
+                  <p className="text-4xl font-extrabold text-gray-800">
                     {stat.value}
                   </p>
 
@@ -285,9 +385,9 @@ export default function UserDashboard() {
 
                 {stat.label === "Daily Water Target" &&
                   metrics?.waterIntake && (
-                    <p className="text-xs text-gray-500 mt-3">
+                    <p className="text-xs text-gray-500 mt-3 relative">
                       Approx.{" "}
-                      <span className="font-bold">
+                      <span className="font-bold text-gray-700">
                         {metrics.waterIntake.glasses}
                       </span>{" "}
                       glasses per day.
@@ -295,7 +395,7 @@ export default function UserDashboard() {
                   )}
 
                 {stat.label === "Daily Calorie Target" && metrics?.tdee && (
-                  <p className="text-xs text-gray-500 mt-3">
+                  <p className="text-xs text-gray-500 mt-3 relative">
                     Estimated calories required per day.
                   </p>
                 )}
@@ -304,13 +404,11 @@ export default function UserDashboard() {
           })}
         </section>
 
-        {/* =================================================
-            BODY METRICS
-        ================================================= */}
-
         <section>
           <div className="mb-6">
-            <h2 className="text-2xl font-black text-gray-900">Body Metrics</h2>
+            <h2 className="text-2xl font-extrabold text-gray-800">
+              Body Metrics
+            </h2>
 
             <p className="text-gray-500 text-sm mt-1">
               Your calculated fitness measurements.
@@ -318,22 +416,20 @@ export default function UserDashboard() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* BMI */}
-
-            <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
+            <div className="card bg-surface/85 border-brand-light/40">
               <div className="flex items-center gap-3 mb-5">
-                <div className="p-3 bg-emerald-50 rounded-xl">
-                  <Scale className="w-5 h-5 text-emerald-600" />
+                <div className="p-3 bg-brand-light/35 rounded-btn">
+                  <Scale className="w-5 h-5 text-brand-dark" />
                 </div>
 
                 <div>
-                  <h3 className="font-bold text-gray-900">BMI</h3>
+                  <h3 className="font-bold text-gray-800">BMI</h3>
 
                   <p className="text-xs text-gray-400">Body Mass Index</p>
                 </div>
               </div>
 
-              <p className="text-4xl font-black text-gray-900">
+              <p className="text-4xl font-extrabold text-gray-800">
                 {metrics?.bmi ?? "--"}
               </p>
 
@@ -342,22 +438,20 @@ export default function UserDashboard() {
               </p>
             </div>
 
-            {/* BMR */}
-
-            <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
+            <div className="card bg-surface/85 border-accent-orange/50">
               <div className="flex items-center gap-3 mb-5">
-                <div className="p-3 bg-orange-50 rounded-xl">
-                  <Flame className="w-5 h-5 text-orange-600" />
+                <div className="p-3 bg-accent-orange/45 rounded-btn">
+                  <Flame className="w-5 h-5 text-accent-orange-dark" />
                 </div>
 
                 <div>
-                  <h3 className="font-bold text-gray-900">BMR</h3>
+                  <h3 className="font-bold text-gray-800">BMR</h3>
 
                   <p className="text-xs text-gray-400">Basal Metabolic Rate</p>
                 </div>
               </div>
 
-              <p className="text-4xl font-black text-gray-900">
+              <p className="text-4xl font-extrabold text-gray-800">
                 {metrics?.bmr ? Math.round(metrics.bmr) : "--"}
               </p>
 
@@ -366,16 +460,14 @@ export default function UserDashboard() {
               </p>
             </div>
 
-            {/* TDEE */}
-
-            <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
+            <div className="card bg-surface/85 border-accent-blue/50">
               <div className="flex items-center gap-3 mb-5">
-                <div className="p-3 bg-indigo-50 rounded-xl">
-                  <Activity className="w-5 h-5 text-indigo-600" />
+                <div className="p-3 bg-accent-blue/50 rounded-btn">
+                  <Activity className="w-5 h-5 text-blue-600" />
                 </div>
 
                 <div>
-                  <h3 className="font-bold text-gray-900">TDEE</h3>
+                  <h3 className="font-bold text-gray-800">TDEE</h3>
 
                   <p className="text-xs text-gray-400">
                     Daily Energy Requirement
@@ -383,7 +475,7 @@ export default function UserDashboard() {
                 </div>
               </div>
 
-              <p className="text-4xl font-black text-gray-900">
+              <p className="text-4xl font-extrabold text-gray-800">
                 {metrics?.tdee ? Math.round(metrics.tdee) : "--"}
               </p>
 
@@ -394,18 +486,14 @@ export default function UserDashboard() {
           </div>
         </section>
 
-        {/* =================================================
-            FITNESS PROFILE
-        ================================================= */}
-
-        <section className="bg-white p-6 md:p-8 rounded-3xl border border-gray-100 shadow-sm">
+        <section className="card bg-surface/85 border-brand-light/40 p-6 md:p-8">
           <div className="flex items-center gap-3 mb-6">
-            <div className="p-3 bg-emerald-50 rounded-xl">
-              <HeartPulse className="w-5 h-5 text-emerald-600" />
+            <div className="p-3 bg-brand-light/35 rounded-btn">
+              <HeartPulse className="w-5 h-5 text-brand-dark" />
             </div>
 
             <div>
-              <h2 className="text-xl font-bold text-gray-900">
+              <h2 className="text-xl font-extrabold text-gray-800">
                 Your Fitness Profile
               </h2>
 
@@ -416,478 +504,378 @@ export default function UserDashboard() {
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {/* Weight */}
-
-            <div className="bg-gray-50 rounded-2xl p-4">
+            <div className="bg-brand-light/15 rounded-btn p-4 border border-brand-light/30">
               <p className="text-xs text-gray-400 mb-1">Weight</p>
 
-              <p className="font-bold text-gray-900">
+              <p className="font-bold text-gray-800">
                 {metrics?.weight ?? "--"} kg
               </p>
             </div>
 
-            {/* Height */}
-
-            <div className="bg-gray-50 rounded-2xl p-4">
+            <div className="bg-accent-blue/15 rounded-btn p-4 border border-accent-blue/30">
               <p className="text-xs text-gray-400 mb-1">Height</p>
 
-              <p className="font-bold text-gray-900">
+              <p className="font-bold text-gray-800">
                 {metrics?.height ?? "--"} cm
               </p>
             </div>
 
-            {/* Age */}
-
-            <div className="bg-gray-50 rounded-2xl p-4">
+            <div className="bg-accent-orange/15 rounded-btn p-4 border border-accent-orange/30">
               <p className="text-xs text-gray-400 mb-1">Age</p>
 
-              <p className="font-bold text-gray-900">
+              <p className="font-bold text-gray-800">
                 {metrics?.age ?? "--"} years
               </p>
             </div>
 
-            {/* Goal */}
-
-            <div className="bg-gray-50 rounded-2xl p-4">
+            <div className="bg-brand-light/15 rounded-btn p-4 border border-brand-light/30">
               <p className="text-xs text-gray-400 mb-1">Goal</p>
 
-              <p className="font-bold text-gray-900 capitalize">
+              <p className="font-bold text-gray-800 capitalize">
                 {metrics?.goal ?? "--"}
               </p>
             </div>
 
-            {/* Gender */}
-
-            <div className="bg-gray-50 rounded-2xl p-4">
+            <div className="bg-accent-blue/15 rounded-btn p-4 border border-accent-blue/30">
               <p className="text-xs text-gray-400 mb-1">Gender</p>
 
-              <p className="font-bold text-gray-900 capitalize">
+              <p className="font-bold text-gray-800 capitalize">
                 {metrics?.gender ?? "--"}
               </p>
             </div>
 
-            {/* Activity Level */}
-
-            <div className="bg-gray-50 rounded-2xl p-4">
+            <div className="bg-accent-orange/15 rounded-btn p-4 border border-accent-orange/30">
               <p className="text-xs text-gray-400 mb-1">Activity Level</p>
 
-              <p className="font-bold text-gray-900 capitalize">
+              <p className="font-bold text-gray-800 capitalize">
                 {metrics?.activityLevel ?? "--"}
               </p>
             </div>
-
-            {/* Diet Preference */}
-
-            <div className="bg-gray-50 rounded-2xl p-4">
-              <p className="text-xs text-gray-400 mb-1">Diet Preference</p>
-
-              <p className="font-bold text-gray-900 capitalize">
-                {metrics?.dietPref ?? "--"}
-              </p>
-            </div>
-
-            {/* Diabetes */}
-
-            <div className="bg-gray-50 rounded-2xl p-4">
-              <p className="text-xs text-gray-400 mb-1">Diabetes</p>
-
-              <p className="font-bold text-gray-900 capitalize">
-                {metrics?.diabetes ? "Yes" : "No"}
-              </p>
-            </div>
-          </div>
-
-          {/* Allergy */}
-
-          <div className="mt-4 bg-gray-50 rounded-2xl p-4">
-            <p className="text-xs text-gray-400 mb-1">Nut Allergy</p>
-
-            <p className="font-bold text-gray-900">
-              {metrics?.allergiesNuts ? "Yes" : "No"}
-            </p>
           </div>
         </section>
-
-        {/* =================================================
-            MACROS
-        ================================================= */}
-
-        <section className="bg-white p-6 md:p-8 rounded-3xl border border-gray-100 shadow-sm">
-          <div className="mb-6">
-            <h2 className="text-2xl font-black text-gray-900">
-              Daily Macro Targets
-            </h2>
-
-            <p className="text-gray-500 text-sm mt-1">
-              Your estimated daily macronutrient requirements.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {/* Protein */}
-
-            <div className="bg-indigo-50 rounded-2xl p-6">
-              <p className="text-xs font-bold uppercase text-indigo-500">
-                Protein
-              </p>
-
-              <p className="text-3xl font-black text-gray-900 mt-2">
-                {metrics?.macros?.protein
-                  ? Math.round(metrics.macros.protein)
-                  : "--"}{" "}
-                g
-              </p>
-            </div>
-
-            {/* Carbs */}
-
-            <div className="bg-emerald-50 rounded-2xl p-6">
-              <p className="text-xs font-bold uppercase text-emerald-500">
-                Carbs
-              </p>
-
-              <p className="text-3xl font-black text-gray-900 mt-2">
-                {metrics?.macros?.carbs
-                  ? Math.round(metrics.macros.carbs)
-                  : "--"}{" "}
-                g
-              </p>
-            </div>
-
-            {/* Fat */}
-
-            <div className="bg-orange-50 rounded-2xl p-6">
-              <p className="text-xs font-bold uppercase text-orange-500">Fat</p>
-
-              <p className="text-3xl font-black text-gray-900 mt-2">
-                {metrics?.macros?.fat ? Math.round(metrics.macros.fat) : "--"} g
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* =================================================
-            DAILY HYDRATION
-        ================================================= */}
 
         <section>
-          <div className="mb-6">
-            <h2 className="text-2xl font-black text-gray-900">
-              Daily Hydration
-            </h2>
+          <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h2 className="text-2xl font-extrabold text-gray-800 uppercase">
+                Today's Nutrition
+              </h2>
 
-            <p className="text-gray-500 text-sm mt-1">
-              Your recommended daily water intake.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Liters */}
-
-            <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-3 bg-blue-50 rounded-xl">
-                  <Droplets className="w-5 h-5 text-blue-500" />
-                </div>
-
-                <div>
-                  <h3 className="font-bold text-gray-900">Water Target</h3>
-
-                  <p className="text-xs text-gray-400">Per day</p>
-                </div>
-              </div>
-
-              <p className="text-4xl font-black text-gray-900">
-                {metrics?.waterIntake?.liters ?? "--"}
-              </p>
-
-              <p className="text-sm text-blue-500 font-bold mt-1">Liters</p>
-            </div>
-
-            {/* Glasses */}
-
-            <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-3 bg-cyan-50 rounded-xl">
-                  <Droplets className="w-5 h-5 text-cyan-500" />
-                </div>
-
-                <div>
-                  <h3 className="font-bold text-gray-900">Water Glasses</h3>
-
-                  <p className="text-xs text-gray-400">Per day</p>
-                </div>
-              </div>
-
-              <p className="text-4xl font-black text-gray-900">
-                {metrics?.waterIntake?.glasses ?? "--"}
-              </p>
-
-              <p className="text-sm text-cyan-500 font-bold mt-1">Glasses</p>
-            </div>
-
-            {/* ML */}
-
-            <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-3 bg-sky-50 rounded-xl">
-                  <Droplets className="w-5 h-5 text-sky-500" />
-                </div>
-
-                <div>
-                  <h3 className="font-bold text-gray-900">Water Amount</h3>
-
-                  <p className="text-xs text-gray-400">Per day</p>
-                </div>
-              </div>
-
-              <p className="text-4xl font-black text-gray-900">
-                {metrics?.waterIntake?.ml ?? "--"}
-              </p>
-
-              <p className="text-sm text-sky-500 font-bold mt-1">ml</p>
-            </div>
-          </div>
-        </section>
-
-        {/* =================================================
-            WEEKLY ACTIVITY + STREAK
-        ================================================= */}
-
-        <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Weekly Activity */}
-
-          <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm">
-            <div className="flex items-center gap-3 mb-5">
-              <div className="p-3 bg-indigo-50 rounded-xl">
-                <TrendingUp className="w-5 h-5 text-indigo-600" />
-              </div>
-
-              <div>
-                <h2 className="text-xl font-bold text-gray-900">
-                  Weekly Activity
-                </h2>
-
-                <p className="text-xs text-gray-400">
-                  Workout activity tracking
-                </p>
-              </div>
-            </div>
-
-            <div className="py-8 text-center">
-              <p className="text-gray-400 text-sm">
-                Weekly workout activity is not available yet.
-              </p>
-
-              <p className="text-xs text-gray-400 mt-2">
-                It will be connected with your workout/posture tracking system.
+              <p className="text-gray-500 text-sm mt-1">
+                {todayDiet?.isExpired
+                  ? "Your 3-day diet plan has expired. Please regenerate your plan."
+                  : todayDiet?.meals
+                  ? `Day ${todayDiet.currentDay} Meals • Target: ${Math.round(
+                      todayDiet.targetDailyCalories || 0,
+                    )} kcal`
+                  : "Your personalized meals will appear here."}
               </p>
             </div>
+
+            <Link
+              to="/user/dietplan"
+              className="inline-flex items-center gap-1.5 rounded-btn bg-brand-light/30 text-brand-dark hover:bg-brand-light/50 border border-brand-light/40 px-4 py-2 text-xs font-bold transition-all"
+            >
+              {todayDiet?.isExpired
+                ? "Regenerate Plan"
+                : todayDiet?.meals
+                ? "Full 3-Day Plan"
+                : "Create Diet Plan"}
+            </Link>
           </div>
 
-          {/* Streak */}
-
-          <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm">
-            <div className="flex items-center gap-3 mb-5">
-              <div className="p-3 bg-orange-50 rounded-xl">
-                <Flame className="w-5 h-5 text-orange-500" />
+          {todayDiet?.isExpired ? (
+            <div className="card bg-amber-50/80 border-amber-200 p-6 md:p-8 text-center space-y-3">
+              <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center text-amber-700 mx-auto">
+                <AlertCircle className="w-6 h-6" />
               </div>
 
-              <div>
-                <h2 className="text-xl font-bold text-gray-900">
-                  Workout Streak
-                </h2>
+              <h3 className="text-lg font-extrabold text-amber-900">
+                Your 3-Day Diet Plan Has Expired
+              </h3>
 
-                <p className="text-xs text-gray-400">Your consistency</p>
-              </div>
-            </div>
-
-            <div className="py-8 text-center">
-              <p className="text-4xl font-black text-gray-900">--</p>
-
-              <p className="text-sm text-gray-400 mt-2">
-                Streak tracking will be available once workout activity is
-                recorded.
+              <p className="text-sm text-amber-700 max-w-md mx-auto">
+                You have completed Day 3 of your personalized meal plan.
+                Generate a new plan to continue tracking your meals!
               </p>
-            </div>
-          </div>
-        </section>
 
-        {/* =================================================
-            HEALTH TRACKING
-        ================================================= */}
-
-        <section>
-          <div className="mb-6">
-            <h2 className="text-2xl font-black text-gray-900">
-              Health Tracking
-            </h2>
-
-            <p className="text-gray-500 text-sm mt-1">
-              These features will be connected with future tracking systems.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* WATER */}
-
-            <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-3 bg-blue-50 rounded-xl">
-                    <Droplets className="w-5 h-5 text-blue-500" />
-                  </div>
-
-                  <div>
-                    <h3 className="font-bold text-gray-900">Water Intake</h3>
-
-                    <p className="text-xs text-gray-400">Recommended today</p>
-                  </div>
-                </div>
-
-                <span className="text-xs font-bold px-3 py-1 rounded-full bg-blue-50 text-blue-500">
-                  Recommended
-                </span>
-              </div>
-
-              <div className="mt-6">
-                <p className="text-3xl font-black text-gray-900">
-                  {metrics?.waterIntake?.liters ?? "--"} L
-                </p>
-
-                <p className="text-sm text-gray-400 mt-2">
-                  Approximately{" "}
-                  <span className="font-bold text-gray-700">
-                    {metrics?.waterIntake?.glasses ?? "--"}
-                  </span>{" "}
-                  glasses per day.
-                </p>
+              <div className="pt-2">
+                <Link
+                  to="/user/dietplan"
+                  className="inline-flex items-center gap-2 rounded-btn bg-amber-800 hover:bg-amber-900 text-white text-xs font-bold px-5 py-3 shadow-card transition-all"
+                >
+                  Regenerate Plan Now
+                </Link>
               </div>
             </div>
+          ) : todayDiet?.meals ? (
 
-            {/* SLEEP */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[
+                {
+                  key: "breakfast",
+                  time: "8:00 AM",
+                  img: dietData[0].image,
+                },
+                {
+                  key: "lunch",
+                  time: "1:30 PM",
+                  img: dietData[1].image,
+                },
+                {
+                  key: "snack",
+                  time: "4:30 PM",
+                  img: dietData[2].image,
+                },
+                {
+                  key: "dinner",
+                  time: "8:30 PM",
+                  img: dietData[3].image,
+                },
+              ].map(({ key, time, img }) => {
+                const slot = todayDiet.meals[key];
 
-            <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-3 bg-purple-50 rounded-xl">
-                    <Moon className="w-5 h-5 text-purple-500" />
-                  </div>
+                if (!slot) return null;
 
-                  <div>
-                    <h3 className="font-bold text-gray-900">Sleep Quality</h3>
+                const slotTitle = slot.slot_name || key.toUpperCase();
 
-                    <p className="text-xs text-gray-400">Today's sleep</p>
-                  </div>
-                </div>
+                const firstDish = slot.items?.[0];
 
-                <span className="text-xs font-bold px-3 py-1 rounded-full bg-gray-100 text-gray-500">
-                  Not Tracked
-                </span>
-              </div>
+                const dishLabel = firstDish
+                  ? `${firstDish.dish_name} (${firstDish.portion_grams}g)`
+                  : "Recommended dish";
 
-              <div className="mt-6">
-                <p className="text-3xl font-black text-gray-900">--</p>
+                const extraDishes = (slot.items?.length || 0) - 1;
 
-                <p className="text-sm text-gray-400 mt-2">
-                  Sleep data will be added with sleep tracking.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* =================================================
-            TODAY'S NUTRITION
-        ================================================= */}
-
-        <section>
-          <div className="mb-8">
-            <h2 className="text-2xl font-black text-gray-900 uppercase">
-              Today's Nutrition
-            </h2>
-
-            <p className="text-gray-500 text-sm mt-1">
-              Your personalized meals will appear here.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {dietData.map((item) => (
-              <div
-                key={item.id}
-                className="group bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden"
-              >
-                {/* IMAGE */}
-
-                <div className="relative h-48 overflow-hidden">
-                  <img
-                    src={item.image}
-                    alt={item.name}
-                    className="w-full h-full object-cover"
-                  />
-
-                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/30">
-                    <Lock className="h-10 w-10 text-white mb-2" />
-
-                    <p className="text-white text-xs font-semibold">
-                      Diet plan coming soon
-                    </p>
-                  </div>
-
-                  {/* TIME */}
-
-                  <div className="absolute top-4 left-4">
-                    <span className="bg-white/90 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase text-gray-900">
-                      {item.time}
-                    </span>
-                  </div>
-
-                  {/* NAME */}
-
-                  <div className="absolute bottom-4 left-4">
-                    <h3 className="font-bold text-white text-xl">
-                      {item.name}
-                    </h3>
-                  </div>
-                </div>
-
-                {/* DETAILS */}
-
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <span className="block text-[10px] uppercase font-bold text-gray-400">
-                        Calories
-                      </span>
-
-                      <span className="font-bold text-gray-900">
-                        {item.calories}
-                      </span>
-                    </div>
-
-                    <div className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-gray-50 text-gray-400">
-                      {item.status}
-                    </div>
-                  </div>
-
-                  <button
-                    disabled
-                    className="w-full py-3 rounded-2xl text-xs font-bold bg-gray-50 text-gray-400 cursor-not-allowed"
+                return (
+                  <div
+                    key={key}
+                    className="group bg-surface/90 rounded-card border border-brand-light/30 shadow-card overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover flex flex-col justify-between"
                   >
-                    View Details
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+                    <div className="relative h-48 overflow-hidden">
+                      <img
+                        src={img}
+                        alt={slotTitle}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
 
-          <div className="mt-6 text-center text-sm text-gray-500">
-            Your personalized diet plan will appear here once it has been
-            generated.
-          </div>
+                      <div className="absolute inset-0  from-black/60 via-transparent to-transparent" />
+
+                      <div className="absolute top-4 left-4">
+                        <span className="bg-surface/90 px-3 py-1.5 rounded-btn text-[10px] font-extrabold uppercase text-gray-800 shadow-xs">
+                          {time}
+                        </span>
+                      </div>
+
+                      <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between text-white">
+                        <h3 className="font-bold text-xl drop-shadow-sm">
+                          {slotTitle}
+                        </h3>
+
+                        <span className="text-xs font-bold bg-brand px-2 py-0.5 rounded-btn">
+                          {slot.total_calories} kcal
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="block text-[10px] uppercase font-bold text-gray-400">
+                            Calories
+                          </span>
+
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-brand-light/30 text-brand-dark border border-brand-light/40">
+                            Day {todayDiet.currentDay}
+                          </span>
+                        </div>
+
+                        <p className="text-base font-extrabold text-gray-800">
+                          {slot.total_calories} kcal
+                        </p>
+
+                        <p className="text-xs font-semibold text-gray-600 mt-2 truncate">
+                          {dishLabel}
+                          {extraDishes > 0 && ` +${extraDishes} more`}
+                        </p>
+                      </div>
+
+                      <Link
+                        to="/user/dietplan"
+                        className="block w-full py-2.5 rounded-btn text-xs font-bold text-center bg-stone-50 hover:bg-stone-100 text-gray-700 border border-brand-light/30 transition-colors"
+                      >
+                        View Details
+                      </Link>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {dietData.map((item) => (
+                  <div
+                    key={item.id}
+                    className="group bg-surface/90 rounded-card border border-brand-light/30 shadow-card overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover"
+                  >
+                    <div className="relative h-48 overflow-hidden">
+                      <img
+                        src={item.image}
+                        alt={item.name}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+
+                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/30">
+                        <Lock className="h-10 w-10 text-white mb-2" />
+
+                        <p className="text-white text-xs font-semibold">
+                          Diet plan not generated yet
+                        </p>
+                      </div>
+
+                      <div className="absolute top-4 left-4">
+                        <span className="bg-surface/90 px-3 py-1.5 rounded-btn text-[10px] font-extrabold uppercase text-gray-800">
+                          {item.time}
+                        </span>
+                      </div>
+
+                      <div className="absolute bottom-4 left-4">
+                        <h3 className="font-bold text-white text-xl">
+                          {item.name}
+                        </h3>
+                      </div>
+                    </div>
+
+                    <div className="p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <span className="block text-[10px] uppercase font-bold text-gray-400">
+                            Calories
+                          </span>
+
+                          <span className="font-bold text-gray-800">
+                            {item.calories}
+                          </span>
+                        </div>
+
+                        <div className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-brand-light/20 text-gray-500 border border-brand-light/30">
+                          {item.status}
+                        </div>
+                      </div>
+
+                      <Link
+                        to="/user/dietplan"
+                        className="block w-full py-3 rounded-btn text-xs font-bold text-center bg-gray-800 hover:bg-gray-700 text-white shadow-card transition-all"
+                      >
+                        Generate Plan
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-6 text-center text-sm text-gray-500">
+                Your personalized diet plan will appear here once it has been
+                generated.
+              </div>
+            </>
+          )}
         </section>
       </main>
+
+      {activeRatingSession && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="relative w-full max-w-md overflow-hidden rounded-card border border-brand-light/50 bg-surface/95 p-7 shadow-card-hover backdrop-blur-xl">
+            <button
+              type="button"
+              onClick={handleDismissDialog}
+              disabled={submittingRating}
+              className="absolute right-5 top-5 flex h-8 w-8 items-center justify-center rounded-full bg-stone-100 text-stone-500 transition-colors hover:bg-stone-200 hover:text-stone-800 disabled:opacity-50"
+              title="Dismiss"
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            <div className="text-center">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-card bg-brand-light/50 border border-brand-light text-2xl font-extrabold text-brand-dark shadow-card">
+                {activeRatingSession.professional?.firstName?.[0]?.toUpperCase() ||
+                  "P"}
+              </div>
+
+              <span className="mt-4 inline-block rounded-full border border-brand-light bg-brand-light/30 px-3 py-1 text-[11px] font-extrabold text-brand-dark uppercase tracking-wider">
+                Session Completed
+              </span>
+
+              <h2 className="mt-2 text-xl font-extrabold text-gray-800 leading-tight">
+                How was your experience with{" "}
+                <span className="text-brand-dark">
+                  {activeRatingSession.professional?.firstName}{" "}
+                  {activeRatingSession.professional?.lastName}
+                </span>
+                ?
+              </h2>
+
+              <p className="mt-1 text-xs text-gray-500 font-medium">
+                {activeRatingSession.appointmentDay} •{" "}
+                {activeRatingSession.appointmentSlot}
+              </p>
+
+              <form onSubmit={handleSubmitRating} className="mt-6 space-y-6">
+                <div className="flex flex-col items-center">
+                  <div className="flex items-center gap-2 p-2">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setSelectedRating(star)}
+                        onMouseEnter={() => setHoverRating(star)}
+                        onMouseLeave={() => setHoverRating(0)}
+                        className="p-1 text-3xl transition-transform hover:scale-125 focus:outline-none"
+                        title={`${star} Stars`}
+                      >
+                        <span
+                          className={
+                            star <= (hoverRating || selectedRating)
+                              ? "text-amber-400 drop-shadow-xs"
+                              : "text-stone-200"
+                          }
+                        >
+                          ★
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+
+                  <p className="mt-1 text-xs font-extrabold text-gray-700">
+                    {hoverRating || selectedRating} out of 5 Stars
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={handleDismissDialog}
+                    disabled={submittingRating}
+                    className="flex-1 rounded-btn border border-stone-200 bg-stone-100 py-3.5 text-sm font-bold text-stone-700 transition-colors hover:bg-stone-200 disabled:opacity-50"
+                  >
+                    Maybe Later
+                  </button>
+
+                  <button
+                    type="submit"
+                    disabled={submittingRating}
+                    className="flex-1 rounded-btn bg-gray-800 py-3.5 text-sm font-bold text-white shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:bg-gray-700 hover:shadow-card-hover disabled:opacity-50 disabled:hover:translate-y-0"
+                  >
+                    {submittingRating ? "Submitting..." : "Submit Rating"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </UserLayout>
   );
 }

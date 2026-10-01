@@ -1,357 +1,308 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
+import { z } from "zod";
 import { httpClient } from "../../lib/http";
-import { IconAlertTriangle } from "../../components/admin/Icons";
+import { AlertTriangle } from "lucide-react";
+import posefit_logo from "../../assets/posefit_logo.png";
+
+const loginSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .min(1, "Email is required.")
+    .max(254, "Email address is too long.")
+    .email("Please enter a valid email address."),
+
+  password: z
+    .string()
+    .min(1, "Password is required."),
+});
 
 export default function UserLogin() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [form, setForm] = useState({
-    email: "",
-    password: "",
-  });
-
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState(null);
 
-  // =====================================================
-  // TOAST
-  // =====================================================
+  const showToast = useCallback((type, message) => {
+    setToast({ type, message });
 
-  const showToast = useCallback((message, type = "success") => {
-    setToast({
-      msg: message,
-      type,
-    });
+    setTimeout(() => {
+      setToast(null);
+    }, 4000);
   }, []);
 
   useEffect(() => {
-    if (!toast) return;
-
-    const timer = setTimeout(() => {
+    return () => {
       setToast(null);
-    }, 4000);
-
-    return () => clearTimeout(timer);
-  }, [toast]);
-
-  // =====================================================
-  // LOGIN
-  // =====================================================
+    };
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!form.email.trim() || !form.password) {
-      showToast("Email and password are required.", "error");
+    const validation = loginSchema.safeParse({
+      email,
+      password,
+    });
+
+    if (!validation.success) {
+      showToast("error", validation.error.issues[0].message);
       return;
     }
 
-    try {
-      setLoading(true);
+    const validatedData = validation.data;
 
-      const res = await httpClient.post("/auth/login", {
-        email: form.email.trim().toLowerCase(),
-        password: form.password,
+    setLoading(true);
+
+    try {
+      const response = await httpClient.post("/auth/login", {
+        email: validatedData.email.toLowerCase(),
+        password: validatedData.password,
       });
 
-      console.log("LOGIN RESPONSE:", res.data);
+      const data = response?.data;
 
-      const { success, token, user } = res.data;
-
-      // =================================================
-      // VALIDATE RESPONSE
-      // =================================================
-
-      if (!success || !token || !user) {
-        showToast("Invalid response from server.", "error");
-        return;
+      if (!data?.success) {
+        throw new Error(
+          data?.message || data?.error || "Login failed. Please try again.",
+        );
       }
 
-      // =================================================
-      // USER ID CHECK
-      // =================================================
+      const token = data?.token;
+      const user = data?.user;
+
+      if (!token || !user) {
+        throw new Error("Invalid login response from server.");
+      }
 
       const userId = user?._id || user?.id || user?.userId;
 
       if (!userId) {
-        console.error("User object does not contain an ID:", user);
-
-        showToast("User ID was not received from server.", "error");
-        return;
+        throw new Error("User information is missing.");
       }
 
-      // =================================================
-      // ROLE CHECK
-      // =================================================
+      const role = String(user?.role || "USER").toUpperCase();
 
-      if (user.role !== "USER") {
-        showToast(
-          "Access denied. Admin and Professional accounts must use their respective portal.",
-          "error",
+      const validRoles = ["USER", "ADMIN", "PROFESSIONAL"];
+
+      if (!validRoles.includes(role)) {
+        throw new Error("Invalid user role.");
+      }
+
+      if (role === "USER" && user?.isVerified === false) {
+        throw new Error(
+          "Your account is not verified. Please verify your email first.",
         );
-        return;
       }
-
-      // =================================================
-      // EMAIL VERIFICATION
-      // =================================================
-
-      if (!user.isVerified) {
-        showToast("Please verify your email before logging in.", "error");
-        return;
-      }
-
-      // =================================================
-      // NORMALIZE USER OBJECT
-      // =================================================
 
       const normalizedUser = {
         ...user,
-        _id: user._id || user.id || user.userId,
+        _id: userId,
+        id: userId,
+        role,
       };
 
-      // =================================================
-      // CLEAR OLD LOGIN DATA
-      // =================================================
-
-      localStorage.removeItem("pose-fit");
-      localStorage.removeItem("pose-fit-user");
-
-      // =================================================
-      // SAVE NEW LOGIN DATA
-      // =================================================
-
       localStorage.setItem("pose-fit", token);
-
       localStorage.setItem("pose-fit-user", JSON.stringify(normalizedUser));
 
-      // =================================================
-      // DEBUG
-      // =================================================
-
-      console.log("SAVED TOKEN:", token);
-      console.log("SAVED USER:", normalizedUser);
-      console.log("SAVED USER ID:", normalizedUser._id);
-
-      // =================================================
-      // SUCCESS TOAST
-      // =================================================
-
-      showToast("Login successful! Welcome to PoseFit.", "success");
-
-      // =================================================
-      // REDIRECT
-      // =================================================
-
-      const from = location.state?.from?.pathname || "/user/dashboard";
+      showToast("success", "Login successful! Redirecting...");
 
       setTimeout(() => {
-        navigate(from, {
-          replace: true,
-        });
-      }, 700);
-    } catch (err) {
-      console.error("Login error:", err);
+        if (role === "ADMIN") {
+          navigate("/admin/dashboard");
+          return;
+        }
 
-      showToast(
-        err?.response?.data?.message ||
-          err?.response?.data?.error ||
-          "Login failed. Please check your email and password.",
-        "error",
-      );
+        if (role === "PROFESSIONAL") {
+          const professionalStatus = String(
+            user?.professionalStatus || "",
+          ).toLowerCase();
+
+          const incompleteStatuses = [
+            "",
+            "incomplete",
+            "invited",
+            "pending_verification",
+            "rejected",
+          ];
+
+          if (incompleteStatuses.includes(professionalStatus)) {
+            navigate("/professional/profile/complete");
+          } else if (professionalStatus === "approved") {
+            navigate("/professional/dashboard");
+          } else {
+            navigate("/professional/profile/complete");
+          }
+
+          return;
+        }
+
+        const fromPath = location.state?.from?.pathname || "/user/dashboard";
+
+        navigate(fromPath);
+      }, 700);
+    } catch (error) {
+      console.error("Login error:", error);
+
+      const message =
+  error?.response?.status === 404
+    ? "Invalid email or password."
+    : error?.response?.data?.message ||
+      error?.response?.data?.error ||
+      error?.message ||
+      "Something went wrong. Please try again.";
+
+      showToast("error", message);
     } finally {
       setLoading(false);
     }
   };
 
-  // =====================================================
-  // UI
-  // =====================================================
-
   return (
-    <div
-      className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
-      style={{
-        background:
-          "linear-gradient(135deg, #f0fdf4 0%, #f8fafc 40%, #e0f2fe 100%)",
-      }}
-    >
-      {/* =================================================
-          BACKGROUND DECORATION
-      ================================================= */}
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-surface px-4 py-8 font-sans">
+      <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-brand-light/50 blur-3xl" />
 
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div
-          className="absolute -top-32 -left-32 w-96 h-96 rounded-full opacity-40 blur-3xl"
-          style={{
-            background: "#bbf7d0",
-          }}
-        />
+      <div className="pointer-events-none absolute -bottom-24 -right-24 h-80 w-80 rounded-full bg-accent-blue/60 blur-3xl" />
 
-        <div
-          className="absolute -bottom-32 -right-32 w-96 h-96 rounded-full opacity-40 blur-3xl"
-          style={{
-            background: "#bae6fd",
-          }}
-        />
-      </div>
-
-      {/* =================================================
-          TOAST
-      ================================================= */}
+      <div className="pointer-events-none absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent-orange/20 blur-3xl" />
 
       {toast && (
         <div
-          className={`fixed top-5 right-5 z-[100] px-5 py-3 rounded-2xl shadow-xl text-white text-sm font-bold border max-w-sm ${
+          className={`fixed right-5 top-5 z-[100] flex max-w-sm items-center gap-3 rounded-card border px-5 py-4 text-sm font-medium shadow-card-hover ${
             toast.type === "error"
-              ? "bg-rose-500 border-rose-600"
-              : "bg-emerald-600 border-emerald-700"
+              ? "border-red-200 bg-red-50 text-red-700"
+              : "border-brand-light bg-brand-light/60 text-brand-dark"
           }`}
         >
-          <div className="flex items-center gap-2.5">
-            {toast.type === "error" && (
-              <IconAlertTriangle className="w-4 h-4 shrink-0 text-white" />
-            )}
+          {toast.type === "error" && (
+            <AlertTriangle className="h-5 w-5 shrink-0" />
+          )}
 
-            {toast.type === "success" && (
-              <span className="text-base leading-none">✓</span>
-            )}
-
-            <span>{toast.msg}</span>
-          </div>
+          <span>{toast.message}</span>
         </div>
       )}
 
-      {/* =================================================
-          LOGIN CARD
-      ================================================= */}
+      <div className="relative z-10 w-full max-w-md">
+        <div className="rounded-card border border-brand-light/70 bg-surface/80 p-8 shadow-card-hover backdrop-blur-xl sm:p-10">
+          <div className="mb-8 flex justify-center">
+            <Link className="flex h-16 w-16 items-center justify-center rounded-card bg-white/70 p-2 shadow-card transition-transform duration-300 hover:-translate-y-1">
+              <img
+                src={posefit_logo}
+                alt="PoseFit Logo"
+                className="h-full w-full object-contain"
+              />
+            </Link>
+          </div>
 
-      <div className="w-full max-w-md relative z-10">
-        <div className="bg-white/90 backdrop-blur-xl rounded-3xl p-8 border border-stone-200/80 shadow-xl">
-          {/* =================================================
-              LOGO / HEADER
-          ================================================= */}
-
-          <div className="text-center mb-8">
-            <div
-              className="w-16 h-16 rounded-3xl mx-auto flex items-center justify-center text-white font-black text-2xl shadow-sm mb-4"
-              style={{
-                background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-              }}
-            >
-              P
-            </div>
-
-            <h1 className="text-2xl font-black text-stone-800 tracking-tight">
-              PoseFit Login
+          <div className="mb-8 text-center">
+            <h1 className="text-3xl font-extrabold tracking-tight text-gray-800">
+              Welcome Back
             </h1>
 
-            <p className="text-xs text-stone-500 font-medium mt-1">
-              Sign in to your customer account
+            <p className="mt-2 text-sm text-gray-500">
+              Login to continue to PoseFit
             </p>
           </div>
 
-          {/* =================================================
-              LOGIN FORM
-          ================================================= */}
-
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* EMAIL */}
-
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-stone-600 mb-2">
+              <label
+                htmlFor="email"
+                className="mb-2 block text-sm font-semibold text-gray-700"
+              >
                 Email Address
               </label>
 
               <input
+                id="email"
                 type="email"
-                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email"
                 autoComplete="email"
-                placeholder="customer@example.com"
-                value={form.email}
-                onChange={(e) => {
-                  setForm((prev) => ({
-                    ...prev,
-                    email: e.target.value,
-                  }));
-                }}
-                className="w-full px-4 py-3 rounded-2xl border border-stone-200 text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-300 text-stone-800 transition-all bg-stone-50/50 focus:bg-white"
+                disabled={loading}
+                className="w-full rounded-btn border border-gray-200 bg-white/70 px-4 py-3.5 text-sm text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand-light/60 disabled:cursor-not-allowed disabled:opacity-60"
               />
             </div>
 
-            {/* PASSWORD */}
-
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-stone-600 mb-2">
+              <label
+                htmlFor="password"
+                className="mb-2 block text-sm font-semibold text-gray-700"
+              >
                 Password
               </label>
 
-              <input
-                type="password"
-                required
-                autoComplete="current-password"
-                placeholder="••••••••"
-                value={form.password}
-                onChange={(e) => {
-                  setForm((prev) => ({
-                    ...prev,
-                    password: e.target.value,
-                  }));
-                }}
-                className="w-full px-4 py-3 rounded-2xl border border-stone-200 text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-300 text-stone-800 transition-all bg-stone-50/50 focus:bg-white"
-              />
+              <div className="relative">
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                 onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  autoComplete="current-password"
+                  disabled={loading}
+                  className="w-full rounded-btn border border-gray-200 bg-white/70 px-4 py-3.5 pr-12 text-sm text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand-light/60 disabled:cursor-not-allowed disabled:opacity-60"
+                />
+
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  disabled={loading}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 transition-colors hover:text-brand-dark disabled:cursor-not-allowed"
+                >
+                  <span className="material-symbols-outlined text-[22px]">
+                    {showPassword ? "visibility_off" : "visibility"}
+                  </span>
+                </button>
+              </div>
+
             </div>
 
-            {/* FORGOT PASSWORD */}
-
-            <div className="text-right">
+            <div className="flex justify-end">
               <Link
                 to="/forgot-password"
-                className="text-xs font-bold text-emerald-600 hover:text-emerald-700"
+                className="text-sm font-semibold text-brand-dark transition-colors hover:text-brand"
               >
                 Forgot Password?
               </Link>
             </div>
 
-            {/* LOGIN BUTTON */}
-
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3.5 rounded-2xl font-bold text-white text-sm shadow-md hover:opacity-95 active:scale-95 disabled:opacity-60 transition-all duration-200 flex items-center justify-center gap-2"
-              style={{
-                background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-              }}
+              className="w-full rounded-btn bg-gray-800 px-6 py-3.5 text-sm font-bold text-white shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:bg-gray-700 hover:shadow-card-hover disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
             >
               {loading ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-
-                  <span>Signing in...</span>
-                </>
+                <span className="flex items-center justify-center gap-2">
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                  Logging in...
+                </span>
               ) : (
-                <span>Sign In</span>
+                "Login"
               )}
             </button>
           </form>
 
-          {/* =================================================
-              REGISTER
-          ================================================= */}
-
-          <div className="mt-8 text-center text-xs font-bold text-stone-600">
+          <div className="mt-7 text-center text-sm text-gray-500">
             Don't have an account?{" "}
             <Link
               to="/user/register"
-              state={location.state}
-              className="text-emerald-600 hover:text-emerald-700 underline transition-colors"
+              className="font-bold text-brand-dark transition-colors hover:text-brand"
             >
               Sign Up
             </Link>
           </div>
         </div>
+
+        <p className="mt-5 text-center text-xs text-gray-400">
+          Your fitness journey starts with PoseFit.
+        </p>
       </div>
     </div>
   );

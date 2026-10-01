@@ -1,470 +1,390 @@
 import { useState } from "react";
+import { z } from "zod";
 import AdminLayout from "../../components/admin/AdminLayout";
 import { httpClient } from "../../lib/http";
 import { getUser } from "../../lib/local-storage";
 import {
-  IconLock,
-  IconUsers,
-  IconBell,
-  IconSettings,
-  IconServer,
-  IconCheckCircle,
-  IconAlertTriangle,
-} from "../../components/admin/Icons";
+  Lock,
+  Users,
+  CheckCircle,
+  AlertTriangle,
+} from "lucide-react";
 
-export default function AdminSettings() {
-  const [activeTab, setActiveTab] = useState("security"); // "security" | "profile" | "notifications" | "preferences" | "system"
+const adminPasswordSchema = z
+  .object({
+    currentPassword: z
+      .string()
+      .min(1, "Current password is required."),
 
-  // Admin user info
-  const currentUser = getUser() || { firstName: "Admin", lastName: "User", email: "admin@posefit.com", role: "ADMIN" };
-  const [profileForm, setProfileForm] = useState({
-    firstName: currentUser.firstName || "",
-    lastName: currentUser.lastName || "",
+    newPassword: z
+      .string()
+      .min(1, "New password is required.")
+      .min(8, "New password must be at least 8 characters.")
+      .max(64, "New password must not exceed 64 characters.")
+      .refine((value) => !/\s/.test(value), {
+        message: "New password must not contain spaces.",
+      })
+      .refine((value) => /[a-z]/.test(value), {
+        message: "New password must contain a lowercase letter.",
+      })
+      .refine((value) => /[A-Z]/.test(value), {
+        message: "New password must contain an uppercase letter.",
+      })
+      .refine((value) => /[0-9]/.test(value), {
+        message: "New password must contain a number.",
+      })
+      .refine((value) => /[^A-Za-z0-9]/.test(value), {
+        message: "New password must contain a special character.",
+      }),
+
+    confirmPassword: z
+      .string()
+      .min(1, "Please confirm your new password."),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "New password and confirm password do not match.",
+    path: ["confirmPassword"],
+  })
+  .refine((data) => data.currentPassword !== data.newPassword, {
+    message: "New password must be different from the current password.",
+    path: ["newPassword"],
   });
 
-  // Password form
-  const [passForm, setPassForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
+export default function AdminSettings() {
+  const currentUser = getUser() || {
+    firstName: "Admin",
+    lastName: "User",
+    email: "admin@posefit.com",
+    role: "ADMIN",
+  };
+
+  const [passForm, setPassForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+
   const [loadingPass, setLoadingPass] = useState(false);
   const [passError, setPassError] = useState("");
   const [passSuccess, setPassSuccess] = useState("");
-
-  // Toggles for notifications
-  const [notifications, setNotifications] = useState({
-    emailOnProReq: true,
-    emailOnPayment: true,
-    emailWeeklyDigest: false,
-    securityAlerts: true,
-  });
-
-  // Preferences
-  const [preferences, setPreferences] = useState({
-    commissionRate: "20%",
-    currency: "USD ($)",
-    timezone: "UTC+05:00 (Asia/Karachi)",
-    theme: "Fitness Sage (Default)",
-  });
-
   const [toast, setToast] = useState(null);
+
   const showToast = (msg, type = "success") => {
     setToast({ msg, type });
-    setTimeout(() => setToast(null), 3500);
+
+    setTimeout(() => {
+      setToast(null);
+    }, 3500);
   };
 
   const handlePassChange = (e) => {
-    setPassForm((p) => ({ ...p, [e.target.name]: e.target.value }));
-    setPassError(""); setPassSuccess("");
+    const { name, value } = e.target;
+
+    setPassForm((prev) => ({
+      ...prev,
+      [name]:
+        name === "newPassword" || name === "confirmPassword"
+          ? value.slice(0, 64)
+          : value,
+    }));
+
+    setPassError("");
+    setPassSuccess("");
   };
 
   const handlePassSubmit = async (e) => {
     e.preventDefault();
-    if (!passForm.currentPassword || !passForm.newPassword || !passForm.confirmPassword) {
-      setPassError("All password fields are required."); return;
-    }
-    if (passForm.newPassword !== passForm.confirmPassword) {
-      setPassError("New passwords do not match."); return;
-    }
-    if (passForm.newPassword.length < 6) {
-      setPassError("New password must be at least 6 characters."); return;
-    }
-    if (passForm.newPassword === passForm.currentPassword) {
-      setPassError("New password must be different from the current password."); return;
+
+    const validation = adminPasswordSchema.safeParse(passForm);
+
+    if (!validation.success) {
+      setPassError(validation.error.issues[0].message);
+      return;
     }
 
-    setLoadingPass(true); setPassError("");
+    const validatedData = validation.data;
+
+    setLoadingPass(true);
+    setPassError("");
+    setPassSuccess("");
+
     try {
-      await httpClient.put("/admin/change-password", {
-        currentPassword: passForm.currentPassword,
-        newPassword: passForm.newPassword,
+      const res = await httpClient.put("/admin/change-password", {
+        currentPassword: validatedData.currentPassword,
+        newPassword: validatedData.newPassword,
       });
-      setPassSuccess("Admin password updated successfully!");
-      setPassForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
-      showToast("Password updated!");
+
+      setPassSuccess(
+        res.data?.message || "Admin password updated successfully!",
+      );
+
+      setPassForm({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+
+      showToast("Password updated successfully!");
     } catch (err) {
-      setPassError(err?.response?.data?.message || "Failed to change password.");
-    } finally { setLoadingPass(false); }
+      setPassError(
+        err?.response?.data?.message || "Failed to change password.",
+      );
+    } finally {
+      setLoadingPass(false);
+    }
   };
 
-  const handleProfileSave = (e) => {
-    e.preventDefault();
-    const updated = { ...currentUser, firstName: profileForm.firstName, lastName: profileForm.lastName };
-    setAdminUser(updated);
-    showToast("Profile details updated!");
-  };
+  const fullName = `${currentUser.firstName || "Admin"} ${
+    currentUser.lastName || "User"
+  }`.trim();
 
-  const tabs = [
-    { id: "security",      Icon: IconLock,     label: "Security & Login" },
-    { id: "profile",       Icon: IconUsers,    label: "Admin Profile" },
-    { id: "notifications", Icon: IconBell,     label: "Email & Alerts" },
-    { id: "preferences",   Icon: IconSettings, label: "App Preferences" },
-    { id: "system",        Icon: IconServer,   label: "System Health" },
-  ];
+  const initials = `${currentUser.firstName?.[0] || "A"}${
+    currentUser.lastName?.[0] || ""
+  }`.toUpperCase();
 
   return (
     <AdminLayout>
-      <div className="min-h-screen pb-16" style={{ background: "#f5f7f2" }}>
-        {/* Toast */}
+      <div className="min-h-screen pb-16 bg-transparent font-sans">
         {toast && (
           <div
-            className={`fixed top-5 right-5 z-50 px-5 py-3 rounded-2xl shadow-xl text-white text-sm font-bold border transition-all ${
-              toast.type === "error" ? "bg-rose-500 border-rose-600" : "bg-emerald-600 border-emerald-700"
+            className={`fixed right-5 top-5 z-50 rounded-2xl border px-5 py-3 text-sm font-bold text-white shadow-card-hover ${
+              toast.type === "error"
+                ? "border-rose-600 bg-rose-500"
+                : "border-brand-dark bg-brand-dark"
             }`}
-            style={{ animation: "modalIn 0.2s ease" }}
           >
             {toast.msg}
           </div>
         )}
 
-        {/* Header */}
-        <div className="px-8 pt-8 pb-4">
-          <span className="text-xs font-extrabold uppercase tracking-widest px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
-            System Control Center
+        <div className="px-4 pb-6 pt-6 sm:px-6 sm:pt-8 lg:px-8">
+          <span className="inline-flex items-center rounded-full border border-brand-light/70 bg-brand-light/40 px-3 py-1.5 text-xs font-extrabold uppercase tracking-widest text-brand-dark">
+            Account Settings
           </span>
-          <h1 className="text-3xl font-black text-stone-800 tracking-tight mt-2">Admin Settings</h1>
-          <p className="text-stone-500 font-medium text-sm mt-1">Manage security credentials, platform configuration, notifications, and environment statuses.</p>
+
+          <div className="mt-3 flex items-end justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-extrabold tracking-tight text-gray-800 sm:text-3xl">
+                Admin Settings
+              </h1>
+
+              <p className="mt-1 text-sm font-medium text-gray-500">
+                Manage your administrator account and security.
+              </p>
+            </div>
+          </div>
         </div>
 
-        {/* Main Settings Container */}
-        <div className="px-8 mt-4 grid grid-cols-1 md:grid-cols-4 gap-6">
-          {/* Navigation Sidebar */}
-          <div className="md:col-span-1 space-y-1.5">
-            {tabs.map(({ id, Icon, label }) => {
-              const active = activeTab === id;
-              return (
-                <button
-                  key={id}
-                  onClick={() => setActiveTab(id)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold transition-all text-left border ${
-                    active
-                      ? "bg-white text-emerald-900 border-emerald-200 shadow-xs"
-                      : "text-stone-600 border-transparent hover:bg-stone-200/60"
-                  }`}
-                >
-                  <Icon className="w-4 h-4 shrink-0" />
-                  <span>{label}</span>
-                </button>
-              );
-            })}
-          </div>
+        <div className="max-w-5xl space-y-6 px-4 sm:px-6 lg:px-8">
+          <section className="overflow-hidden rounded-card border border-brand-light/50 bg-surface/80 shadow-card backdrop-blur-xl">
+            <div className="relative overflow-hidden px-7 py-7">
+              <div className="absolute inset-0 bg-gradient-to-br from-brand-light/40 via-surface/80 to-accent-blue/20" />
 
-          {/* Tab Content Panel */}
-          <div className="md:col-span-3">
-            <div className="bg-white rounded-3xl p-8 border border-stone-200 shadow-xs">
-              {/* TAB 1: SECURITY & LOGIN */}
-              {activeTab === "security" && (
-                <div className="space-y-6">
-                  <div>
-                    <h2 className="text-lg font-black text-stone-800 flex items-center gap-2">
-                      <IconLock className="w-5 h-5 text-amber-700" />
-                      Password & Authentication
+              <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center">
+                <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-card bg-brand text-2xl font-black text-white shadow-card">
+                  {initials}
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 className="text-xl font-extrabold text-gray-800">
+                      {fullName}
                     </h2>
-                    <p className="text-xs text-stone-400 font-medium mt-1">
-                      Update your primary administrator access credentials.
+
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-light/70 bg-brand-light/40 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-brand-dark">
+                      <span className="h-1.5 w-1.5 rounded-full bg-brand" />
+                      Active
+                    </span>
+                  </div>
+
+                  <p className="mt-1 text-sm font-medium text-gray-500">
+                    {currentUser.email}
+                  </p>
+
+                  <div className="mt-3 flex items-center gap-2">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-gray-500">
+                      Role
+                    </span>
+
+                    <span className="rounded-lg border border-gray-200 bg-white/70 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-gray-700">
+                      Administrator
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="px-7 pb-7">
+              <div className="border-t border-brand-light/40 pt-6">
+                <div className="mb-4 flex items-center gap-2">
+                  <Users className="h-4 w-4 text-brand-dark" />
+
+                  <h3 className="text-xs font-extrabold uppercase tracking-wider text-gray-600">
+                    Account Information
+                  </h3>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                  <div className="rounded-card border border-brand-light/40 bg-brand-light/10 px-4 py-4">
+                    <p className="text-[10px] font-extrabold uppercase tracking-wider text-gray-400">
+                      First Name
+                    </p>
+
+                    <p className="mt-1.5 truncate text-sm font-bold text-gray-800">
+                      {currentUser.firstName || "Admin"}
                     </p>
                   </div>
 
-                  {passError && (
-                    <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center gap-2">
-                      <IconAlertTriangle className="w-4 h-4 shrink-0" />
-                      <span>{passError}</span>
-                    </div>
-                  )}
-                  {passSuccess && (
-                    <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center gap-2">
-                      <IconCheckCircle className="w-4 h-4 shrink-0" />
-                      <span>{passSuccess}</span>
-                    </div>
-                  )}
+                  <div className="rounded-card border border-brand-light/40 bg-brand-light/10 px-4 py-4">
+                    <p className="text-[10px] font-extrabold uppercase tracking-wider text-gray-400">
+                      Last Name
+                    </p>
 
-                  <form onSubmit={handlePassSubmit} className="space-y-4 max-w-md">
-                    <div>
-                      <label className="block text-xs font-bold text-stone-600 mb-1.5 uppercase tracking-wider">
-                        Current Admin Password
-                      </label>
-                      <input
-                        name="currentPassword"
-                        type="password"
-                        value={passForm.currentPassword}
-                        onChange={handlePassChange}
-                        placeholder="••••••••"
-                        className="w-full px-4 py-2.5 rounded-xl border border-stone-200 text-sm outline-none focus:ring-2 focus:ring-emerald-300 font-medium"
-                      />
-                    </div>
+                    <p className="mt-1.5 truncate text-sm font-bold text-gray-800">
+                      {currentUser.lastName || "User"}
+                    </p>
+                  </div>
 
+                  <div className="rounded-card border border-brand-light/40 bg-brand-light/10 px-4 py-4">
+                    <p className="text-[10px] font-extrabold uppercase tracking-wider text-gray-400">
+                      Account Role
+                    </p>
+
+                    <p className="mt-1.5 text-sm font-bold text-gray-800">
+                      Administrator
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-3 rounded-card border border-brand-light/40 bg-brand-light/10 px-4 py-4">
+                  <p className="text-[10px] font-extrabold uppercase tracking-wider text-gray-400">
+                    Email Address
+                  </p>
+
+                  <p className="mt-1.5 break-all text-sm font-bold text-gray-800">
+                    {currentUser.email}
+                  </p>
+                </div>
+
+                <div className="mt-4 flex items-start gap-2 text-[11px] font-medium text-gray-400">
+                  <span className="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-gray-300" />
+
+                  <p>
+                    Administrator profile details are controlled by the system
+                    and cannot be edited from this page.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="overflow-hidden rounded-card border border-brand-light/50 bg-surface/80 shadow-card backdrop-blur-xl">
+            <div className="border-b border-brand-light/40 px-7 py-6">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent-orange/40 text-accent-orange-dark">
+                  <Lock className="h-5 w-5" />
+                </div>
+
+                <div>
+                  <h2 className="text-lg font-extrabold text-gray-800">
+                    Password & Security
+                  </h2>
+
+                  <p className="mt-0.5 text-xs font-medium text-gray-400">
+                    Keep your administrator account secure by updating your
+                    password regularly.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-7">
+              <div className="max-w-xl">
+                {passError && (
+                  <div className="mb-5 flex items-center gap-2 rounded-card border border-rose-200 bg-rose-50 p-3.5 text-xs font-semibold text-rose-700">
+                    <AlertTriangle className="h-4 w-4 shrink-0" />
+                    <span>{passError}</span>
+                  </div>
+                )}
+
+                {passSuccess && (
+                  <div className="mb-5 flex items-center gap-2 rounded-card border border-brand-light/70 bg-brand-light/25 p-3.5 text-xs font-semibold text-brand-dark">
+                    <CheckCircle className="h-4 w-4 shrink-0" />
+                    <span>{passSuccess}</span>
+                  </div>
+                )}
+
+                <form onSubmit={handlePassSubmit} className="space-y-5">
+                  <div>
+                    <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-600">
+                      Current Password
+                    </label>
+
+                    <input
+                      name="currentPassword"
+                      type="password"
+                      value={passForm.currentPassword}
+                      onChange={handlePassChange}
+                      placeholder="Enter current password"
+                      autoComplete="current-password"
+                      className="w-full rounded-btn border border-gray-200 bg-white/70 px-4 py-3 text-sm font-medium text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand-light/60"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
-                      <label className="block text-xs font-bold text-stone-600 mb-1.5 uppercase tracking-wider">
+                      <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-600">
                         New Password
                       </label>
+
                       <input
                         name="newPassword"
                         type="password"
                         value={passForm.newPassword}
                         onChange={handlePassChange}
-                        placeholder="Min. 6 characters"
-                        className="w-full px-4 py-2.5 rounded-xl border border-stone-200 text-sm outline-none focus:ring-2 focus:ring-emerald-300 font-medium"
+                        maxLength={64}
+                        placeholder="Enter new password"
+                        autoComplete="new-password"
+                        className="w-full rounded-btn border border-gray-200 bg-white/70 px-4 py-3 text-sm font-medium text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand-light/60"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-stone-600 mb-1.5 uppercase tracking-wider">
-                        Confirm New Password
+                      <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-600">
+                        Confirm Password
                       </label>
+
                       <input
                         name="confirmPassword"
                         type="password"
                         value={passForm.confirmPassword}
                         onChange={handlePassChange}
+                        maxLength={64}
                         placeholder="Re-enter new password"
-                        className="w-full px-4 py-2.5 rounded-xl border border-stone-200 text-sm outline-none focus:ring-2 focus:ring-emerald-300 font-medium"
+                        autoComplete="new-password"
+                        className="w-full rounded-btn border border-gray-200 bg-white/70 px-4 py-3 text-sm font-medium text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand-light/60"
                       />
                     </div>
+                  </div>
+
+                  <div className="flex flex-col gap-4 pt-2 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="text-[11px] font-medium text-gray-400">
+                      Password must be 8–64 characters and include uppercase,
+                      lowercase, number, and special character.
+                    </p>
 
                     <button
                       type="submit"
                       disabled={loadingPass}
-                      className="w-full py-3 rounded-xl text-white font-bold text-sm shadow-xs hover:opacity-90 disabled:opacity-60 transition-all"
-                      style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}
+                      className="shrink-0 rounded-btn bg-gray-800 px-6 py-3 text-sm font-bold text-white shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:bg-gray-700 hover:shadow-card-hover disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
                     >
-                      {loadingPass ? "Updating Password..." : "Update Admin Password"}
+                      {loadingPass ? "Updating..." : "Update Password"}
                     </button>
-                  </form>
-
-                  <hr className="my-6 border-stone-100" />
-
-                  {/* Active Session Info */}
-                  <div>
-                    <h3 className="text-xs font-extrabold uppercase tracking-wider text-stone-500 mb-3">
-                      Active Admin Session
-                    </h3>
-                    <div className="flex items-center justify-between p-4 bg-stone-50 rounded-2xl border border-stone-200/80">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center">
-                          <IconServer className="w-4 h-4" />
-                        </div>
-                        <div>
-                          <p className="text-xs font-bold text-stone-800">Current Web Session (Active)</p>
-                          <p className="text-[11px] text-stone-400 font-medium mt-0.5">JWT Token Authenticated • Role: ADMIN</p>
-                        </div>
-                      </div>
-                      <span className="text-[11px] font-bold text-emerald-800 bg-emerald-100 px-2.5 py-1 rounded-full border border-emerald-200">
-                        Authorized
-                      </span>
-                    </div>
                   </div>
-                </div>
-              )}
-
-              {/* TAB 2: PROFILE */}
-              {activeTab === "profile" && (
-                <div className="space-y-6">
-                  <div>
-                    <h2 className="text-lg font-black text-stone-800 flex items-center gap-2">
-                      <IconUsers className="w-5 h-5 text-teal-800" />
-                      Administrator Account Details
-                    </h2>
-                    <p className="text-xs text-stone-400 font-medium mt-1">
-                      Personal identity information for system logs.
-                    </p>
-                  </div>
-
-                  <form onSubmit={handleProfileSave} className="space-y-4 max-w-md">
-                    <div className="flex items-center gap-4 p-4 bg-emerald-50/60 rounded-2xl border border-emerald-100 mb-4">
-                      <div className="w-14 h-14 rounded-2xl bg-emerald-600 text-white font-black text-2xl flex items-center justify-center shadow-xs">
-                        {currentUser.firstName?.[0] || "A"}
-                      </div>
-                      <div>
-                        <p className="font-extrabold text-stone-800 text-base">
-                          {currentUser.firstName} {currentUser.lastName}
-                        </p>
-                        <p className="text-xs text-stone-500 font-semibold">{currentUser.email}</p>
-                        <span className="inline-block mt-1 text-[10px] font-extrabold text-emerald-900 bg-emerald-200/80 px-2 py-0.5 rounded-md uppercase tracking-wider">
-                          Super Administrator
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-xs font-bold text-stone-600 mb-1.5 uppercase tracking-wider">
-                          First Name
-                        </label>
-                        <input
-                          type="text"
-                          value={profileForm.firstName}
-                          onChange={(e) => setProfileForm((p) => ({ ...p, firstName: e.target.value }))}
-                          className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 text-sm outline-none focus:ring-2 focus:ring-emerald-300 font-medium"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-stone-600 mb-1.5 uppercase tracking-wider">
-                          Last Name
-                        </label>
-                        <input
-                          type="text"
-                          value={profileForm.lastName}
-                          onChange={(e) => setProfileForm((p) => ({ ...p, lastName: e.target.value }))}
-                          className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 text-sm outline-none focus:ring-2 focus:ring-emerald-300 font-medium"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-stone-600 mb-1.5 uppercase tracking-wider">
-                        Email Address (Read Only)
-                      </label>
-                      <input
-                        type="email"
-                        value={currentUser.email}
-                        disabled
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 bg-stone-100 text-stone-500 text-sm font-medium cursor-not-allowed opacity-80"
-                      />
-                    </div>
-
-                    <button
-                      type="submit"
-                      className="w-full py-3 rounded-xl text-white font-bold text-sm shadow-xs hover:opacity-90 transition-all"
-                      style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}
-                    >
-                      Save Profile Name
-                    </button>
-                  </form>
-                </div>
-              )}
-
-              {/* TAB 3: NOTIFICATIONS */}
-              {activeTab === "notifications" && (
-                <div className="space-y-6">
-                  <div>
-                    <h2 className="text-lg font-black text-stone-800 flex items-center gap-2">
-                      <IconBell className="w-5 h-5 text-sky-800" />
-                      Email Notification Preferences
-                    </h2>
-                    <p className="text-xs text-stone-400 font-medium mt-1">
-                      Configure automated system alerts sent via Gmail SMTP.
-                    </p>
-                  </div>
-
-                  <div className="space-y-4 max-w-lg">
-                    {[
-                      { key: "emailOnProReq", label: "New Application Alerts", desc: "Notify admin when a professional submits verification details" },
-                      { key: "emailOnPayment", label: "Stripe Payment Receipts", desc: "Notify admin on every completed transaction" },
-                      { key: "emailWeeklyDigest", label: "Weekly Activity Summary", desc: "Send automated weekly analytics report every Sunday" },
-                      { key: "securityAlerts", label: "Security & Login Alerts", desc: "Notify on password resets or unusual login attempts" },
-                    ].map(({ key, label, desc }) => (
-                      <div key={key} className="flex items-center justify-between p-4 rounded-2xl border border-stone-200 hover:bg-stone-50/60 transition-colors">
-                        <div>
-                          <p className="text-xs font-bold text-stone-800">{label}</p>
-                          <p className="text-[11px] text-stone-400 font-medium mt-0.5">{desc}</p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setNotifications((p) => ({ ...p, [key]: !p[key] }));
-                            showToast("Preference updated!");
-                          }}
-                          className={`w-12 h-6 rounded-full transition-colors relative flex items-center p-0.5 ${
-                            notifications[key] ? "bg-emerald-500" : "bg-stone-300"
-                          }`}
-                        >
-                          <span
-                            className={`w-5 h-5 rounded-full bg-white shadow-xs transition-transform ${
-                              notifications[key] ? "translate-x-6" : "translate-x-0"
-                            }`}
-                          />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* TAB 4: PREFERENCES */}
-              {activeTab === "preferences" && (
-                <div className="space-y-6">
-                  <div>
-                    <h2 className="text-lg font-black text-stone-800 flex items-center gap-2">
-                      <IconSettings className="w-5 h-5 text-purple-800" />
-                      Platform Global Preferences
-                    </h2>
-                    <p className="text-xs text-stone-400 font-medium mt-1">
-                      Default settings for PoseFit business operations.
-                    </p>
-                  </div>
-
-                  <div className="space-y-4 max-w-md">
-                    <div>
-                      <label className="block text-xs font-bold text-stone-600 mb-1.5 uppercase tracking-wider">
-                        Default Platform Commission Rate
-                      </label>
-                      <input
-                        type="text"
-                        value={preferences.commissionRate}
-                        disabled
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 bg-stone-100 text-stone-700 text-sm font-bold cursor-not-allowed"
-                      />
-                      <p className="text-[11px] text-stone-400 mt-1 font-medium">Configured in backend payment logic (20% admin / 80% professional).</p>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-stone-600 mb-1.5 uppercase tracking-wider">
-                        Primary Payment Currency
-                      </label>
-                      <input
-                        type="text"
-                        value={preferences.currency}
-                        disabled
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 bg-stone-100 text-stone-700 text-sm font-bold cursor-not-allowed"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-stone-600 mb-1.5 uppercase tracking-wider">
-                        Server Timezone
-                      </label>
-                      <input
-                        type="text"
-                        value={preferences.timezone}
-                        disabled
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 bg-stone-100 text-stone-700 text-sm font-bold cursor-not-allowed"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* TAB 5: SYSTEM HEALTH */}
-              {activeTab === "system" && (
-                <div className="space-y-6">
-                  <div>
-                    <h2 className="text-lg font-black text-stone-800 flex items-center gap-2">
-                      <IconServer className="w-5 h-5 text-emerald-800" />
-                      System Health & Integrations
-                    </h2>
-                    <p className="text-xs text-stone-400 font-medium mt-1">
-                      Status of connected backend microservices and databases.
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {[
-                      { name: "Express Backend API", status: "Operational", detail: "Port 4000 • CORS Enabled" },
-                      { name: "MongoDB Database", status: "Connected", detail: "PoseFit DB Cluster" },
-                      { name: "Stripe API Integration", status: "Live Webhook Ready", detail: "PaymentIntents & Sessions" },
-                      { name: "Nodemailer SMTP", status: "Gmail Transport Active", detail: "Verification & Meeting Emails" },
-                    ].map((item) => (
-                      <div key={item.name} className="p-4 rounded-2xl border border-stone-200 bg-stone-50/60">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="font-extrabold text-stone-800 text-sm">{item.name}</span>
-                          <IconCheckCircle className="w-4 h-4 text-emerald-600" />
-                        </div>
-                        <p className="text-xs font-bold text-emerald-700">{item.status}</p>
-                        <p className="text-[11px] text-stone-400 font-medium mt-0.5">{item.detail}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+                </form>
+              </div>
             </div>
-          </div>
+          </section>
         </div>
       </div>
     </AdminLayout>
