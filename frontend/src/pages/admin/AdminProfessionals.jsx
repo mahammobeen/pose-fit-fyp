@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { z } from "zod";
 import AdminLayout from "../../components/admin/AdminLayout";
 import Modal from "../../components/admin/Modal";
 import StatusBadge from "../../components/admin/StatusBadge";
@@ -14,6 +15,45 @@ const EMPTY_FORM = {
   specialization: "",
   sessionFee: "",
 };
+
+const addProfessionalSchema = z.object({
+  firstName: z.string().min(1, "First name is required."),
+  lastName: z.string().min(1, "Last name is required."),
+  email: z.string().email("Please enter a valid email address."),
+  password: z
+    .string()
+    .refine(
+      (value) => value === "" || value.length >= 8,
+      "Password must be at least 8 characters.",
+    )
+    .refine(
+      (value) => value === "" || value.length <= 64,
+      "Password must not exceed 64 characters.",
+    )
+    .refine(
+      (value) => value === "" || /[a-z]/.test(value),
+      "Password must contain a lowercase letter.",
+    )
+    .refine(
+      (value) => value === "" || /[A-Z]/.test(value),
+      "Password must contain an uppercase letter.",
+    )
+    .refine(
+      (value) => value === "" || /\d/.test(value),
+      "Password must contain a number.",
+    )
+    .refine(
+      (value) => value === "" || /[^A-Za-z0-9]/.test(value),
+      "Password must contain a special character.",
+    )
+    .refine(
+      (value) => value === "" || !/\s/.test(value),
+      "Password must not contain spaces.",
+    ),
+  professionalType: z.string(),
+  specialization: z.string(),
+  sessionFee: z.string(),
+});
 
 export default function AdminProfessionals() {
   const [professionals, setProfessionals] = useState([]);
@@ -67,8 +107,10 @@ export default function AdminProfessionals() {
   const handleAdd = async (e) => {
     e.preventDefault();
 
-    if (!addForm.firstName || !addForm.lastName || !addForm.email) {
-      setAddError("First name, last name, and email are required.");
+    const validation = addProfessionalSchema.safeParse(addForm);
+
+    if (!validation.success) {
+      setAddError(validation.error.issues[0]?.message || "Please check the form.");
       return;
     }
 
@@ -114,7 +156,6 @@ export default function AdminProfessionals() {
   return (
     <AdminLayout>
       <div className="min-h-screen pb-16 bg-transparent font-sans">
-        {/* Toast */}
         {toast && (
           <div
             className={`fixed top-5 right-5 z-50 px-5 py-3 rounded-btn shadow-card-hover text-white text-sm font-bold border transition-all ${
@@ -127,7 +168,6 @@ export default function AdminProfessionals() {
           </div>
         )}
 
-        {/* Header */}
         <div className="px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 pb-5">
           <div className="rounded-card border border-brand-light/60 bg-surface/75 backdrop-blur-xl shadow-card p-6 sm:p-7 flex items-center justify-between flex-wrap gap-4">
             <div>
@@ -160,7 +200,6 @@ export default function AdminProfessionals() {
           </div>
         </div>
 
-        {/* Status Counts */}
         <div className="px-4 sm:px-6 lg:px-8 mb-5 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           {[
             {
@@ -229,7 +268,6 @@ export default function AdminProfessionals() {
           ))}
         </div>
 
-        {/* Search */}
         <div className="px-4 sm:px-6 lg:px-8 mb-4">
           <div className="relative max-w-sm">
             <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">
@@ -246,7 +284,6 @@ export default function AdminProfessionals() {
           </div>
         </div>
 
-        {/* Table */}
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="rounded-card shadow-card border border-brand-light/50 overflow-hidden bg-surface/85 backdrop-blur-xl">
             {loading ? (
@@ -290,7 +327,6 @@ export default function AdminProfessionals() {
                         key={pro._id}
                         className="hover:bg-brand-light/10 transition-colors"
                       >
-                        {/* Name */}
                         <td className="px-5 py-4">
                           <div className="flex items-center gap-3">
                             <div className="w-9 h-9 rounded-btn flex items-center justify-center text-white text-xs font-black shrink-0 bg-brand">
@@ -303,24 +339,20 @@ export default function AdminProfessionals() {
                           </div>
                         </td>
 
-                        {/* Email */}
                         <td className="px-5 py-4 text-gray-600 font-medium">
                           {pro.email}
                         </td>
 
-                        {/* Role */}
                         <td className="px-5 py-4">
                           <span className="inline-block px-2.5 py-0.5 rounded-md text-xs font-bold bg-brand-light/20 text-brand-dark border border-brand-light/60">
                             {pro.professionalType || "Trainer"}
                           </span>
                         </td>
 
-                        {/* Specialization */}
                         <td className="px-5 py-4 text-gray-600 font-medium">
                           {pro.specialization || "General"}
                         </td>
 
-                        {/* Fee */}
                         <td className="px-5 py-4 text-gray-800 font-bold">
                           Rs.{" "}
                           {pro.sessionFee
@@ -328,14 +360,12 @@ export default function AdminProfessionals() {
                             : "0"}
                         </td>
 
-                        {/* Status */}
                         <td className="px-5 py-4">
                           <StatusBadge
                             status={pro.professionalStatus || "invited"}
                           />
                         </td>
 
-                        {/* Stripe */}
                         <td className="px-5 py-4 whitespace-nowrap">
                           {pro.stripeAccountId ? (
                             <div>
@@ -364,7 +394,6 @@ export default function AdminProfessionals() {
                           )}
                         </td>
 
-                        {/* Actions */}
                         <td className="px-5 py-4">
                           <button
                             onClick={() => {
@@ -390,7 +419,6 @@ export default function AdminProfessionals() {
           </p>
         </div>
 
-        {/* ADD / INVITE MODAL */}
         <Modal
           isOpen={addOpen}
           onClose={() => setAddOpen(false)}
@@ -403,7 +431,6 @@ export default function AdminProfessionals() {
               </div>
             )}
 
-            {/* First / Last Name */}
             <div className="grid grid-cols-2 gap-3">
               {[
                 ["firstName", "First Name"],
@@ -429,7 +456,6 @@ export default function AdminProfessionals() {
               ))}
             </div>
 
-            {/* Email */}
             <div>
               <label className="block text-xs font-bold text-gray-600 mb-1.5 uppercase tracking-wider">
                 Email Address
@@ -448,7 +474,6 @@ export default function AdminProfessionals() {
               />
             </div>
 
-            {/* Role / Fee */}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-bold text-gray-600 mb-1.5 uppercase tracking-wider">
@@ -467,7 +492,6 @@ export default function AdminProfessionals() {
                 >
                   <option value="Trainer">Trainer</option>
                   <option value="Nutritionist">Nutritionist</option>
-                  <option value="OTHER">Other</option>
                 </select>
               </div>
 
@@ -492,7 +516,6 @@ export default function AdminProfessionals() {
               </div>
             </div>
 
-            {/* Specialization */}
             <div>
               <label className="block text-xs font-bold text-gray-600 mb-1.5 uppercase tracking-wider">
                 Specialization
@@ -512,7 +535,6 @@ export default function AdminProfessionals() {
               />
             </div>
 
-            {/* Password */}
             <div>
               <label className="block text-xs font-bold text-gray-600 mb-1.5 uppercase tracking-wider">
                 Temporary Password (Optional)
@@ -522,14 +544,20 @@ export default function AdminProfessionals() {
                 type="text"
                 placeholder="Auto-generated if left blank"
                 value={addForm.password}
+                maxLength={64}
                 onChange={(e) =>
                   setAddForm((p) => ({
                     ...p,
-                    password: e.target.value,
+                    password: e.target.value.slice(0, 64),
                   }))
                 }
                 className="w-full px-3.5 py-2.5 rounded-btn border border-gray-200 bg-white/70 text-sm text-gray-800 outline-none focus:border-brand focus:ring-2 focus:ring-brand-light/60 font-medium"
               />
+
+              <p className="text-xs text-gray-400 font-medium mt-1.5">
+                Password must be 8 to 64 characters with uppercase, lowercase,
+                number, and special character.
+              </p>
             </div>
 
             <p className="text-xs text-gray-400 font-medium">
@@ -537,7 +565,6 @@ export default function AdminProfessionals() {
               instructions will be sent automatically.
             </p>
 
-            {/* Modal Buttons */}
             <div className="flex gap-3 pt-2">
               <button
                 type="button"
@@ -560,7 +587,6 @@ export default function AdminProfessionals() {
           </form>
         </Modal>
 
-        {/* DELETE MODAL */}
         <Modal
           isOpen={deleteOpen}
           onClose={() => setDeleteOpen(false)}
@@ -601,4 +627,5 @@ export default function AdminProfessionals() {
       </div>
     </AdminLayout>
   );
-};
+}
+

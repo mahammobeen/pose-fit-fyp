@@ -36,39 +36,21 @@ const MEAL_CATEGORY_IMAGES = {
 
 export default function DietPlan() {
   const [userId, setUserId] = useState(null);
-
-  // =========================================================
-  // USER INPUTS
-  // =========================================================
   const [age, setAge] = useState("");
   const [height, setHeight] = useState("");
   const [weight, setWeight] = useState("");
   const [gender, setGender] = useState("");
   const [activityLevel, setActivityLevel] = useState("");
   const [goal, setGoal] = useState("");
-
-  // =========================================================
-  // HEALTH METRICS + DIET PLAN
-  // =========================================================
   const [metrics, setMetrics] = useState(null);
   const [dietPlan, setDietPlan] = useState(null);
-
-  // =========================================================
-  // ACTIVE DAY
-  // =========================================================
+  const [showMetricsForm, setShowMetricsForm] = useState(true);
   const [selectedDay, setSelectedDay] = useState(1);
-
-  // =========================================================
-  // UI STATES
-  // =========================================================
   const [loading, setLoading] = useState(true);
   const [savingMetrics, setSavingMetrics] = useState(false);
   const [generatingPlan, setGeneratingPlan] = useState(false);
   const [errors, setErrors] = useState({});
 
-  // =========================================================
-  // GET USER ID
-  // =========================================================
   const getUserId = () => {
     try {
       const stored = localStorage.getItem("pose-fit-user");
@@ -90,9 +72,6 @@ export default function DietPlan() {
     }
   };
 
-  // =========================================================
-  // CLEAR FORM
-  // =========================================================
   const clearMetricForm = () => {
     setAge("");
     setHeight("");
@@ -103,9 +82,6 @@ export default function DietPlan() {
     setErrors({});
   };
 
-  // =========================================================
-  // DISCARD OLD DIET PLAN
-  // =========================================================
   const discardDietPlan = () => {
     setDietPlan(null);
     setSelectedDay(1);
@@ -113,9 +89,6 @@ export default function DietPlan() {
     window.dispatchEvent(new CustomEvent("diet-plan-updated"));
   };
 
-  // =========================================================
-  // LOAD METRICS + DIET PLAN
-  // =========================================================
   useEffect(() => {
     const init = async () => {
       const id = getUserId();
@@ -131,19 +104,15 @@ export default function DietPlan() {
       try {
         setLoading(true);
 
-        // =====================================================
-        // LOAD SAVED HEALTH METRICS
-        // =====================================================
         try {
           const metricsRes = await httpClient.get(`/user/user-metrics/${id}`);
 
           if (metricsRes.data?.data) {
             const savedMetrics = metricsRes.data.data;
 
-            // Show saved metrics only in Calculated Targets.
-            // Health Information fields stay empty.
             setMetrics(savedMetrics);
             clearMetricForm();
+            setShowMetricsForm(false);
           }
         } catch (err) {
           if (err?.response?.status !== 404) {
@@ -151,9 +120,6 @@ export default function DietPlan() {
           }
         }
 
-        // =====================================================
-        // LOAD ACTIVE DIET PLAN
-        // =====================================================
         try {
           const planRes = await httpClient.get(`/user/diet-plan/${id}`);
 
@@ -177,13 +143,9 @@ export default function DietPlan() {
     init();
   }, []);
 
-  // =========================================================
-  // VALIDATION
-  // =========================================================
   const validate = () => {
     const newErrors = {};
 
-    // AGE
     if (!age || age.trim() === "") {
       newErrors.age = "Age is required";
     } else {
@@ -194,7 +156,6 @@ export default function DietPlan() {
       }
     }
 
-    // HEIGHT
     if (!height || height.trim() === "") {
       newErrors.height = "Height is required";
     } else {
@@ -205,7 +166,6 @@ export default function DietPlan() {
       }
     }
 
-    // WEIGHT
     if (!weight || weight.trim() === "") {
       newErrors.weight = "Weight is required";
     } else {
@@ -216,17 +176,14 @@ export default function DietPlan() {
       }
     }
 
-    // GENDER
     if (!gender) {
       newErrors.gender = "Please select your gender";
     }
 
-    // ACTIVITY LEVEL
     if (!activityLevel) {
       newErrors.activityLevel = "Please select your activity level";
     }
 
-    // GOAL
     if (!goal) {
       newErrors.goal = "Please select your fitness goal";
     }
@@ -236,9 +193,6 @@ export default function DietPlan() {
     return Object.keys(newErrors).length === 0;
   };
 
-  // =========================================================
-  // SAVE / RECALCULATE HEALTH METRICS
-  // =========================================================
   const handleSaveMetrics = async (e) => {
     if (e) {
       e.preventDefault();
@@ -279,18 +233,12 @@ export default function DietPlan() {
         throw new Error("Server did not return saved metrics");
       }
 
-      // Backend already deletes previous diet plan.
-      discardDietPlan();
-
-      // Keep calculated metrics visible.
       setMetrics(saved);
 
-      // Clear form after calculation.
       clearMetricForm();
+      setShowMetricsForm(false);
 
-      toast.success(
-        "Health metrics calculated successfully! Your previous diet plan has been discarded.",
-      );
+      toast.success("Health metrics calculated successfully!");
     } catch (err) {
       console.error("Save metrics error:", err);
 
@@ -305,9 +253,20 @@ export default function DietPlan() {
     }
   };
 
-  // =========================================================
-  // GENERATE / REGENERATE DIET PLAN
-  // =========================================================
+  const handleRegenerateClick = () => {
+    if (metrics) {
+      setAge(metrics.age?.toString() || "");
+      setHeight(metrics.height?.toString() || "");
+      setWeight(metrics.weight?.toString() || "");
+      setGender(metrics.gender || "");
+      setActivityLevel(metrics.activityLevel || "");
+      setGoal(metrics.goal || "");
+    }
+
+    setErrors({});
+    setShowMetricsForm(true);
+  };
+
   const handleGeneratePlan = async () => {
     const currentId = userId || getUserId();
 
@@ -365,9 +324,6 @@ export default function DietPlan() {
     }
   };
 
-  // =========================================================
-  // LOADING SCREEN
-  // =========================================================
   if (loading) {
     return (
       <UserLayout>
@@ -384,16 +340,10 @@ export default function DietPlan() {
     );
   }
 
-  // =========================================================
-  // CURRENT DAY DATA
-  // =========================================================
   const currentDayData =
     dietPlan?.planDays?.find((d) => d.day === selectedDay) ||
     dietPlan?.planDays?.[0];
 
-  // =========================================================
-  // CHECK IF FORM HAS VALUES
-  // =========================================================
   const hasFormValues = Boolean(
     age || height || weight || gender || activityLevel || goal,
   );
@@ -401,9 +351,7 @@ export default function DietPlan() {
   return (
     <UserLayout>
       <main className="w-full min-w-0 overflow-x-hidden bg-transparent px-3 py-5 sm:px-5 sm:py-6 md:px-6 lg:px-8 lg:py-8 space-y-6 sm:space-y-8 font-sans">
-        {/* =====================================================
-            PAGE HEADER
-        ====================================================== */}
+
         <div className="w-full max-w-6xl mx-auto min-w-0">
           <div className="flex flex-col gap-2">
             <h1 className="text-xl leading-tight sm:text-2xl md:text-3xl font-extrabold tracking-tight text-gray-800">
@@ -415,19 +363,15 @@ export default function DietPlan() {
 
             <p className="max-w-3xl text-[11px] sm:text-xs md:text-sm font-medium leading-5 sm:leading-6 text-gray-500">
               Calculate your precise nutritional targets and generate an
-              authentic 3-day Pakistani meal plan optimized by our ML model.
+              authentic 3-day meal plan.
             </p>
           </div>
         </div>
 
-        {/* =====================================================
-            HEALTH INFORMATION + CALCULATED TARGETS
-        ====================================================== */}
-        <div className="w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 lg:gap-8 items-start min-w-0">
-          {/* ===================================================
-              HEALTH INFORMATION
-          ==================================================== */}
-          <section className="lg:col-span-6 min-w-0 card bg-surface/90 border border-brand-light/40 p-4 sm:p-5 md:p-6 lg:p-8">
+        <div className="w-full max-w-6xl mx-auto min-w-0">
+
+          {showMetricsForm && (
+          <section className="min-w-0 w-full card bg-surface/90 border border-brand-light/40 p-4 sm:p-5 md:p-6 lg:p-8">
             <div className="flex items-start gap-2.5 sm:gap-3 mb-5 sm:mb-6">
               <div className="shrink-0 p-2.5 sm:p-3 bg-brand-light/35 rounded-btn">
                 <Scale className="w-4 h-4 sm:w-5 sm:h-5 text-brand-dark" />
@@ -449,9 +393,9 @@ export default function DietPlan() {
               onSubmit={handleSaveMetrics}
               className="space-y-4 sm:space-y-5"
             >
-              {/* AGE / HEIGHT / WEIGHT */}
+
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-                {/* AGE */}
+
                 <div className="min-w-0">
                   <label className="block text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-500 mb-1.5">
                     Age (yrs)
@@ -481,7 +425,6 @@ export default function DietPlan() {
                   )}
                 </div>
 
-                {/* HEIGHT */}
                 <div className="min-w-0">
                   <label className="block text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-500 mb-1.5">
                     Height (cm)
@@ -511,7 +454,6 @@ export default function DietPlan() {
                   )}
                 </div>
 
-                {/* WEIGHT */}
                 <div className="min-w-0">
                   <label className="block text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-500 mb-1.5">
                     Weight (kg)
@@ -542,8 +484,8 @@ export default function DietPlan() {
                 </div>
               </div>
 
-              {/* GENDER */}
-              <div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
+              <div className="lg:col-span-2">
                 <label className="block text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-500 mb-1.5">
                   Gender
                 </label>
@@ -581,7 +523,6 @@ export default function DietPlan() {
                 )}
               </div>
 
-              {/* ACTIVITY LEVEL */}
               <div>
                 <label className="block text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-500 mb-1.5">
                   Activity Level
@@ -631,7 +572,6 @@ export default function DietPlan() {
                 )}
               </div>
 
-              {/* FITNESS GOAL */}
               <div>
                 <label className="block text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-500 mb-1.5">
                   Fitness Goal
@@ -672,8 +612,8 @@ export default function DietPlan() {
                   </p>
                 )}
               </div>
+              </div>
 
-              {/* SAVE / CALCULATE BUTTON */}
               <button
                 type="submit"
                 disabled={savingMetrics}
@@ -692,31 +632,38 @@ export default function DietPlan() {
               </button>
             </form>
           </section>
+          )}
 
-          {/* ===================================================
-              CALCULATED TARGETS
-          ==================================================== */}
-          <section className="lg:col-span-6 min-w-0 card bg-surface/90 border border-brand-light/40 p-4 sm:p-5 md:p-6 lg:p-8 space-y-5 sm:space-y-6">
-            <div className="flex items-start gap-2.5 sm:gap-3">
-              <div className="shrink-0 p-2.5 sm:p-3 bg-accent-blue/30 rounded-btn">
-                <HeartPulse className="w-4 h-4 sm:w-5 sm:h-5 text-blue-700" />
+          {!showMetricsForm && (
+          <section className="min-w-0 card bg-surface/90 border border-brand-light/40 p-4 sm:p-5 md:p-6 lg:p-8 space-y-5 sm:space-y-6">
+            <div className="flex items-start justify-between gap-2.5 sm:gap-3">
+              <div className="flex items-start gap-2.5 sm:gap-3 min-w-0">
+                <div className="shrink-0 p-2.5 sm:p-3 bg-accent-blue/30 rounded-btn">
+                  <HeartPulse className="w-4 h-4 sm:w-5 sm:h-5 text-blue-700" />
+                </div>
+
+                <div className="min-w-0">
+                  <h2 className="text-base sm:text-lg md:text-xl font-extrabold text-gray-800">
+                    Calculated Metrics
+                  </h2>
+
+                  <p className="text-[11px] sm:text-xs leading-5 text-gray-400 mt-1">
+                    Updated from your latest health metrics.
+                  </p>
+                </div>
               </div>
 
-              <div className="min-w-0">
-                <h2 className="text-base sm:text-lg md:text-xl font-extrabold text-gray-800">
-                  Calculated Targets
-                </h2>
-
-                <p className="text-[11px] sm:text-xs leading-5 text-gray-400 mt-1">
-                  {metrics
-                    ? "Updated from your latest health metrics."
-                    : "Enter and save your metrics on the left to see your targets."}
-                </p>
-              </div>
+              <button
+                type="button"
+                onClick={handleRegenerateClick}
+                className="shrink-0 rounded-btn border border-brand-light/50 bg-brand-light/20 px-2.5 py-1.5 sm:px-3 sm:py-2 text-[10px] sm:text-xs font-bold text-brand-dark transition-all hover:bg-brand-light/35"
+              >
+                Recalculate Metrics
+              </button>
             </div>
 
-            {/* METRIC CARDS */}
-            <div className="grid grid-cols-2 gap-2.5 sm:gap-3 md:gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 md:gap-4">
+
               <div className="min-w-0 bg-brand-light/15 rounded-btn p-3 sm:p-4 border border-brand-light/30">
                 <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-400">
                   BMI
@@ -733,7 +680,6 @@ export default function DietPlan() {
                 </span>
               </div>
 
-              {/* BMR */}
               <div className="min-w-0 bg-accent-blue/15 rounded-btn p-3 sm:p-4 border border-accent-blue/30">
                 <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-400">
                   BMR
@@ -748,7 +694,6 @@ export default function DietPlan() {
                 </p>
               </div>
 
-              {/* TDEE */}
               <div className="min-w-0 bg-accent-orange/15 rounded-btn p-3 sm:p-4 border border-accent-orange/30">
                 <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-400">
                   TDEE
@@ -763,7 +708,6 @@ export default function DietPlan() {
                 </p>
               </div>
 
-              {/* TARGET CALORIES */}
               <div className="min-w-0 bg-brand-light/25 rounded-btn p-3 sm:p-4 border border-brand-light/40">
                 <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-brand-dark">
                   Target Calories
@@ -781,14 +725,13 @@ export default function DietPlan() {
               </div>
             </div>
 
-            {/* MACRONUTRIENTS */}
             <div>
               <h3 className="text-xs sm:text-sm font-extrabold text-gray-800 mb-3 uppercase tracking-wider">
                 Daily Macronutrient Targets
               </h3>
 
               <div className="grid grid-cols-3 gap-2 sm:gap-3">
-                {/* PROTEIN */}
+
                 <div className="min-w-0 p-2.5 sm:p-3.5 rounded-btn bg-brand-light/20 border border-brand-light/35">
                   <span className="block text-[8px] sm:text-[10px] md:text-[11px] font-bold text-gray-500 uppercase">
                     Protein
@@ -803,7 +746,6 @@ export default function DietPlan() {
                   </span>
                 </div>
 
-                {/* CARBS */}
                 <div className="min-w-0 p-2.5 sm:p-3.5 rounded-btn bg-accent-blue/20 border border-accent-blue/35">
                   <span className="block text-[8px] sm:text-[10px] md:text-[11px] font-bold text-gray-500 uppercase">
                     Carbs
@@ -816,7 +758,6 @@ export default function DietPlan() {
                   </span>
                 </div>
 
-                {/* FATS */}
                 <div className="min-w-0 p-2.5 sm:p-3.5 rounded-btn bg-accent-orange/20 border border-accent-orange/35">
                   <span className="block text-[8px] sm:text-[10px] md:text-[11px] font-bold text-gray-500 uppercase">
                     Fats
@@ -831,7 +772,6 @@ export default function DietPlan() {
               </div>
             </div>
 
-            {/* GENERATE DIET PLAN */}
             <div className="pt-3 border-t border-brand-light/30">
               <button
                 type="button"
@@ -861,14 +801,12 @@ export default function DietPlan() {
               )}
             </div>
           </section>
+          )}
         </div>
 
-        {/* =====================================================
-            3-DAY DIET PLAN
-        ====================================================== */}
         {dietPlan && (
           <section className="w-full max-w-6xl mx-auto min-w-0 space-y-5 sm:space-y-6">
-            {/* EXPIRY BANNER */}
+
             {dietPlan.isExpired && (
               <div className="rounded-card bg-amber-50 border border-amber-200 p-3.5 sm:p-4 md:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
                 <div className="flex items-start gap-2.5 sm:gap-3 min-w-0">
@@ -899,7 +837,6 @@ export default function DietPlan() {
               </div>
             )}
 
-            {/* PLAN HEADER */}
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 border-b border-brand-light/30 pb-4 sm:pb-5">
               <div className="min-w-0">
                 <h2 className="text-lg sm:text-xl md:text-2xl font-extrabold text-gray-800">
@@ -919,7 +856,6 @@ export default function DietPlan() {
                 </p>
               </div>
 
-              {/* DAY TABS */}
               <div className="flex items-center gap-1.5 sm:gap-2 bg-surface/90 p-1.5 rounded-btn border border-brand-light/40 shadow-xs w-full lg:w-auto overflow-x-auto">
                 {[1, 2, 3].map((dayNum) => {
                   const isToday = dietPlan.currentDay === dayNum;
@@ -950,7 +886,6 @@ export default function DietPlan() {
               </div>
             </div>
 
-            {/* MEAL CARDS */}
             {currentDayData && (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 lg:gap-6">
@@ -969,7 +904,7 @@ export default function DietPlan() {
                         key={slotKey}
                         className="group min-w-0 flex flex-col overflow-hidden rounded-card border border-brand-light/50 bg-surface/90 shadow-card transition-all duration-300 md:hover:-translate-y-1 md:hover:shadow-card-hover"
                       >
-                        {/* IMAGE */}
+
                         <div className="relative h-40 sm:h-44 md:h-48 w-full overflow-hidden bg-brand-light/20">
                           <img
                             src={categoryImage}
@@ -979,14 +914,12 @@ export default function DietPlan() {
 
                           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
-                          {/* BADGE */}
                           <div className="absolute top-3 sm:top-4 left-3 sm:left-4">
                             <span className="rounded-btn border border-white/40 bg-surface/90 px-2.5 sm:px-3 py-1 text-[9px] sm:text-[10px] md:text-[11px] font-extrabold uppercase tracking-wider text-gray-800 shadow-card backdrop-blur-md">
                               {title}
                             </span>
                           </div>
 
-                          {/* IMAGE BOTTOM */}
                           <div className="absolute bottom-3 sm:bottom-4 left-3 sm:left-4 right-3 sm:right-4 flex items-end justify-between gap-2 sm:gap-3 text-white">
                             <h3 className="font-extrabold text-base sm:text-lg md:text-xl min-w-0 truncate">
                               {title}
@@ -998,9 +931,8 @@ export default function DietPlan() {
                           </div>
                         </div>
 
-                        {/* CARD BODY */}
                         <div className="p-4 sm:p-5 md:p-6 space-y-4 sm:space-y-5 flex-1">
-                          {/* DISHES */}
+
                           <div className="space-y-2.5">
                             <p className="text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider text-gray-400">
                               Recommended Dish(es) & Portion Size
@@ -1030,10 +962,9 @@ export default function DietPlan() {
                             ))}
                           </div>
 
-                          {/* MACRO BREAKDOWN */}
                           <div className="pt-3 sm:pt-4 border-t border-brand-light/30">
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                              {/* CALORIES */}
+
                               <div className="p-2 sm:p-2.5 rounded-btn bg-brand-light/15 text-center min-w-0">
                                 <span className="block text-[8px] sm:text-[9px] uppercase font-bold text-gray-400">
                                   Calories
@@ -1044,7 +975,6 @@ export default function DietPlan() {
                                 </span>
                               </div>
 
-                              {/* PROTEIN */}
                               <div className="p-2 sm:p-2.5 rounded-btn bg-brand-light/15 text-center min-w-0">
                                 <span className="block text-[8px] sm:text-[9px] uppercase font-bold text-gray-400">
                                   Protein
@@ -1055,7 +985,6 @@ export default function DietPlan() {
                                 </span>
                               </div>
 
-                              {/* CARBS */}
                               <div className="p-2 sm:p-2.5 rounded-btn bg-accent-blue/15 text-center min-w-0">
                                 <span className="block text-[8px] sm:text-[9px] uppercase font-bold text-gray-400">
                                   Carbs
@@ -1066,7 +995,6 @@ export default function DietPlan() {
                                 </span>
                               </div>
 
-                              {/* FATS */}
                               <div className="p-2 sm:p-2.5 rounded-btn bg-accent-orange/15 text-center min-w-0">
                                 <span className="block text-[8px] sm:text-[9px] uppercase font-bold text-gray-400">
                                   Fats
@@ -1084,7 +1012,6 @@ export default function DietPlan() {
                   })}
                 </div>
 
-                {/* DAILY NUTRITION SUMMARY */}
                 <div className="card bg-surface/90 border border-brand-light/40 p-4 sm:p-5 md:p-6 lg:p-8">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-5">
                     <div className="min-w-0">
@@ -1104,7 +1031,7 @@ export default function DietPlan() {
                   </div>
 
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 md:gap-4">
-                    {/* CALORIES */}
+
                     <div className="min-w-0 bg-brand-light/20 rounded-btn p-3 sm:p-4 border border-brand-light/35">
                       <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-500">
                         Calories
@@ -1119,7 +1046,6 @@ export default function DietPlan() {
                       </p>
                     </div>
 
-                    {/* PROTEIN */}
                     <div className="min-w-0 bg-brand-light/20 rounded-btn p-3 sm:p-4 border border-brand-light/35">
                       <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-brand-dark">
                         Protein
@@ -1134,7 +1060,6 @@ export default function DietPlan() {
                       </p>
                     </div>
 
-                    {/* CARBS */}
                     <div className="min-w-0 bg-accent-blue/20 rounded-btn p-3 sm:p-4 border border-accent-blue/35">
                       <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-blue-700">
                         Carbohydrates
@@ -1149,7 +1074,6 @@ export default function DietPlan() {
                       </p>
                     </div>
 
-                    {/* FATS */}
                     <div className="min-w-0 bg-accent-orange/20 rounded-btn p-3 sm:p-4 border border-accent-orange/35">
                       <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-accent-orange-dark">
                         Fats
@@ -1166,7 +1090,6 @@ export default function DietPlan() {
                   </div>
                 </div>
 
-                {/* REGENERATE */}
                 <div className="pt-1 pb-4 sm:pb-6 flex justify-center">
                   <button
                     type="button"

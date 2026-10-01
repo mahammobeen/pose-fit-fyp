@@ -291,7 +291,6 @@ PoseFit Team`,
   }
 };
 
-// 10. Delete a professional by ID
 const deleteProfessional = async (req, res) => {
   try {
     const { id } = req.params;
@@ -322,7 +321,6 @@ const deleteProfessional = async (req, res) => {
   }
 };
 
-// 11. Get admin registration analytics (past 7 days)
 const getAnalytics = async (req, res) => {
   try {
     const dates = [];
@@ -395,7 +393,6 @@ const getAnalytics = async (req, res) => {
   }
 };
 
-// 12. Get pending professional applications for verification
 const getPendingProfessionals = async (req, res) => {
   try {
     const professionals = await UserModel.find({
@@ -405,7 +402,7 @@ const getPendingProfessionals = async (req, res) => {
       },
     })
       .select(
-        "firstName lastName email role professionalType specialization experience bio profilePhoto sessionFee credentialDocs bankDetails availability professionalStatus rejectionReason appliedAt verificationNotes",
+        "firstName lastName email role professionalType specialization experience bio profilePhoto sessionFee credentialDocs bankDetails availability professionalStatus rejectionReason appliedAt ",
       )
       .sort({ updatedAt: -1 });
 
@@ -423,10 +420,9 @@ const getPendingProfessionals = async (req, res) => {
   }
 };
 
-// 13. Admin approves or rejects professional application
 const updateProfessionalStatus = async (req, res) => {
   try {
-    const { status, rejectionReason, verificationNotes } = req.body;
+    const { status, rejectionReason } = req.body;
 
     const normalizedStatus = (status || "").toLowerCase();
 
@@ -455,14 +451,12 @@ const updateProfessionalStatus = async (req, res) => {
     } else {
       professional.professionalStatus = "rejected";
       professional.rejectionReason =
-        rejectionReason ||
-        verificationNotes ||
-        "Application requirements not met.";
+        rejectionReason || "Application rejected by Admin.";
     }
 
-    if (verificationNotes) {
-      professional.verificationNotes = verificationNotes;
-    }
+    // if (verificationNotes) {
+    //   professional.verificationNotes = verificationNotes;
+    // }
 
     await professional.save();
 
@@ -528,61 +522,51 @@ PoseFit Team`;
 const changeAdminPassword = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
-
     if (!currentPassword || !newPassword) {
-      return res.status(400).json({
-        success: false,
-        message: "Current password and new password are required",
-      });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "Current password and new password are required",
+        });
     }
-
     const admin = await UserModel.findOne({
       _id: req.user.userId,
       role: "ADMIN",
     });
-
     if (!admin) {
-      return res.status(404).json({
-        success: false,
-        message: "Admin not found",
-      });
+      return res
+        .status(404)
+        .json({ success: false, message: "Admin not found" });
     }
-
     const isPasswordCorrect = await bcrypt.compare(
       currentPassword,
       admin.password,
     );
-
     if (!isPasswordCorrect) {
-      return res.status(400).json({
-        success: false,
-        message: "Current password is incorrect",
-      });
+      return res
+        .status(400)
+        .json({ success: false, message: "Current password is incorrect" });
     }
-
     const isSamePassword = await bcrypt.compare(newPassword, admin.password);
-
     if (isSamePassword) {
-      return res.status(400).json({
-        success: false,
-        message: "New password must be different",
-      });
+      return res
+        .status(400)
+        .json({ success: false, message: "New password must be different" });
     }
-
     admin.password = await bcrypt.hash(newPassword, 10);
-
     await admin.save();
-
-    return res.status(200).json({
-      success: true,
-      message: "Admin password changed successfully",
-    });
+    return res
+      .status(200)
+      .json({ success: true, message: "Admin password changed successfully" });
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: "Failed to change admin password",
-      error: error.message,
-    });
+    return res
+      .status(500)
+      .json({
+        success: false,
+        message: "Failed to change admin password",
+        error: error.message,
+      });
   }
 };
 

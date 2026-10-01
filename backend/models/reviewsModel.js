@@ -66,7 +66,6 @@ reviewSchema.index({
 
 const ReviewModel = mongoose.model("Review", reviewSchema);
 
-// Remove old legacy unique index if it still exists
 ReviewModel.collection
   .indexes()
   .then(async (indexes) => {

@@ -1,5 +1,5 @@
 const STATUS_STYLES = {
-  // Payment statuses
+
   completed: {
     bg: "bg-brand-light/30",
     text: "text-brand-dark",
@@ -24,7 +24,6 @@ const STATUS_STYLES = {
     label: "Failed",
   },
 
-  // Professional statuses flow
   invited: {
     bg: "bg-accent-blue/40",
     text: "text-blue-800",
@@ -97,7 +96,6 @@ const STATUS_STYLES = {
     label: "Rejected",
   },
 
-  // Verification
   verified: {
     bg: "bg-brand-light/30",
     text: "text-brand-dark",

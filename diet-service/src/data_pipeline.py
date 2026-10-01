@@ -1,8 +1,3 @@
-"""
-data_pipeline.py: Data Loading, Cleaning, Validation, Explosion, and Feature Engineering
-for PoseFit Diet Plan Recommendation Module.
-"""
-
 import os
 import sys
 
@@ -17,20 +12,15 @@ from src.recommender import StandardScaler, OneHotEncoder
 NUMERIC_FEATURES = ["calories_kcal", "protein_g", "carbs_g", "fats_g"]
 STANDARD_MEAL_TYPES = ["Breakfast", "Lunch", "Dinner", "Snack", "Dessert"]
 
-
 def load_raw_data(filepath: str) -> pd.DataFrame:
-    """Load raw dataset CSV and return pandas DataFrame."""
+
     if not os.path.exists(filepath):
         raise FileNotFoundError(f"Dataset not found at {filepath}")
     df = pd.read_csv(filepath)
     return df
 
-
 def check_missing_and_duplicates(df: pd.DataFrame) -> Dict[str, Any]:
-    """
-    Check for missing values and duplicates on food_id and dish_name.
-    Returns audit dictionary.
-    """
+
     missing_counts = df.isna().sum().to_dict()
     duplicate_food_ids = int(df["food_id"].duplicated().sum())
     duplicate_dish_names = int(df["dish_name"].str.strip().str.lower().duplicated().sum())
@@ -43,28 +33,19 @@ def check_missing_and_duplicates(df: pd.DataFrame) -> Dict[str, Any]:
     }
     return report
 
-
 def validate_atwater_and_outliers(
     df: pd.DataFrame, tolerance: float = 0.05
 ) -> Tuple[pd.DataFrame, Dict[str, Any]]:
-    """
-    Validate macronutrient energy consistency via Atwater factors:
-      Expected Calories = (protein_g * 4) + (carbs_g * 4) + (fats_g * 9)
-    Tolerance threshold: ~5% deviation.
-    Also flags negative values and calories > 800 kcal / 100g.
-    """
+
     df = df.copy()
 
-    # Calculate expected calories
     expected_cal = (df["protein_g"] * 4.0) + (df["carbs_g"] * 4.0) + (df["fats_g"] * 9.0)
     df["calculated_calories"] = expected_cal.round(2)
 
-    # Relative difference (safe against 0 calories)
     denom = np.maximum(df["calories_kcal"], 1.0)
     rel_diff = np.abs(df["calories_kcal"] - expected_cal) / denom
     df["atwater_rel_diff"] = rel_diff.round(4)
 
-    # Flags
     atwater_discrepancies = df[rel_diff > tolerance]
     negative_values = df[
         (df["calories_kcal"] < 0)
@@ -85,13 +66,8 @@ def validate_atwater_and_outliers(
 
     return df, report
 
-
 def explode_meal_types(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Explode compound meal_type column (e.g. 'Breakfast/Lunch/Dinner')
-    so each slot becomes its own distinct row for slot-based retrieval,
-    while preserving original food_id and dish metadata.
-    """
+
     df = df.copy()
     exploded_rows = []
 
@@ -108,7 +84,6 @@ def explode_meal_types(df: pd.DataFrame) -> pd.DataFrame:
     exploded_df.reset_index(drop=True, inplace=True)
     return exploded_df
 
-
 def engineer_features(
     df: pd.DataFrame,
     scaler: Optional[StandardScaler] = None,
@@ -116,17 +91,9 @@ def engineer_features(
     meal_weight: float = 0.35,
     fit: bool = True,
 ) -> Tuple[np.ndarray, StandardScaler, OneHotEncoder, pd.DataFrame]:
-    """
-    Step 4 Feature Engineering:
-    - 4 Core numeric features standardized (calories_kcal, protein_g, carbs_g, fats_g)
-    - Derived feature: protein_ratio = (protein_g * 4) / calories_kcal (safe for 0-cal items)
-    - One-hot encoded slot_meal_type blended at reduced weight (meal_weight ~0.3-0.4x)
-    Returns (feature_matrix, fitted_scaler, fitted_encoder, transformed_df).
-    """
+
     df = df.copy()
 
-    # Derived Feature: protein_ratio
-    # Safe division for 0 calories (e.g., water, black coffee)
     df["protein_ratio"] = np.where(
         df["calories_kcal"] > 0,
         (df["protein_g"] * 4.0) / df["calories_kcal"],
@@ -136,14 +103,12 @@ def engineer_features(
 
     numeric_cols = NUMERIC_FEATURES + ["protein_ratio"]
 
-    # StandardScaler for numeric features
     if fit or scaler is None:
         scaler = StandardScaler()
         scaled_numeric = scaler.fit_transform(df[numeric_cols].to_numpy())
     else:
         scaled_numeric = scaler.transform(df[numeric_cols].to_numpy())
 
-    # OneHotEncoder for meal slot
     if "slot_meal_type" not in df.columns:
         df["slot_meal_type"] = df["meal_type"]
 
@@ -153,21 +118,17 @@ def engineer_features(
     else:
         encoded_meal = encoder.transform(df[["slot_meal_type"]].to_numpy())
 
-    # Blend meal slot with reduced weight
     weighted_meal = encoded_meal * meal_weight
 
-    # Final feature matrix: [scaled_cal, scaled_pro, scaled_carbs, scaled_fats, scaled_pro_ratio, weighted_one_hot_meals]
     feature_matrix = np.hstack([scaled_numeric, weighted_meal])
 
-    # Store scaled features on df for inspection
     for i, col in enumerate(numeric_cols):
         df[f"scaled_{col}"] = scaled_numeric[:, i]
 
     return feature_matrix, scaler, encoder, df
 
-
 def run_pipeline_report(csv_path: str) -> Dict[str, Any]:
-    """Execute end-to-end data cleaning & preprocessing pipeline and print report."""
+
     print("=" * 80)
     print("STEP 3: DATA CLEANING & PREPROCESSING REPORT")
     print("=" * 80)
@@ -176,7 +137,6 @@ def run_pipeline_report(csv_path: str) -> Dict[str, Any]:
     print(f"[1] Raw Data Loaded: {len(raw_df)} food items.")
     print("Columns:", list(raw_df.columns))
 
-    # Audit Missing & Duplicates
     clean_report = check_missing_and_duplicates(raw_df)
     print(f"\n[2] Missing Values Check:")
     for col, count in clean_report["missing_per_column"].items():
@@ -184,7 +144,6 @@ def run_pipeline_report(csv_path: str) -> Dict[str, Any]:
     print(f"    - Duplicate Food IDs: {clean_report['duplicate_food_ids']}")
     print(f"    - Duplicate Dish Names: {clean_report['duplicate_dish_names']}")
 
-    # Atwater & Outliers
     validated_df, atwater_report = validate_atwater_and_outliers(raw_df, tolerance=0.05)
     print(f"\n[3] Outlier & Atwater Consistency Check (5% tolerance):")
     print(f"    - Negative values found: {atwater_report['negative_value_count']}")
@@ -195,7 +154,6 @@ def run_pipeline_report(csv_path: str) -> Dict[str, Any]:
         for item in atwater_report["atwater_discrepant_sample"][:5]:
             print(f"      * [{item['food_id']}] {item['dish_name']}: Listed={item['calories_kcal']} kcal, Calculated={item['calculated_calories']} kcal (diff: {item['atwater_rel_diff']*100:.1f}%)")
 
-    # Explode meal types
     exploded_df = explode_meal_types(raw_df)
     print(f"\n[4] Meal Type Explosion:")
     print(f"    - Original Catalog Rows: {len(raw_df)}")
@@ -203,7 +161,6 @@ def run_pipeline_report(csv_path: str) -> Dict[str, Any]:
     print("    Per-Slot Counts in Exploded Catalog:")
     print(exploded_df["slot_meal_type"].value_counts().to_string())
 
-    # Feature engineering
     print("\n" + "=" * 80)
     print("STEP 4: FEATURE ENGINEERING")
     print("=" * 80)
@@ -230,7 +187,6 @@ def run_pipeline_report(csv_path: str) -> Dict[str, Any]:
         "exploded_df": exploded_df,
         "feature_matrix": feature_matrix,
     }
-
 
 if __name__ == "__main__":
     current_dir = os.path.dirname(os.path.abspath(__file__))

@@ -161,11 +161,13 @@ const sendBookingConfirmationEmails = async ({
   };
 
   await Promise.all([
-    transporter.sendMail(userMail),
-    transporter.sendMail(professionalMail),
-  ]);
+     transporter.sendMail(userMail),
+     transporter.sendMail(professionalMail),
+   ]);
 
-  return true;
+
+return true;
+ 
 };
 
 const sendBookingReminderEmails = async ({
@@ -355,4 +357,3 @@ module.exports = {
   sendBookingConfirmationEmails,
   sendBookingReminderEmails,
 };
-

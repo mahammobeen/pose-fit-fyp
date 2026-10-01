@@ -17,10 +17,6 @@ router.post("/login", login);
 router.post("/verify-email", verifyEmail);
 router.post("/forgot-password", forgotPassword);
 router.put("/reset-password/", resetPassword);
-router.put(
-  "/complete-professional-profile",
-  authMiddleware,
-  completeProfessionalProfile,
-);
+router.put("/complete-professional-profile",authMiddleware,completeProfessionalProfile,);
 
 module.exports = router;

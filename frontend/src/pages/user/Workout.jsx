@@ -61,7 +61,7 @@ export default function PostureDetection() {
   return (
     <UserLayout>
       <div className="min-h-screen bg-transparent px-4 py-4 font-sans sm:px-6 md:px-8 md:py-6">
-        {/* Title */}
+
         <div className="mx-auto max-w-6xl">
           <h1 className="flex flex-wrap items-center gap-2 text-2xl font-extrabold tracking-tight text-gray-800 sm:text-3xl">
             Select an exercise for
@@ -76,14 +76,13 @@ export default function PostureDetection() {
           </p>
         </div>
 
-        {/* 2 Cards Per Row Grid */}
         <div className="mx-auto mt-6 grid max-w-6xl grid-cols-1 gap-6 md:grid-cols-2">
           {EXERCISES.map((ex) => (
             <div
               key={ex.id}
               className="group flex flex-col justify-between overflow-hidden rounded-card border border-brand-light/50 bg-surface/80 shadow-card backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover"
             >
-              {/* Top Image Banner */}
+
               <div className="relative h-60 w-full overflow-hidden bg-brand-light/20 md:h-64">
                 <img
                   src={ex.image}
@@ -93,14 +92,12 @@ export default function PostureDetection() {
 
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
 
-                {/* Category Badge Floating on Image */}
                 <div className="absolute left-4 top-4">
                   <span className="rounded-btn border border-white/50 bg-surface/90 px-3 py-1 text-[11px] font-black uppercase tracking-wider text-gray-800 shadow-card backdrop-blur-md">
                     {ex.category}
                   </span>
                 </div>
 
-                {/* Title & Target on Bottom of Image */}
                 <div className="absolute bottom-4 left-4 right-4">
                   <h3 className="text-2xl font-extrabold tracking-tight text-white drop-shadow-sm">
                     {ex.title}
@@ -113,10 +110,9 @@ export default function PostureDetection() {
                 </div>
               </div>
 
-              {/* Content Body */}
               <div className="flex flex-1 flex-col justify-between space-y-4 p-6">
                 <div className="space-y-2.5">
-                  {/* Metric Badge */}
+
                   <div className="flex items-center gap-2">
                     <span
                       className={`flex items-center gap-1.5 rounded-btn border px-3 py-1 text-xs font-bold ${ex.badgeColor}`}
@@ -131,7 +127,6 @@ export default function PostureDetection() {
                   </p>
                 </div>
 
-                {/* Action Button */}
                 <div className="pt-2">
                   <button
                     onClick={() => navigate(`/user/workout/session/${ex.id}`)}

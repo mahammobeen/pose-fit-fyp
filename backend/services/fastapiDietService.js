@@ -19,20 +19,6 @@ const fastapiDietService = {
     }
   },
 
-  /**
-   * Request multi-day meal plan recommendation from FastAPI microservice
-   *
-   * @param {Object} params
-   * @param {number} params.targetCalories
-   * @param {number} params.protein_g
-   * @param {number} params.carbs_g
-   * @param {number} params.fats_g
-   * @param {string} params.fitnessGoal
-   * @param {number} [params.days=3]
-   * @param {Array<number>} [params.excludeFoodIds=null]
-   * @param {number} [params.randomSeed=null]
-   * @returns {Promise<Object>} DietPlanResponse from FastAPI
-   */
   generateDietPlan: async ({
     targetCalories,
     protein_g,
@@ -94,7 +80,6 @@ const fastapiDietService = {
 
     const data = response.data;
 
-    // Validate FastAPI response structure
     if (!data || data.status !== "success" || !Array.isArray(data.plan_days)) {
       throw new Error(
         "Invalid response received from the Diet Plan Recommendation Service.",

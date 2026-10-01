@@ -9,8 +9,12 @@ const createAdmin = async () => {
   try {
     await ConnectToDB();
 
-    const email = "admin@posefit.com";
-    const password = "admin@123";
+    const email = process.env.ADMIN_EMAIL;
+    const password = process.env.ADMIN_PASSWORD;
+
+if (!email || !password) {
+  throw new Error("ADMIN_EMAIL and ADMIN_PASSWORD must be configured");
+}
 
     const existingAdmin = await UserModel.findOne({
       email,
@@ -34,7 +38,7 @@ const createAdmin = async () => {
 
     console.log("Admin created successfully");
     console.log("Email:", email);
-    console.log("Password:", password);
+   
 
     process.exit(0);
   } catch (error) {

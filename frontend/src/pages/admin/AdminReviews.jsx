@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import AdminLayout from "../../components/admin/AdminLayout";
-// import StatusBadge from "../../components/admin/StatusBadge";
+
 import { httpClient } from "../../lib/http";
 import { toast } from "sonner";
 import {
@@ -98,7 +98,7 @@ export default function AdminReviews() {
   return (
     <AdminLayout>
       <div className="min-h-screen pb-16 bg-transparent font-sans">
-        {/* Header */}
+
         <div className="px-4 pt-6 pb-4 sm:px-6 sm:pt-8 lg:px-8">
           <span className="inline-flex rounded-full border border-brand-light/70 bg-brand-light/40 px-3 py-1 text-xs font-extrabold uppercase tracking-widest text-brand-dark">
             Platform Management
@@ -114,9 +114,8 @@ export default function AdminReviews() {
           </p>
         </div>
 
-        {/* Metric Summary Cards */}
         <div className="mb-6 grid grid-cols-1 gap-4 px-4 sm:grid-cols-3 sm:px-6 lg:px-8">
-          {/* Total Reviews */}
+
           <div className="rounded-card border border-brand-light/60 bg-surface/80 p-5 shadow-card backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:shadow-card-hover">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold uppercase tracking-wider text-gray-400">
@@ -137,7 +136,6 @@ export default function AdminReviews() {
             </p>
           </div>
 
-          {/* Platform Feedback */}
           <div className="rounded-card border border-accent-blue/70 bg-accent-blue/20 p-5 shadow-card backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:shadow-card-hover">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold uppercase tracking-wider text-gray-500">
@@ -158,7 +156,6 @@ export default function AdminReviews() {
             </p>
           </div>
 
-          {/* Professional Ratings */}
           <div className="rounded-card border border-accent-orange/70 bg-accent-orange/20 p-5 shadow-card backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:shadow-card-hover">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold uppercase tracking-wider text-gray-500">
@@ -180,9 +177,8 @@ export default function AdminReviews() {
           </div>
         </div>
 
-        {/* Filters & Search */}
         <div className="mb-4 flex flex-col items-stretch justify-between gap-3 px-4 sm:flex-row sm:items-center sm:px-6 lg:px-8">
-          {/* Filters */}
+
           <div className="flex items-center gap-1 overflow-x-auto rounded-card border border-brand-light/50 bg-surface/80 p-1.5 shadow-card backdrop-blur-xl">
             {TYPE_FILTERS.map((item) => (
               <button
@@ -199,7 +195,6 @@ export default function AdminReviews() {
             ))}
           </div>
 
-          {/* Search */}
           <div className="relative w-full sm:w-72">
             <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">
               <Search className="h-4 w-4" />
@@ -215,7 +210,6 @@ export default function AdminReviews() {
           </div>
         </div>
 
-        {/* Table Content */}
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="overflow-hidden rounded-card border border-brand-light/50 bg-surface/80 shadow-card backdrop-blur-xl">
             {loading ? (
@@ -264,7 +258,7 @@ export default function AdminReviews() {
                           key={r._id}
                           className="transition-colors hover:bg-brand-light/10"
                         >
-                          {/* Reviewer */}
+
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
                               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-brand text-xs font-black text-white shadow-sm">
@@ -285,7 +279,6 @@ export default function AdminReviews() {
                             </div>
                           </td>
 
-                          {/* Type */}
                           <td className="whitespace-nowrap px-6 py-4">
                             <span
                               className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-bold ${
@@ -298,7 +291,6 @@ export default function AdminReviews() {
                             </span>
                           </td>
 
-                          {/* Target */}
                           <td className="whitespace-nowrap px-6 py-4">
                             {isPro ? (
                               <div>
@@ -319,7 +311,6 @@ export default function AdminReviews() {
                             )}
                           </td>
 
-                          {/* Rating */}
                           <td className="whitespace-nowrap px-6 py-4">
                             <div className="flex items-center gap-1.5">
                               <div className="flex text-xs">
@@ -343,7 +334,6 @@ export default function AdminReviews() {
                             </div>
                           </td>
 
-                          {/* Comment */}
                           <td className="max-w-xs px-6 py-4">
                             {r.comment ? (
                               <p
@@ -361,7 +351,6 @@ export default function AdminReviews() {
                             )}
                           </td>
 
-                          {/* Date */}
                           <td className="whitespace-nowrap px-6 py-4 text-xs font-medium text-gray-500">
                             {new Date(r.createdAt).toLocaleDateString("en-US", {
                               month: "short",
@@ -370,7 +359,6 @@ export default function AdminReviews() {
                             })}
                           </td>
 
-                          {/* Action */}
                           <td className="whitespace-nowrap px-6 py-4">
                             <button
                               onClick={() => handleDelete(r._id)}

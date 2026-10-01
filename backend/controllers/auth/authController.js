@@ -47,12 +47,10 @@ const signup = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Generate 6-digit verification code
     const verificationCode = Math.floor(
       100000 + Math.random() * 900000,
     ).toString();
 
-    // Verification code expires after 15 minutes
     const verificationCodeExpires = new Date(Date.now() + 15 * 60 * 1000);
 
     const newUser = new UserModel({
@@ -67,8 +65,6 @@ const signup = async (req, res) => {
     });
 
     await newUser.save();
-
-    // Send verification email
     await transporter.sendMail({
       from: `"PoseFit" <${process.env.EMAIL_USER}>`,
       to: email,
@@ -123,7 +119,6 @@ const verifyEmail = async (req, res) => {
       });
     }
 
-    // Check verification code and expiry
     if (
       user.verificationCode !== code.toString() ||
       !user.verificationCodeExpires ||
@@ -135,7 +130,6 @@ const verifyEmail = async (req, res) => {
       });
     }
 
-    // Verify user
     user.isVerified = true;
     user.verificationCode = undefined;
     user.verificationCodeExpires = undefined;
@@ -250,19 +244,15 @@ const forgotPassword = async (req, res) => {
       });
     }
 
-    // Generate secure random password reset token
     const resetPasswordToken = crypto.randomBytes(32).toString("hex");
 
-    // Reset token expires after 15 minutes
     const resetPasswordTokenExpires = new Date(Date.now() + 15 * 60 * 1000);
 
-    // Save reset token and expiry in database
     isExisted.resetPasswordToken = resetPasswordToken;
     isExisted.resetPasswordTokenExpires = resetPasswordTokenExpires;
 
     await isExisted.save();
 
-    // Password reset link
     const resetLink = `http://localhost:5173/reset-password?token=${encodeURIComponent(
       resetPasswordToken,
     )}`;
@@ -272,7 +262,6 @@ const forgotPassword = async (req, res) => {
       to: email,
       subject: "Reset Your PoseFit Password",
 
-      // Plain-text version
       text: `Hi ${isExisted.firstName} ${isExisted.lastName},
 
 We received a request to reset your PoseFit password.
@@ -289,7 +278,6 @@ If you did not request a password reset, please ignore this email.
 Regards,
 PoseFit Team`,
 
-      // HTML version
       html: `<!DOCTYPE html>
 <html>
 <head>
@@ -438,9 +426,7 @@ PoseFit Team`,
 
 const resetPassword = async (req, res) => {
   try {
-    // Get reset token from URL query
-    // Example:
-    // /reset-password?token=abc123
+
     const token = req.query.token || req.body.token || req.params.token;
 
     const { password } = req.body;
@@ -452,7 +438,6 @@ const resetPassword = async (req, res) => {
       });
     }
 
-    // Find user using token and check expiry
     const user = await UserModel.findOne({
       resetPasswordToken: token,
       resetPasswordTokenExpires: {
@@ -467,7 +452,6 @@ const resetPassword = async (req, res) => {
       });
     }
 
-    // Prevent using the same old password
     const isSamePassword = await bcrypt.compare(password, user.password);
 
     if (isSamePassword) {
@@ -479,10 +463,8 @@ const resetPassword = async (req, res) => {
 
     const encryptedPassword = await bcrypt.hash(password, 10);
 
-    // Update password
     user.password = encryptedPassword;
 
-    // Invalidate reset token after successful password reset
     user.resetPasswordToken = undefined;
     user.resetPasswordTokenExpires = undefined;
 
@@ -502,7 +484,6 @@ const resetPassword = async (req, res) => {
   }
 };
 
-// PROFESSIONAL PROFILE COMPLETION SUPPORT
 const completeProfessionalProfile = async (req, res) => {
   try {
     const professionalId = req.user.userId;
@@ -526,7 +507,7 @@ const completeProfessionalProfile = async (req, res) => {
       experience,
       sessionFee,
       credentialDocs,
-      bankDetails,
+      // bankDetails,
       availability,
     } = req.body;
 
@@ -546,8 +527,6 @@ const completeProfessionalProfile = async (req, res) => {
       professional.experience = Number(experience);
     }
 
-    // professionalType is ADMIN-SET
-    // and cannot be modified by the professional
     if (sessionFee !== undefined) {
       professional.sessionFee = Number(sessionFee);
     }
@@ -563,8 +542,6 @@ const completeProfessionalProfile = async (req, res) => {
     if (availability) {
       professional.availability = availability;
     }
-
-    // Transition status to pending_verification
     professional.professionalStatus = "pending_verification";
     professional.rejectionReason = undefined;
     professional.appliedAt = new Date();

@@ -1,8 +1,4 @@
 const { google } = require("googleapis");
-const fs = require("fs");
-const path = require("path");
-
-const TOKEN_PATH = path.join(__dirname, "../google-token.json");
 
 const getOAuth2Client = () => {
   const clientId = process.env.GOOGLE_CLIENT_ID;
@@ -17,18 +13,20 @@ const getOAuth2Client = () => {
 };
 
 const getGoogleCalendarClient = () => {
-  if (!fs.existsSync(TOKEN_PATH)) {
+  const tokenJson = process.env.GOOGLE_TOKEN_JSON;
+
+  if (!tokenJson) {
     throw new Error(
-      "Google Calendar is not connected. Please authorize PoseFit with Google first.",
+      "Google Calendar is not connected. GOOGLE_TOKEN_JSON is not configured.",
     );
   }
 
   let tokens;
 
   try {
-    tokens = JSON.parse(fs.readFileSync(TOKEN_PATH, "utf8"));
+    tokens = JSON.parse(tokenJson);
   } catch (error) {
-    throw new Error("Google Calendar token file could not be read.");
+    throw new Error("Google Calendar token configuration is invalid.");
   }
 
   if (!tokens.refresh_token) {
@@ -60,7 +58,7 @@ const createGoogleMeetEvent = async ({
   professional,
   notes,
 }) => {
-  const calendar = getGoogleCalendarClient();
+  const calendar = await getGoogleCalendarClient();
 
   if (!appointmentDate) {
     throw new Error("Appointment date is required");
@@ -245,3 +243,4 @@ module.exports = {
   getGoogleCalendarClient,
   createGoogleMeetEvent,
 };
+

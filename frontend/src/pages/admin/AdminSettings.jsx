@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { z } from "zod";
 import AdminLayout from "../../components/admin/AdminLayout";
 import { httpClient } from "../../lib/http";
 import { getUser } from "../../lib/local-storage";
@@ -8,6 +9,46 @@ import {
   CheckCircle,
   AlertTriangle,
 } from "lucide-react";
+
+const adminPasswordSchema = z
+  .object({
+    currentPassword: z
+      .string()
+      .min(1, "Current password is required."),
+
+    newPassword: z
+      .string()
+      .min(1, "New password is required.")
+      .min(8, "New password must be at least 8 characters.")
+      .max(64, "New password must not exceed 64 characters.")
+      .refine((value) => !/\s/.test(value), {
+        message: "New password must not contain spaces.",
+      })
+      .refine((value) => /[a-z]/.test(value), {
+        message: "New password must contain a lowercase letter.",
+      })
+      .refine((value) => /[A-Z]/.test(value), {
+        message: "New password must contain an uppercase letter.",
+      })
+      .refine((value) => /[0-9]/.test(value), {
+        message: "New password must contain a number.",
+      })
+      .refine((value) => /[^A-Za-z0-9]/.test(value), {
+        message: "New password must contain a special character.",
+      }),
+
+    confirmPassword: z
+      .string()
+      .min(1, "Please confirm your new password."),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "New password and confirm password do not match.",
+    path: ["confirmPassword"],
+  })
+  .refine((data) => data.currentPassword !== data.newPassword, {
+    message: "New password must be different from the current password.",
+    path: ["newPassword"],
+  });
 
 export default function AdminSettings() {
   const currentUser = getUser() || {
@@ -37,9 +78,14 @@ export default function AdminSettings() {
   };
 
   const handlePassChange = (e) => {
+    const { name, value } = e.target;
+
     setPassForm((prev) => ({
       ...prev,
-      [e.target.name]: e.target.value,
+      [name]:
+        name === "newPassword" || name === "confirmPassword"
+          ? value.slice(0, 64)
+          : value,
     }));
 
     setPassError("");
@@ -49,43 +95,28 @@ export default function AdminSettings() {
   const handlePassSubmit = async (e) => {
     e.preventDefault();
 
-    if (
-      !passForm.currentPassword ||
-      !passForm.newPassword ||
-      !passForm.confirmPassword
-    ) {
-      setPassError("All password fields are required.");
+    const validation = adminPasswordSchema.safeParse(passForm);
+
+    if (!validation.success) {
+      setPassError(validation.error.issues[0].message);
       return;
     }
 
-    if (passForm.newPassword !== passForm.confirmPassword) {
-      setPassError("New passwords do not match.");
-      return;
-    }
-
-    if (passForm.newPassword.length < 6) {
-      setPassError("New password must be at least 6 characters.");
-      return;
-    }
-
-    if (passForm.newPassword === passForm.currentPassword) {
-      setPassError(
-        "New password must be different from the current password.",
-      );
-      return;
-    }
+    const validatedData = validation.data;
 
     setLoadingPass(true);
     setPassError("");
     setPassSuccess("");
 
     try {
-      await httpClient.put("/admin/change-password", {
-        currentPassword: passForm.currentPassword,
-        newPassword: passForm.newPassword,
+      const res = await httpClient.put("/admin/change-password", {
+        currentPassword: validatedData.currentPassword,
+        newPassword: validatedData.newPassword,
       });
 
-      setPassSuccess("Admin password updated successfully!");
+      setPassSuccess(
+        res.data?.message || "Admin password updated successfully!",
+      );
 
       setPassForm({
         currentPassword: "",
@@ -114,7 +145,6 @@ export default function AdminSettings() {
   return (
     <AdminLayout>
       <div className="min-h-screen pb-16 bg-transparent font-sans">
-        {/* Toast */}
         {toast && (
           <div
             className={`fixed right-5 top-5 z-50 rounded-2xl border px-5 py-3 text-sm font-bold text-white shadow-card-hover ${
@@ -127,7 +157,6 @@ export default function AdminSettings() {
           </div>
         )}
 
-        {/* Header */}
         <div className="px-4 pb-6 pt-6 sm:px-6 sm:pt-8 lg:px-8">
           <span className="inline-flex items-center rounded-full border border-brand-light/70 bg-brand-light/40 px-3 py-1.5 text-xs font-extrabold uppercase tracking-widest text-brand-dark">
             Account Settings
@@ -146,11 +175,8 @@ export default function AdminSettings() {
           </div>
         </div>
 
-        {/* Content */}
         <div className="max-w-5xl space-y-6 px-4 sm:px-6 lg:px-8">
-          {/* Profile Card */}
           <section className="overflow-hidden rounded-card border border-brand-light/50 bg-surface/80 shadow-card backdrop-blur-xl">
-            {/* Profile Header */}
             <div className="relative overflow-hidden px-7 py-7">
               <div className="absolute inset-0 bg-gradient-to-br from-brand-light/40 via-surface/80 to-accent-blue/20" />
 
@@ -188,7 +214,6 @@ export default function AdminSettings() {
               </div>
             </div>
 
-            {/* Profile Information */}
             <div className="px-7 pb-7">
               <div className="border-t border-brand-light/40 pt-6">
                 <div className="mb-4 flex items-center gap-2">
@@ -253,7 +278,6 @@ export default function AdminSettings() {
             </div>
           </section>
 
-          {/* Password Card */}
           <section className="overflow-hidden rounded-card border border-brand-light/50 bg-surface/80 shadow-card backdrop-blur-xl">
             <div className="border-b border-brand-light/40 px-7 py-6">
               <div className="flex items-center gap-3">
@@ -276,7 +300,6 @@ export default function AdminSettings() {
 
             <div className="p-7">
               <div className="max-w-xl">
-                {/* Error */}
                 {passError && (
                   <div className="mb-5 flex items-center gap-2 rounded-card border border-rose-200 bg-rose-50 p-3.5 text-xs font-semibold text-rose-700">
                     <AlertTriangle className="h-4 w-4 shrink-0" />
@@ -284,7 +307,6 @@ export default function AdminSettings() {
                   </div>
                 )}
 
-                {/* Success */}
                 {passSuccess && (
                   <div className="mb-5 flex items-center gap-2 rounded-card border border-brand-light/70 bg-brand-light/25 p-3.5 text-xs font-semibold text-brand-dark">
                     <CheckCircle className="h-4 w-4 shrink-0" />
@@ -320,7 +342,8 @@ export default function AdminSettings() {
                         type="password"
                         value={passForm.newPassword}
                         onChange={handlePassChange}
-                        placeholder="Minimum 6 characters"
+                        maxLength={64}
+                        placeholder="Enter new password"
                         autoComplete="new-password"
                         className="w-full rounded-btn border border-gray-200 bg-white/70 px-4 py-3 text-sm font-medium text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand-light/60"
                       />
@@ -336,6 +359,7 @@ export default function AdminSettings() {
                         type="password"
                         value={passForm.confirmPassword}
                         onChange={handlePassChange}
+                        maxLength={64}
                         placeholder="Re-enter new password"
                         autoComplete="new-password"
                         className="w-full rounded-btn border border-gray-200 bg-white/70 px-4 py-3 text-sm font-medium text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand-light/60"
@@ -343,9 +367,10 @@ export default function AdminSettings() {
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between gap-4 pt-2">
+                  <div className="flex flex-col gap-4 pt-2 sm:flex-row sm:items-center sm:justify-between">
                     <p className="text-[11px] font-medium text-gray-400">
-                      Password must contain at least 6 characters.
+                      Password must be 8–64 characters and include uppercase,
+                      lowercase, number, and special character.
                     </p>
 
                     <button

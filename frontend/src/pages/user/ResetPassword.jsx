@@ -1,16 +1,44 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { z } from "zod";
 import { httpClient } from "../../lib/http";
 import { toast } from "sonner";
 import posefit_logo from "../../assets/posefit_logo.png";
+
+const resetPasswordSchema = z
+  .object({
+    password: z
+      .string()
+      .min(1, "Password is required.")
+      .min(8, "Password must be at least 8 characters.")
+      .max(64, "Password must not exceed 64 characters.")
+      .refine((value) => !/\s/.test(value), {
+        message: "Password must not contain spaces.",
+      })
+      .refine((value) => /[a-z]/.test(value), {
+        message: "Password must contain a lowercase letter.",
+      })
+      .refine((value) => /[A-Z]/.test(value), {
+        message: "Password must contain an uppercase letter.",
+      })
+      .refine((value) => /[0-9]/.test(value), {
+        message: "Password must contain a number.",
+      })
+      .refine((value) => /[^A-Za-z0-9]/.test(value), {
+        message: "Password must contain a special character.",
+      }),
+
+    confirmPassword: z.string().min(1, "Please confirm your password."),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords do not match.",
+    path: ["confirmPassword"],
+  });
 
 const ResetPassword = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  // Secure password reset token from URL
-  // Example:
-  // /reset-password?token=abc123...
   const token = searchParams.get("token");
 
   const [password, setPassword] = useState("");
@@ -20,89 +48,98 @@ const ResetPassword = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [loading, setLoading] = useState(false);
+  const [checkingToken, setCheckingToken] = useState(true);
+  const [tokenValid, setTokenValid] = useState(false);
 
-  // =====================================================
-  // CHECK RESET LINK
-  // =====================================================
 
   useEffect(() => {
-    if (!token || !token.trim()) {
-      toast.error("Invalid or missing password reset link.");
+    const verifyToken = async () => {
+      const cleanToken = token?.trim();
 
-      navigate("/user/login", {
-        replace: true,
-      });
-    }
+      if (!cleanToken) {
+        toast.error("Invalid or missing password reset link.");
+
+        navigate("/user/login", {
+          replace: true,
+        });
+
+        return;
+      }
+
+      try {
+  
+        await httpClient.get("/auth/verify-reset-token", {
+          params: {
+            token: cleanToken,
+          },
+        });
+
+        setTokenValid(true);
+      } catch (error) {
+        console.error("Reset token verification error:", error);
+
+        const message =
+          error?.response?.data?.message ||
+          "This password reset link is invalid or has expired.";
+
+        toast.error(message);
+
+        setTokenValid(false);
+
+        navigate("/user/login", {
+          replace: true,
+        });
+      } finally {
+        setCheckingToken(false);
+      }
+    };
+
+    verifyToken();
   }, [token, navigate]);
 
-  // =====================================================
-  // SUBMIT
-  // =====================================================
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const cleanToken = token?.trim();
-    const cleanPassword = password.trim();
-    const cleanConfirmPassword = confirmPassword.trim();
+    if (!tokenValid) {
+      toast.error("This password reset link is invalid or has expired.");
+      return;
+    }
 
-    // =====================================================
-    // TOKEN
-    // =====================================================
+    const cleanToken = token?.trim();
 
     if (!cleanToken) {
       toast.error("Invalid or missing password reset link.");
       return;
     }
 
-    // =====================================================
-    // PASSWORD
-    // =====================================================
+    const validationResult = resetPasswordSchema.safeParse({
+      password,
+      confirmPassword,
+    });
 
-    if (!cleanPassword) {
-      toast.error("Password is required.");
-      return;
-    }
+    if (!validationResult.success) {
+      const firstError =
+        validationResult.error.issues?.[0]?.message ||
+        "Please enter a valid password.";
 
-    if (cleanPassword.length < 6) {
-      toast.error("Password must be at least 6 characters.");
-      return;
-    }
-
-    // =====================================================
-    // CONFIRM PASSWORD
-    // =====================================================
-
-    if (!cleanConfirmPassword) {
-      toast.error("Please confirm your password.");
-      return;
-    }
-
-    if (cleanPassword !== cleanConfirmPassword) {
-      toast.error("Passwords do not match.");
+      toast.error(firstError);
       return;
     }
 
     setLoading(true);
 
     try {
-      // =====================================================
-      // RESET PASSWORD
-      // =====================================================
-
       const { data } = await httpClient.put("/auth/reset-password", {
         token: cleanToken,
-        password: cleanPassword,
+        password,
       });
-
-      // =====================================================
-      // SUCCESS
-      // =====================================================
 
       toast.success(data?.message || "Password reset successfully.");
 
       setPassword("");
       setConfirmPassword("");
+      setTokenValid(false);
 
       setTimeout(() => {
         navigate("/user/login", {
@@ -111,6 +148,8 @@ const ResetPassword = () => {
       }, 1000);
     } catch (error) {
       console.error("Reset password error:", error);
+
+      const status = error?.response?.status;
 
       let errorMessage = "Failed to reset password. Please try again.";
 
@@ -122,46 +161,58 @@ const ResetPassword = () => {
         errorMessage = "Unable to connect to the server. Please try again.";
       }
 
+      if (status === 400 || status === 401 || status === 403) {
+        setTokenValid(false);
+
+        toast.error(
+          errorMessage || "This password reset link is invalid or has expired.",
+        );
+
+        setTimeout(() => {
+          navigate("/user/login", {
+            replace: true,
+          });
+        }, 1200);
+
+        return;
+      }
+
       toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
-  // =====================================================
-  // IMPORTANT
-  // =====================================================
 
-  if (!token || !token.trim()) {
+  if (checkingToken) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-surface">
+        <div className="flex flex-col items-center gap-3">
+          <span className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-gray-800" />
+
+          <p className="text-sm text-gray-500">Verifying reset link...</p>
+        </div>
+      </div>
+    );
+  }
+
+
+  if (!tokenValid) {
     return null;
   }
 
-  // =====================================================
-  // UI
-  // =====================================================
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-surface px-4 py-8 font-sans">
-      {/* =================================================
-          BACKGROUND DECORATIONS
-      ================================================= */}
-
       <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-brand-light/50 blur-3xl" />
 
       <div className="pointer-events-none absolute -bottom-24 -right-24 h-80 w-80 rounded-full bg-accent-blue/60 blur-3xl" />
 
       <div className="pointer-events-none absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent-orange/20 blur-3xl" />
 
-      {/* =================================================
-          RESET PASSWORD CARD
-      ================================================= */}
-
       <div className="relative z-10 w-full max-w-md">
         <div className="rounded-card border border-brand-light/70 bg-surface/80 p-8 shadow-card-hover backdrop-blur-xl sm:p-10">
-          {/* =================================================
-              LOGO
-          ================================================= */}
-
+  
           <div className="mb-7 flex justify-center">
             <Link
               to="/"
@@ -175,10 +226,6 @@ const ResetPassword = () => {
             </Link>
           </div>
 
-          {/* =================================================
-              HEADING
-          ================================================= */}
-
           <div className="mb-8 text-center">
             <h1 className="text-3xl font-extrabold tracking-tight text-gray-800">
               Reset Password
@@ -189,14 +236,8 @@ const ResetPassword = () => {
             </p>
           </div>
 
-          {/* =================================================
-              FORM
-          ================================================= */}
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* =================================================
-                NEW PASSWORD
-            ================================================= */}
 
             <div>
               <label
@@ -211,10 +252,11 @@ const ResetPassword = () => {
                   id="password"
                   type={showPassword ? "text" : "password"}
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => setPassword(e.target.value.slice(0, 64))}
                   placeholder="Enter new password"
                   disabled={loading}
                   autoComplete="new-password"
+                  maxLength={64}
                   className="w-full rounded-btn border border-gray-200 bg-white/70 px-4 py-3.5 pr-12 text-sm text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand-light/60 disabled:cursor-not-allowed disabled:opacity-60"
                 />
 
@@ -232,13 +274,10 @@ const ResetPassword = () => {
               </div>
 
               <p className="mt-1.5 text-xs text-gray-400">
-                Password must be at least 6 characters.
+                Password must be 8 to 64 characters with uppercase, lowercase,
+                number, and special character.
               </p>
             </div>
-
-            {/* =================================================
-                CONFIRM PASSWORD
-            ================================================= */}
 
             <div>
               <label
@@ -253,10 +292,13 @@ const ResetPassword = () => {
                   id="confirmPassword"
                   type={showConfirmPassword ? "text" : "password"}
                   value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  onChange={(e) =>
+                    setConfirmPassword(e.target.value.slice(0, 64))
+                  }
                   placeholder="Confirm new password"
                   disabled={loading}
                   autoComplete="new-password"
+                  maxLength={64}
                   className="w-full rounded-btn border border-gray-200 bg-white/70 px-4 py-3.5 pr-12 text-sm text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand-light/60 disabled:cursor-not-allowed disabled:opacity-60"
                 />
 
@@ -276,10 +318,6 @@ const ResetPassword = () => {
               </div>
             </div>
 
-            {/* =================================================
-                RESET BUTTON
-            ================================================= */}
-
             <button
               type="submit"
               disabled={loading}
@@ -296,10 +334,6 @@ const ResetPassword = () => {
             </button>
           </form>
 
-          {/* =================================================
-              LOGIN LINK
-          ================================================= */}
-
           <div className="mt-7 text-center text-sm text-gray-500">
             Remember your password?{" "}
             <Link
@@ -310,10 +344,6 @@ const ResetPassword = () => {
             </Link>
           </div>
         </div>
-
-        {/* ===================================================
-            BOTTOM TEXT
-        =================================================== */}
 
         <p className="mt-5 text-center text-xs text-gray-400">
           Your fitness journey starts with PoseFit.

@@ -1,15 +1,3 @@
-"""
-test_all.py: Combined Test Suite for PoseFit Diet Plan Recommendation Microservice.
-
-Merged from (originally 4 separate files):
-  - test_pipeline.py       -> Data Pipeline Tests
-  - test_api.py            -> FastAPI Endpoint Integration Tests
-  - test_recommendation.py -> End-to-End Recommendation Tests
-  - test_accuracy.py       -> Accuracy Benchmark
-
-No test logic was modified during the merge - only reorganized into one file.
-"""
-
 import os
 import sys
 import numpy as np
@@ -37,15 +25,9 @@ from main import (
     DietPlanResponse,
 )
 
-
-# =====================================================================
-# SECTION 1: DATA PIPELINE TESTS  (from test_pipeline.py)
-# =====================================================================
-
 def get_dataset_path():
     base_dir = os.path.dirname(os.path.abspath(__file__))
     return os.path.join(base_dir, "..", "data", "pakistani_food_dataset_100g.csv")
-
 
 def test_dataset_exists_and_loads(dataset_path=None):
     if dataset_path is None:
@@ -56,7 +38,6 @@ def test_dataset_exists_and_loads(dataset_path=None):
     expected_cols = {"food_id", "dish_name", "meal_type", "serving_basis", "calories_kcal", "protein_g", "carbs_g", "fats_g"}
     assert expected_cols.issubset(set(df.columns))
 
-
 def test_no_missing_values(dataset_path=None):
     if dataset_path is None:
         dataset_path = get_dataset_path()
@@ -65,14 +46,12 @@ def test_no_missing_values(dataset_path=None):
     for col, count in report["missing_per_column"].items():
         assert count == 0, f"Column {col} has {count} missing values"
 
-
 def test_no_duplicate_food_ids(dataset_path=None):
     if dataset_path is None:
         dataset_path = get_dataset_path()
     df = load_raw_data(dataset_path)
     report = check_missing_and_duplicates(df)
     assert report["duplicate_food_ids"] == 0, f"Found duplicate food_ids: {report['duplicate_food_ids']}"
-
 
 def test_no_negative_or_extreme_values(dataset_path=None):
     if dataset_path is None:
@@ -82,7 +61,6 @@ def test_no_negative_or_extreme_values(dataset_path=None):
     assert report["negative_value_count"] == 0, "Found negative nutrient values"
     assert report["high_calorie_outlier_count"] == 0, "Found calories > 800 kcal / 100g"
 
-
 def test_meal_type_explosion(dataset_path=None):
     if dataset_path is None:
         dataset_path = get_dataset_path()
@@ -91,10 +69,8 @@ def test_meal_type_explosion(dataset_path=None):
     assert len(exploded) >= len(df), "Exploded catalog must have at least as many rows as raw catalog"
     assert "slot_meal_type" in exploded.columns
 
-    # Verify no '/' in slot_meal_type
     has_slash = exploded["slot_meal_type"].str.contains("/").any()
     assert not has_slash, "slot_meal_type should contain single meal slot names only"
-
 
 def test_feature_engineering_dimensions_and_scaling(dataset_path=None):
     if dataset_path is None:
@@ -105,20 +81,13 @@ def test_feature_engineering_dimensions_and_scaling(dataset_path=None):
         exploded, meal_weight=0.35, fit=True
     )
 
-    # 4 macros + 1 protein ratio + 5 one-hot slots = 10 columns
     expected_dim = 4 + 1 + len(STANDARD_MEAL_TYPES)
     assert feature_matrix.shape == (len(exploded), expected_dim)
     assert not np.isnan(feature_matrix).any(), "Feature matrix contains NaN values"
 
-    # Verify zero-calorie division safety
     zero_cal_item = transformed_df[transformed_df["calories_kcal"] == 0.0]
     if len(zero_cal_item) > 0:
         assert (zero_cal_item["protein_ratio"] == 0.0).all(), "Zero-calorie items must have protein_ratio = 0.0"
-
-
-# =====================================================================
-# SECTION 2: FASTAPI ENDPOINT TESTS  (from test_api.py)
-# =====================================================================
 
 def test_health_check_endpoint():
     resp = health_check()
@@ -126,7 +95,6 @@ def test_health_check_endpoint():
     assert resp["status"] == "healthy"
     assert "version" in resp
     assert "model_loaded" in resp
-
 
 def test_generate_diet_plan_valid_request():
     req = DietPlanRequest(
@@ -147,13 +115,10 @@ def test_generate_diet_plan_valid_request():
     assert "daily_totals" in result["plan_days"][0]
     assert "error_percentages" in result["plan_days"][0]
 
-    # Validate against DietPlanResponse Pydantic schema
     validated_response = DietPlanResponse(**result)
     assert validated_response.status == "success"
 
-
 def test_generate_diet_plan_with_exclusions():
-    # Test exclusion parameter
     req = DietPlanRequest(
         target_calories=1800.0,
         protein_g=130.0,
@@ -168,16 +133,14 @@ def test_generate_diet_plan_with_exclusions():
     assert isinstance(result, dict)
     assert result["status"] == "success"
 
-    # Verify excluded food IDs are not present in recommended meals
     for slot_key, slot_data in result["plan_days"][0]["meals"].items():
         for item in slot_data["items"]:
             assert item["food_id"] not in [85, 292], f"Food ID {item['food_id']} should have been excluded"
 
-
 def test_generate_diet_plan_invalid_calories():
     try:
         DietPlanRequest(
-            target_calories=100.0,  # Below gt=500 constraint
+            target_calories=100.0,
             protein_g=150.0,
             carbs_g=200.0,
             fats_g=65.0,
@@ -188,7 +151,6 @@ def test_generate_diet_plan_invalid_calories():
     except ValidationError:
         pass
 
-
 def test_generate_diet_plan_invalid_days():
     try:
         DietPlanRequest(
@@ -197,19 +159,14 @@ def test_generate_diet_plan_invalid_days():
             carbs_g=200.0,
             fats_g=65.0,
             fitness_goal="lose weight",
-            days=45,  # Exceeds le=30 constraint
+            days=45,
         )
         assert False, "Should have raised ValidationError for days > 30"
     except ValidationError:
         pass
 
-
-# =====================================================================
-# SECTION 3: END-TO-END RECOMMENDATION TESTS  (from test_recommendation.py)
-# =====================================================================
-
 def run_e2e_profile_tests():
-    """Run end-to-end tests across 3 realistic fitness profiles (1400, 2000, 2800 kcal)."""
+
     models_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "models"))
     recommender = DietRecommender(models_dir=models_dir)
 
@@ -313,20 +270,14 @@ def run_e2e_profile_tests():
     summary_df = pd.DataFrame(summary_records)
     print(summary_df.to_string(index=False))
 
-    # Assertions for automated test runners
     assert len(summary_df) == 9, "Expected 9 day evaluation summaries (3 days * 3 profiles)"
     mean_cal_err = summary_df["Cal Error %"].mean()
     print(f"\nAverage Daily Calorie Deviation across all days & profiles: {mean_cal_err:.2f}%")
     assert mean_cal_err < 8.0, f"Average calorie error too high: {mean_cal_err}%"
     print("All End-to-End Profile Tests PASSED with high accuracy!")
 
-
 def run_regeneration_variability_test():
-    """
-    NEW FEATURE 2 TEST:
-    Call recommendation 3 times with identical inputs and verify results differ
-    while staying close to target (within acceptable error margin).
-    """
+
     models_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "models"))
     recommender = DietRecommender(models_dir=models_dir)
 
@@ -352,7 +303,7 @@ def run_regeneration_variability_test():
             fats_g=fat_g,
             fitness_goal=goal,
             days=1,
-            random_seed=None,  # Non-deterministic stochastic sampling
+            random_seed=None,
             debug_trace=False,
         )
 
@@ -379,16 +330,10 @@ def run_regeneration_variability_test():
     assert distinct_plans >= 2, "Regeneration did not produce diverse recommendations across 3 calls"
     print("Regeneration Variability Test PASSED! Menus differ dynamically while adhering strictly to macro targets.")
 
-
-# =====================================================================
-# SECTION 4: ACCURACY BENCHMARK  (from test_accuracy.py)
-# =====================================================================
-
 def generate_test_profiles() -> list:
-    """Generate 20 diverse fitness profiles covering 1200-3100 kcal across all 3 goals."""
+
     profiles = []
 
-    # 1. Weight Loss Profiles (Caloric Deficit: 1200 - 2100 kcal)
     loss_calories = [1200.0, 1350.0, 1500.0, 1650.0, 1800.0, 1950.0, 2100.0]
     for cal in loss_calories:
         pro = round((cal * 0.30) / 4.0, 1)
@@ -402,7 +347,6 @@ def generate_test_profiles() -> list:
             "fitness_goal": "weight_loss",
         })
 
-    # 2. Maintenance Profiles (Equilibrium: 1800 - 2600 kcal)
     maint_calories = [1800.0, 2000.0, 2150.0, 2300.0, 2450.0, 2600.0]
     for cal in maint_calories:
         pro = round((cal * 0.25) / 4.0, 1)
@@ -416,7 +360,6 @@ def generate_test_profiles() -> list:
             "fitness_goal": "maintenance",
         })
 
-    # 3. Weight Gain Profiles (Caloric Surplus: 2200 - 3100 kcal)
     gain_calories = [2200.0, 2400.0, 2600.0, 2750.0, 2900.0, 3000.0, 3100.0]
     for cal in gain_calories:
         pro = round((cal * 0.25) / 4.0, 1)
@@ -432,9 +375,8 @@ def generate_test_profiles() -> list:
 
     return profiles
 
-
 def test_accuracy_and_performance_benchmark():
-    """Execute recommendation evaluation across all test profiles and generate accuracy metrics."""
+
     models_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "models"))
     recommender = DietRecommender(models_dir=models_dir)
 
@@ -500,23 +442,19 @@ def test_accuracy_and_performance_benchmark():
 
     records_df = pd.DataFrame(slot_records)
 
-    # 1. Overall Error Averages
     avg_cal_err = records_df["cal_err_pct"].mean()
     avg_pro_err = records_df["pro_err_pct"].mean()
     avg_carb_err = records_df["carb_err_pct"].mean()
     avg_fat_err = records_df["fat_err_pct"].mean()
     avg_loss = records_df["weighted_loss"].mean()
 
-    # 2. Percentage of Recommendations within 10% and 15% Calorie Error
     within_10_pct = (records_df["cal_err_pct"] <= 10.0).mean() * 100
     within_15_pct = (records_df["cal_err_pct"] <= 15.0).mean() * 100
 
-    # 3. Breakdown by Meal Type
     meal_type_summary = records_df.groupby("meal_type")[
         ["cal_err_pct", "pro_err_pct", "carb_err_pct", "fat_err_pct", "weighted_loss"]
     ].mean().round(2)
 
-    # 4. Breakdown by Fitness Goal
     goal_summary = records_df.groupby("fitness_goal")[
         ["cal_err_pct", "pro_err_pct", "carb_err_pct", "fat_err_pct", "weighted_loss"]
     ].mean().round(2)
@@ -543,20 +481,13 @@ def test_accuracy_and_performance_benchmark():
     print("=" * 90)
     print(goal_summary.to_string())
 
-    # Export CSV summary
     csv_path = os.path.join(os.path.dirname(__file__), "accuracy_report.csv")
     records_df.to_csv(csv_path, index=False)
     print(f"\nSaved complete per-slot evaluation data to: {csv_path}")
 
-    # Test Assertions
     assert len(records_df) == 80, f"Expected 80 evaluated meal slots, got {len(records_df)}"
     assert within_10_pct >= 85.0, f"Expected >= 85% recommendations within 10% calorie error, got {within_10_pct:.1f}%"
     assert within_15_pct >= 95.0, f"Expected >= 95% recommendations within 15% calorie error, got {within_15_pct:.1f}%"
-
-
-# =====================================================================
-# MANUAL RUN ENTRY POINT (mirrors original 4 files' __main__ blocks)
-# =====================================================================
 
 if __name__ == "__main__":
     base_dir = os.path.dirname(os.path.abspath(__file__))
