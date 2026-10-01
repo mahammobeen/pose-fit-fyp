@@ -381,11 +381,11 @@ export default function AdminProfessionals() {
                                   : "Pending Setup"}
                               </span>
 
-                              {pro.maskedBank && (
+                              {/* {pro.maskedBank && (
                                 <p className="text-[11px] text-gray-500 font-semibold mt-0.5">
                                   Bank: {pro.maskedBank}
                                 </p>
-                              )}
+                              )} */}
                             </div>
                           ) : (
                             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-600 border border-gray-200">

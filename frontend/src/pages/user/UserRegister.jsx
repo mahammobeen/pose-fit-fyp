@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { z } from "zod";
 import { httpClient } from "../../lib/http";
@@ -68,38 +68,21 @@ export default function UserRegister() {
   const location = useLocation();
 
   const [step, setStep] = useState(1);
-
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
     email: "",
     password: "",
   });
-
   const [showPassword, setShowPassword] = useState(false);
-
   const [userId, setUserId] = useState("");
   const [code, setCode] = useState("");
-
   const [loading, setLoading] = useState(false);
-
   const [toast, setToast] = useState(null);
 
   const showToast = useCallback((type, message) => {
-    setToast({
-      type,
-      message,
-    });
-
-    setTimeout(() => {
-      setToast(null);
-    }, 4000);
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      setToast(null);
-    };
+    setToast({ type, message });
+    setTimeout(() => setToast(null), 4000);
   }, []);
 
   const handleChange = (e) => {
@@ -119,16 +102,16 @@ export default function UserRegister() {
       return;
     }
 
-    const validatedData = validation.data;
-
     try {
       setLoading(true);
 
+      const { firstName, lastName, email, password } = validation.data;
+
       const res = await httpClient.post("/auth/register", {
-        firstName: validatedData.firstName,
-        lastName: validatedData.lastName,
-        email: validatedData.email.toLowerCase(),
-        password: validatedData.password,
+        firstName,
+        lastName,
+        email: email.toLowerCase(),
+        password,
         role: "USER",
       });
 
@@ -140,18 +123,23 @@ export default function UserRegister() {
         return;
       }
 
+      if (!res.data?.userId) {
+        showToast(
+          "error",
+          "Registration succeeded, but verification session could not be created.",
+        );
+        return;
+      }
+
       setUserId(res.data.userId);
+      setStep(2);
 
       showToast(
         "success",
         res.data.message ||
           "Registration successful. Verification code sent to your email.",
       );
-
-      setStep(2);
     } catch (err) {
-      console.error("Registration error:", err);
-
       showToast(
         "error",
         err?.response?.data?.message ||
@@ -166,117 +154,54 @@ export default function UserRegister() {
   const handleVerifySubmit = async (e) => {
     e.preventDefault();
 
-    const validation = verificationSchema.safeParse({
-      code,
-    });
+    const validation = verificationSchema.safeParse({ code });
 
     if (!validation.success) {
       showToast("error", validation.error.issues[0].message);
       return;
     }
 
-    const trimmedCode = validation.data.code;
-
     if (!userId) {
       showToast(
         "error",
         "Registration session expired. Please register again.",
       );
-
       setStep(1);
+      setCode("");
       return;
     }
 
     try {
       setLoading(true);
 
-      const verifyRes = await httpClient.post("/auth/verify-email", {
+      const res = await httpClient.post("/auth/verify-email", {
         userId,
-        code: trimmedCode,
+        code: validation.data.code,
       });
 
-      if (!verifyRes.data?.success) {
+      if (!res.data?.success) {
         showToast(
           "error",
-          verifyRes.data?.message ||
-            "Verification failed. Please check the code.",
+          res.data?.message || "Verification failed. Please check the code.",
         );
         return;
       }
 
-      showToast("success", "Email verified successfully. Logging you in...");
+      showToast(
+        "success",
+        "Email verified successfully. Please login to continue.",
+      );
 
-      const loginEmail = form.email.trim().toLowerCase();
-
-      const loginRes = await httpClient.post("/auth/login", {
-        email: loginEmail,
-        password: form.password,
-      });
-
-      const { success, token, user } = loginRes.data;
-
-      if (!success || !token || !user) {
-        showToast(
-          "error",
-          "Email verified successfully, but automatic login failed. Please login manually.",
-        );
-
-        setTimeout(() => {
-          navigate("/user/login", {
-            state: {
-              from: location.state?.from,
-            },
-          });
-        }, 1500);
-
-        return;
-      }
-
-      if (user.role !== "USER") {
-        showToast(
-          "error",
-          "Invalid account role. Please use the appropriate portal.",
-        );
-        return;
-      }
-
-      const normalizedUser = {
-        ...user,
-        _id: user._id || user.id || user.userId,
-      };
-
-      const userIdFromResponse = user?._id || user?.id || user?.userId;
-
-      if (!userIdFromResponse) {
-        showToast("error", "User ID was not received from server.");
-        return;
-      }
-
-      localStorage.removeItem("pose-fit");
-      localStorage.removeItem("pose-fit-user");
-
-      localStorage.setItem("pose-fit", token);
-
-      localStorage.setItem("pose-fit-user", JSON.stringify(normalizedUser));
-
-      localStorage.setItem("pose-fit-email", loginEmail);
-
-      console.log("REGISTER LOGIN RESPONSE:", loginRes.data);
-
-      console.log("SAVED TOKEN:", token);
-
-      console.log("SAVED USER:", normalizedUser);
-
-      console.log("SAVED USER ID:", normalizedUser._id);
-
-      const from = location.state?.from?.pathname || "/user/dashboard";
-
-      navigate(from, {
-        replace: true,
-      });
+      setTimeout(() => {
+        navigate("/user/login", {
+          replace: true,
+          state: {
+            email: form.email.trim().toLowerCase(),
+            from: location.state?.from,
+          },
+        });
+      }, 1200);
     } catch (err) {
-      console.error("Verification/Login error:", err);
-
       showToast(
         "error",
         err?.response?.data?.message ||
@@ -289,6 +214,8 @@ export default function UserRegister() {
   };
 
   const handleBack = () => {
+    if (loading) return;
+
     setStep(1);
     setCode("");
   };
@@ -331,7 +258,10 @@ export default function UserRegister() {
       <div className="relative z-10 w-full max-w-md">
         <div className="rounded-card border border-brand-light/70 bg-surface/80 p-8 shadow-card-hover backdrop-blur-xl sm:p-10">
           <div className="mb-7 flex justify-center">
-            <Link className="flex h-16 w-16 items-center justify-center rounded-card bg-white/70 p-2 shadow-card transition-transform duration-300 hover:-translate-y-1">
+            <Link
+              to="/"
+              className="flex h-16 w-16 items-center justify-center rounded-card bg-white/70 p-2 shadow-card transition-transform duration-300 hover:-translate-y-1"
+            >
               <img
                 src={posefit_logo}
                 alt="PoseFit Logo"
@@ -471,8 +401,8 @@ export default function UserRegister() {
                 </div>
 
                 <p className="mt-1.5 text-xs text-gray-400">
-                  Password must be 8 to 64 characters with uppercase,
-                  lowercase, number, and special character.
+                  Password must be 8 to 64 characters with uppercase, lowercase,
+                  number, and special character.
                 </p>
               </div>
 
@@ -510,13 +440,9 @@ export default function UserRegister() {
                   maxLength={6}
                   placeholder="123456"
                   value={code}
-                  onChange={(e) => {
-                    const value = e.target.value
-                      .replace(/\D/g, "")
-                      .slice(0, 6);
-
-                    setCode(value);
-                  }}
+                  onChange={(e) =>
+                    setCode(e.target.value.replace(/\D/g, "").slice(0, 6))
+                  }
                   disabled={loading}
                   className="w-full rounded-btn border border-gray-200 bg-white/70 px-4 py-3.5 text-center text-lg font-bold tracking-[0.35em] text-gray-800 outline-none transition-all placeholder:tracking-normal placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand-light/60 disabled:cursor-not-allowed disabled:opacity-60"
                 />
@@ -537,7 +463,7 @@ export default function UserRegister() {
                     Verifying...
                   </span>
                 ) : (
-                  "Verify Code & Log In"
+                  "Verify Email & Continue"
                 )}
               </button>
 

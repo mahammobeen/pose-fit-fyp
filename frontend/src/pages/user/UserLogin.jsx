@@ -15,9 +15,7 @@ const loginSchema = z.object({
 
   password: z
     .string()
-    .min(1, "Password is required.")
-    .min(8, "Password must be at least 8 characters.")
-    .max(64, "Password must not exceed 64 characters."),
+    .min(1, "Password is required."),
 });
 
 export default function UserLogin() {
@@ -152,10 +150,12 @@ export default function UserLogin() {
       console.error("Login error:", error);
 
       const message =
-        error?.response?.data?.message ||
-        error?.response?.data?.error ||
-        error?.message ||
-        "Something went wrong. Please try again.";
+  error?.response?.status === 404
+    ? "Invalid email or password."
+    : error?.response?.data?.message ||
+      error?.response?.data?.error ||
+      error?.message ||
+      "Something went wrong. Please try again.";
 
       showToast("error", message);
     } finally {
@@ -243,12 +243,9 @@ export default function UserLogin() {
                   id="password"
                   type={showPassword ? "text" : "password"}
                   value={password}
-                  onChange={(e) =>
-                    setPassword(e.target.value.slice(0, 64))
-                  }
+                 onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
                   autoComplete="current-password"
-                  maxLength={64}
                   disabled={loading}
                   className="w-full rounded-btn border border-gray-200 bg-white/70 px-4 py-3.5 pr-12 text-sm text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand-light/60 disabled:cursor-not-allowed disabled:opacity-60"
                 />
@@ -265,9 +262,6 @@ export default function UserLogin() {
                 </button>
               </div>
 
-              <p className="mt-1.5 text-xs text-gray-400">
-                Password must be 8 to 64 characters.
-              </p>
             </div>
 
             <div className="flex justify-end">

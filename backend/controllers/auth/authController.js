@@ -426,7 +426,6 @@ PoseFit Team`,
 
 const resetPassword = async (req, res) => {
   try {
-
     const token = req.query.token || req.body.token || req.params.token;
 
     const { password } = req.body;
@@ -507,7 +506,6 @@ const completeProfessionalProfile = async (req, res) => {
       experience,
       sessionFee,
       credentialDocs,
-      // bankDetails,
       availability,
     } = req.body;
 
@@ -533,10 +531,6 @@ const completeProfessionalProfile = async (req, res) => {
 
     if (credentialDocs) {
       professional.credentialDocs = credentialDocs;
-    }
-
-    if (bankDetails) {
-      professional.bankDetails = bankDetails;
     }
 
     if (availability) {

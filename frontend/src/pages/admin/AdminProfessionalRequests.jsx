@@ -62,18 +62,67 @@ export default function AdminProfessionalRequests() {
     setStatusOpen(true);
   };
 
-  const handleUpdateStatus = async () => {
-    if (statusAction === "rejected" && !rejectionReasonInput.trim()) {
-      showToast("Please specify a rejection reason", "error");
+  const handleViewDocument = async (fileUrl) => {
+    if (!fileUrl) {
+      showToast("Document URL is not available.", "error");
       return;
     }
 
+    const newTab = window.open("", "_blank");
+
+    if (!newTab) {
+      showToast("Please allow pop-ups to view the document.", "error");
+      return;
+    }
+
+    try {
+      newTab.document.write(`
+        <html>
+          <head>
+            <title>Loading Document...</title>
+          </head>
+          <body style="margin:0;display:flex;align-items:center;justify-content:center;font-family:Arial,sans-serif;">
+            <p>Loading document...</p>
+          </body>
+        </html>
+      `);
+
+      const response = await fetch(fileUrl);
+
+      if (!response.ok) {
+        throw new Error("Failed to load document.");
+      }
+
+      const blob = await response.blob();
+
+      const pdfBlob = new Blob([blob], {
+        type: "application/pdf",
+      });
+
+      const blobUrl = URL.createObjectURL(pdfBlob);
+
+      newTab.location.href = blobUrl;
+
+      setTimeout(() => {
+        URL.revokeObjectURL(blobUrl);
+      }, 60000);
+    } catch (error) {
+      newTab.close();
+
+      showToast(
+        error?.message || "Unable to open the document.",
+        "error",
+      );
+    }
+  };
+
+  const handleUpdateStatus = async () => {
     setActionLoading(true);
 
     try {
       await httpClient.put(`/admin/professional-status/${selectedPro._id}`, {
         status: statusAction,
-        rejectionReason: rejectionReasonInput,
+        rejectionReason: rejectionReasonInput.trim(),
       });
 
       showToast(
@@ -102,7 +151,6 @@ export default function AdminProfessionalRequests() {
   return (
     <AdminLayout>
       <div className="min-h-screen pb-16 bg-transparent font-sans">
-
         {toast && (
           <div
             className={`fixed top-5 right-5 z-50 px-5 py-3 rounded-btn shadow-card-hover text-white text-sm font-bold border transition-all ${
@@ -172,7 +220,6 @@ export default function AdminProfessionalRequests() {
                 className="rounded-card border border-brand-light/50 bg-surface/80 shadow-card p-6 hover:shadow-card-hover hover:-translate-y-0.5 transition-all backdrop-blur-xl"
               >
                 <div className="flex items-start justify-between gap-4 flex-wrap">
-
                   <div className="flex items-start gap-4">
                     {pro.profilePhoto ? (
                       <img
@@ -274,7 +321,6 @@ export default function AdminProfessionalRequests() {
         >
           {detailPro && (
             <div className="space-y-6 text-sm">
-
               <div className="flex items-center gap-4 p-4 bg-brand-light/15 rounded-card border border-brand-light/50">
                 {detailPro.profilePhoto ? (
                   <img
@@ -367,15 +413,16 @@ export default function AdminProfessionalRequests() {
                         </span>
 
                         {doc.fileUrl && (
-                          <a
-                            href={doc.fileUrl}
-                            target="_blank"
-                            rel="noreferrer"
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleViewDocument(doc.fileUrl)
+                            }
                             className="text-brand-dark font-bold hover:underline flex items-center gap-1"
                           >
                             <Link className="w-3.5 h-3.5" />
                             View Document
-                          </a>
+                          </button>
                         )}
                       </div>
                     ))}
@@ -520,7 +567,7 @@ export default function AdminProfessionalRequests() {
               <div>
                 <label className="block text-xs font-bold text-gray-600 mb-1.5 uppercase tracking-wider">
                   Rejection Reason{" "}
-                  <span className="text-rose-600">*</span>
+                  <span className="text-gray-400">(Optional)</span>
                 </label>
 
                 <textarea
@@ -528,7 +575,7 @@ export default function AdminProfessionalRequests() {
                   onChange={(e) =>
                     setRejectionReasonInput(e.target.value)
                   }
-                  placeholder="State clear reason for rejection..."
+                  placeholder="State reason for rejection (optional)..."
                   rows={3}
                   className="w-full px-3.5 py-2.5 rounded-btn border border-gray-200 bg-white/70 text-sm text-gray-800 outline-none focus:border-brand focus:ring-2 focus:ring-brand-light/60 resize-none font-medium"
                 />
@@ -568,4 +615,4 @@ export default function AdminProfessionalRequests() {
       </div>
     </AdminLayout>
   );
-};
+}

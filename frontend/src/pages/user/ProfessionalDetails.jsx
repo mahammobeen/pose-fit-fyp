@@ -35,6 +35,14 @@ const DAY_NAMES = [
   "Saturday",
 ];
 
+const INACTIVE_BOOKING_STATUSES = [
+  "cancelled",
+  "canceled",
+  "failed",
+  "expired",
+  "refunded",
+];
+
 function sortAvailability(availability = []) {
   return [...availability].sort(
     (a, b) => DAYS_ORDER.indexOf(a.day) - DAYS_ORDER.indexOf(b.day),
@@ -96,7 +104,7 @@ function isSlotTimePassed(dateInput, slot) {
   return slotStart.getTime() <= Date.now();
 }
 
-function getUpcomingAvailableDates(availability, count = 14) {
+function getUpcomingAvailableDates(availability) {
   if (!availability || availability.length === 0) return [];
 
   const availableDaysMap = new Set(
@@ -108,19 +116,36 @@ function getUpcomingAvailableDates(availability, count = 14) {
 
   today.setHours(0, 0, 0, 0);
 
-  for (let i = 0; i < 60 && dates.length < count; i++) {
-    const d = new Date(today);
+  const currentDayIndex = today.getDay();
+  const daysFromMonday = currentDayIndex === 0 ? 6 : currentDayIndex - 1;
 
-    d.setDate(today.getDate() + i);
+  const weekStart = new Date(today);
+  weekStart.setDate(today.getDate() - daysFromMonday);
+  weekStart.setHours(0, 0, 0, 0);
 
-    const dayName = DAY_NAMES[d.getDay()];
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6);
+  weekEnd.setHours(23, 59, 59, 999);
 
-    if (availableDaysMap.has(dayName.toLowerCase())) {
+  for (
+    let d = new Date(weekStart);
+    d <= weekEnd;
+    d.setDate(d.getDate() + 1)
+  ) {
+    const currentDate = new Date(d);
+    const dayName = DAY_NAMES[currentDate.getDay()];
+
+    if (
+      currentDate >= today &&
+      availableDaysMap.has(dayName.toLowerCase())
+    ) {
       dates.push({
-        dateString: formatDateForApi(d),
+        dateString: formatDateForApi(currentDate),
         dayName,
-        dateObj: d,
-        isToday: i === 0,
+        dateObj: currentDate,
+        isToday:
+          formatDateForApi(currentDate) ===
+          formatDateForApi(today),
       });
     }
   }
@@ -182,17 +207,24 @@ function formatDateForApi(date) {
 function normalizeDate(date) {
   if (!date) return "";
 
-  if (typeof date === "string") {
-    return date.slice(0, 10);
+  if (typeof date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(date.trim())) {
+    return date.trim();
   }
 
   const parsedDate = new Date(date);
 
   if (Number.isNaN(parsedDate.getTime())) {
-    return "";
+    return typeof date === "string" ? date.slice(0, 10) : "";
   }
 
   return formatDateForApi(parsedDate);
+}
+
+function normalizeSlot(slot) {
+  return String(slot || "")
+    .toLowerCase()
+    .replace(/\s+/g, "")
+    .replace(/[–—]/g, "-");
 }
 
 function formatExperience(years) {
@@ -305,7 +337,7 @@ function isBookingStillActive(booking) {
 
   const status = String(booking.status || "").toLowerCase();
 
-  if (status !== "completed") {
+  if (INACTIVE_BOOKING_STATUSES.includes(status)) {
     return false;
   }
 
@@ -313,16 +345,7 @@ function isBookingStillActive(booking) {
     return false;
   }
 
-  const appointmentStart = getAppointmentDateTime(
-    booking.appointmentDate,
-    booking.appointmentSlot,
-  );
-
-  if (!appointmentStart) {
-    return true;
-  }
-
-  return appointmentStart.getTime() > Date.now();
+  return true;
 }
 
 export default function ProfessionalDetails() {
@@ -703,40 +726,28 @@ export default function ProfessionalDetails() {
 
   const availability = sortAvailability(pro?.availability || []);
 
-  const isSlotBooked = (
-    day,
-    slot,
-    appointmentDate = null,
-  ) => {
+  const isSlotBooked = (day, slot, appointmentDate = null) => {
     const targetDate = normalizeDate(appointmentDate);
+    const targetSlot = normalizeSlot(slot);
+    const targetDay = day?.trim().toLowerCase() || "";
 
     return bookedSlots.some((booking) => {
       if (!isBookingStillActive(booking)) {
         return false;
       }
 
-      const bookingDay =
-        booking.appointmentDay?.trim().toLowerCase() || "";
+      if (normalizeSlot(booking.appointmentSlot) !== targetSlot) {
+        return false;
+      }
 
-      const bookingSlot =
-        booking.appointmentSlot?.trim().toLowerCase() || "";
+      const bookingDay = booking.appointmentDay?.trim().toLowerCase() || "";
 
-      const bookingDate = normalizeDate(
-        booking.appointmentDate,
-      );
-
-      const sameDay =
-        bookingDay === day?.trim().toLowerCase();
-
-      const sameSlot =
-        bookingSlot === slot?.trim().toLowerCase();
-
-      if (!sameDay || !sameSlot) {
+      if (bookingDay && bookingDay !== targetDay) {
         return false;
       }
 
       if (targetDate) {
-        return bookingDate === targetDate;
+        return normalizeDate(booking.appointmentDate) === targetDate;
       }
 
       return true;
@@ -754,18 +765,14 @@ export default function ProfessionalDetails() {
 
     return (dayData.slots || []).filter(
       (slot) =>
-        !isSlotBooked(day, slot, dateStr) &&
-        !isSlotTimePassed(dateStr, slot),
+        !isSlotBooked(day, slot, dateStr),
     );
   };
 
   const openBooking = async () => {
     await fetchBookedSlots();
 
-    const upcoming = getUpcomingAvailableDates(
-      availability,
-      14,
-    );
+    const upcoming = getUpcomingAvailableDates(availability);
 
     const firstAvailable = upcoming.find((item) => {
       const slots = getAvailableSlotsForDate(
@@ -815,27 +822,35 @@ export default function ProfessionalDetails() {
       return;
     }
 
-    const todayStr = formatDateForApi(new Date());
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-    if (dateStr < todayStr) {
-      toast.error("Past dates cannot be selected.");
-      return;
-    }
+    const currentDayIndex = today.getDay();
+    const daysFromMonday =
+      currentDayIndex === 0 ? 6 : currentDayIndex - 1;
 
-    const parts = dateStr
+    const weekStart = new Date(today);
+    weekStart.setDate(today.getDate() - daysFromMonday);
+    weekStart.setHours(0, 0, 0, 0);
+
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+    weekEnd.setHours(23, 59, 59, 999);
+
+    const selectedParts = dateStr
       .slice(0, 10)
       .split("-")
       .map(Number);
 
     if (
-      parts.length !== 3 ||
-      parts.some(Number.isNaN)
+      selectedParts.length !== 3 ||
+      selectedParts.some(Number.isNaN)
     ) {
       toast.error("Invalid date selected.");
       return;
     }
 
-    const [year, month, day] = parts;
+    const [year, month, day] = selectedParts;
 
     const dateObj = new Date(
       year,
@@ -843,7 +858,34 @@ export default function ProfessionalDetails() {
       day,
     );
 
+    dateObj.setHours(0, 0, 0, 0);
+
+    if (dateObj < today) {
+      toast.error("Past dates cannot be selected.");
+      return;
+    }
+
+    if (dateObj > weekEnd) {
+      toast.error(
+        "You can only select a date from the current week.",
+      );
+      return;
+    }
+
     const dayName = DAY_NAMES[dateObj.getDay()];
+
+    const isProfessionalAvailable = availability.some(
+      (item) =>
+        item.day?.trim().toLowerCase() ===
+        dayName.toLowerCase(),
+    );
+
+    if (!isProfessionalAvailable) {
+      toast.error(
+        `${dayName} is not available for this professional.`,
+      );
+      return;
+    }
 
     setSelectedDate(dateStr);
     setSelectedDay(dayName);
@@ -876,14 +918,21 @@ export default function ProfessionalDetails() {
       return;
     }
 
-    if (
-      isSlotTimePassed(
-        selectedDate,
-        selectedSlot,
-      )
-    ) {
+    const upcomingDates = getUpcomingAvailableDates(
+      availability,
+    );
+
+    const selectedDateIsInCurrentWeek =
+      upcomingDates.some(
+        (item) =>
+          item.dateString === selectedDate &&
+          item.dayName.toLowerCase() ===
+            selectedDay.toLowerCase(),
+      );
+
+    if (!selectedDateIsInCurrentWeek) {
       toast.error(
-        "The selected session start time has already passed. Please select an upcoming slot.",
+        "Please select an available date from the current week.",
       );
 
       return;
@@ -1024,10 +1073,24 @@ export default function ProfessionalDetails() {
   );
 
   const upcomingAvailableDates =
-    getUpcomingAvailableDates(
-      availability,
-      14,
-    );
+    getUpcomingAvailableDates(availability);
+
+  const currentWeekEndDate = (() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const currentDayIndex = today.getDay();
+    const daysFromMonday =
+      currentDayIndex === 0 ? 6 : currentDayIndex - 1;
+
+    const weekStart = new Date(today);
+    weekStart.setDate(today.getDate() - daysFromMonday);
+
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+
+    return formatDateForApi(weekEnd);
+  })();
 
   if (loading) {
     return (
@@ -1456,34 +1519,70 @@ export default function ProfessionalDetails() {
 
             {availability.length > 0 ? (
               <div className="overflow-hidden rounded-card border border-brand-light/50 bg-surface/70 shadow-sm">
-                {availability.map((item, index) => (
-                  <div
-                    key={item.day}
-                    className={`flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center ${
-                      index !== availability.length - 1
-                        ? "border-b border-brand-light/30"
-                        : ""
-                    }`}
-                  >
-                    <div className="w-28 shrink-0">
-                      <p className="text-sm font-bold text-gray-800">
-                        {item.day}
-                      </p>
-                    </div>
+                {availability.map((item, index) => {
+                  const currentWeekDate =
+                    upcomingAvailableDates.find(
+                      (dateItem) =>
+                        dateItem.dayName?.trim().toLowerCase() ===
+                        item.day?.trim().toLowerCase(),
+                    );
 
-                    <div className="flex flex-1 flex-wrap gap-x-5 gap-y-2">
-                      {item.slots.map((slot) => (
-                        <span
-                          key={slot}
-                          className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-600"
-                        >
-                          <Clock className="h-3.5 w-3.5 text-brand" />
-                          {slot}
-                        </span>
-                      ))}
+                  return (
+                    <div
+                      key={item.day}
+                      className={`flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center ${
+                        index !== availability.length - 1
+                          ? "border-b border-brand-light/30"
+                          : ""
+                      }`}
+                    >
+                      <div className="w-28 shrink-0">
+                        <p className="text-sm font-bold text-gray-800">
+                          {item.day}
+                        </p>
+                      </div>
+
+                      <div className="flex flex-1 flex-wrap gap-x-5 gap-y-2">
+                        {item.slots.map((slot) => {
+                          const booked =
+                            currentWeekDate &&
+                            isSlotBooked(
+                              item.day,
+                              slot,
+                              currentWeekDate.dateString,
+                            );
+
+                          return (
+                            <span
+                              key={slot}
+                              className={`inline-flex items-center gap-1.5 text-sm font-medium ${
+                                booked
+                                  ? "text-gray-400"
+                                  : "text-gray-600"
+                              }`}
+                            >
+                              <Clock
+                                className={`h-3.5 w-3.5 ${
+                                  booked
+                                    ? "text-gray-400"
+                                    : "text-brand"
+                                }`}
+                              />
+
+                              <span>{slot}</span>
+
+                              {booked && (
+                                <span className="ml-1 font-black uppercase text-[10px] text-gray-400">
+                                  Unavailable
+                                </span>
+                              )}
+                            </span>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="rounded-card border border-gray-200 bg-surface/70 px-5 py-8 text-sm text-gray-500">
@@ -1532,7 +1631,7 @@ export default function ProfessionalDetails() {
                   onClick={() => setShowRatingModal(true)}
                   className="inline-flex items-center gap-1.5 rounded-btn border border-brand-light bg-brand-light/25 px-3.5 py-2 text-xs font-bold text-brand-dark transition-colors hover:bg-brand-light/40"
                 >
-                  <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-500" />
+                  <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
                   Rate Professional
                 </button>
               )}
@@ -1682,6 +1781,7 @@ export default function ProfessionalDetails() {
                         min={formatDateForApi(
                           new Date(),
                         )}
+                        max={currentWeekEndDate}
                         value={selectedDate}
                         onChange={(e) =>
                           handleDateSelect(
@@ -1693,7 +1793,7 @@ export default function ProfessionalDetails() {
                     </div>
 
                     <p className="mt-1 text-[11px] text-gray-500">
-                      Pick any future date above, or choose an upcoming working day below:
+                      Select a date from this week based on the professional's weekly availability.
                     </p>
                   </div>
 
@@ -1818,15 +1918,8 @@ export default function ProfessionalDetails() {
                                 selectedDate,
                               );
 
-                            const isPassed =
-                              isSlotTimePassed(
-                                selectedDate,
-                                slot,
-                              );
-
                             const isUnavailable =
-                              booked ||
-                              isPassed;
+                              booked;
 
                             return (
                               <button
@@ -1845,9 +1938,7 @@ export default function ProfessionalDetails() {
                                   }
                                 }}
                                 className={`flex items-center gap-2 rounded-btn border px-4 py-3 text-xs font-bold transition-all ${
-                                  isPassed
-                                    ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
-                                    : booked
+                                  booked
                                     ? "cursor-not-allowed border-rose-200 bg-rose-50 text-rose-400"
                                     : selectedSlot ===
                                       slot
@@ -1857,9 +1948,7 @@ export default function ProfessionalDetails() {
                               >
                                 <Clock
                                   className={`h-4 w-4 shrink-0 ${
-                                    isPassed
-                                      ? "text-gray-400"
-                                      : booked
+                                    booked
                                       ? "text-rose-400"
                                       : selectedSlot ===
                                         slot
@@ -1872,18 +1961,11 @@ export default function ProfessionalDetails() {
                                   {slot}
                                 </span>
 
-                                {isPassed && (
-                                  <span className="ml-auto rounded bg-gray-200 px-1.5 py-0.5 text-[9px] font-bold uppercase text-gray-500">
-                                    Passed
+                                {booked && (
+                                  <span className="ml-auto text-[10px] font-black uppercase">
+                                    Unavailable
                                   </span>
                                 )}
-
-                                {booked &&
-                                  !isPassed && (
-                                    <span className="ml-auto text-[10px] font-black uppercase">
-                                      Unavailable
-                                    </span>
-                                  )}
 
                                 {selectedSlot ===
                                   slot &&
@@ -1992,10 +2074,6 @@ export default function ProfessionalDetails() {
                       !selectedSlot ||
                       bookingLoading ||
                       !pro.sessionFee ||
-                      isSlotTimePassed(
-                        selectedDate,
-                        selectedSlot,
-                      ) ||
                       isSlotBooked(
                         selectedDay,
                         selectedSlot,
@@ -2012,11 +2090,6 @@ export default function ProfessionalDetails() {
                       ? "Select a Day"
                       : !selectedSlot
                       ? "Select a Time Slot"
-                      : isSlotTimePassed(
-                          selectedDate,
-                          selectedSlot,
-                        )
-                      ? "Slot Has Passed"
                       : isSlotBooked(
                           selectedDay,
                           selectedSlot,
