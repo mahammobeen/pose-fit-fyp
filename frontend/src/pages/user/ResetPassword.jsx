@@ -28,9 +28,7 @@ const resetPasswordSchema = z
         message: "Password must contain a special character.",
       }),
 
-    confirmPassword: z
-      .string()
-      .min(1, "Please confirm your password."),
+    confirmPassword: z.string().min(1, "Please confirm your password."),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords do not match.",
@@ -41,7 +39,7 @@ const ResetPassword = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  const email = searchParams.get("email");
+  const token = searchParams.get("token");
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -50,49 +48,98 @@ const ResetPassword = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [loading, setLoading] = useState(false);
+  const [checkingToken, setCheckingToken] = useState(true);
+  const [tokenValid, setTokenValid] = useState(false);
+
 
   useEffect(() => {
-    if (!email || !email.trim()) {
-      navigate("/user/login", {
-        replace: true,
-      });
-    }
-  }, [email, navigate]);
+    const verifyToken = async () => {
+      const cleanToken = token?.trim();
+
+      if (!cleanToken) {
+        toast.error("Invalid or missing password reset link.");
+
+        navigate("/user/login", {
+          replace: true,
+        });
+
+        return;
+      }
+
+      try {
+  
+        await httpClient.get("/auth/verify-reset-token", {
+          params: {
+            token: cleanToken,
+          },
+        });
+
+        setTokenValid(true);
+      } catch (error) {
+        console.error("Reset token verification error:", error);
+
+        const message =
+          error?.response?.data?.message ||
+          "This password reset link is invalid or has expired.";
+
+        toast.error(message);
+
+        setTokenValid(false);
+
+        navigate("/user/login", {
+          replace: true,
+        });
+      } finally {
+        setCheckingToken(false);
+      }
+    };
+
+    verifyToken();
+  }, [token, navigate]);
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const validation = resetPasswordSchema.safeParse({
+    if (!tokenValid) {
+      toast.error("This password reset link is invalid or has expired.");
+      return;
+    }
+
+    const cleanToken = token?.trim();
+
+    if (!cleanToken) {
+      toast.error("Invalid or missing password reset link.");
+      return;
+    }
+
+    const validationResult = resetPasswordSchema.safeParse({
       password,
       confirmPassword,
     });
 
-    if (!validation.success) {
-      toast.error(validation.error.issues[0].message);
-      return;
-    }
+    if (!validationResult.success) {
+      const firstError =
+        validationResult.error.issues?.[0]?.message ||
+        "Please enter a valid password.";
 
-    const cleanEmail = email.trim().toLowerCase();
-    const validatedData = validation.data;
-
-    if (!cleanEmail) {
+      toast.error(firstError);
       return;
     }
 
     setLoading(true);
 
     try {
-      const { data } = await httpClient.put(
-        `/auth/reset-password/${encodeURIComponent(cleanEmail)}`,
-        {
-          password: validatedData.password,
-        },
-      );
+      const { data } = await httpClient.put("/auth/reset-password", {
+        token: cleanToken,
+        password,
+      });
 
       toast.success(data?.message || "Password reset successfully.");
 
       setPassword("");
       setConfirmPassword("");
+      setTokenValid(false);
 
       setTimeout(() => {
         navigate("/user/login", {
@@ -101,6 +148,8 @@ const ResetPassword = () => {
       }, 1000);
     } catch (error) {
       console.error("Reset password error:", error);
+
+      const status = error?.response?.status;
 
       let errorMessage = "Failed to reset password. Please try again.";
 
@@ -112,15 +161,46 @@ const ResetPassword = () => {
         errorMessage = "Unable to connect to the server. Please try again.";
       }
 
+      if (status === 400 || status === 401 || status === 403) {
+        setTokenValid(false);
+
+        toast.error(
+          errorMessage || "This password reset link is invalid or has expired.",
+        );
+
+        setTimeout(() => {
+          navigate("/user/login", {
+            replace: true,
+          });
+        }, 1200);
+
+        return;
+      }
+
       toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
-  if (!email || !email.trim()) {
+
+  if (checkingToken) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-surface">
+        <div className="flex flex-col items-center gap-3">
+          <span className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-gray-800" />
+
+          <p className="text-sm text-gray-500">Verifying reset link...</p>
+        </div>
+      </div>
+    );
+  }
+
+
+  if (!tokenValid) {
     return null;
   }
+
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-surface px-4 py-8 font-sans">
@@ -132,8 +212,12 @@ const ResetPassword = () => {
 
       <div className="relative z-10 w-full max-w-md">
         <div className="rounded-card border border-brand-light/70 bg-surface/80 p-8 shadow-card-hover backdrop-blur-xl sm:p-10">
+  
           <div className="mb-7 flex justify-center">
-            <Link className="flex h-16 w-16 items-center justify-center rounded-card bg-white/70 p-2 shadow-card transition-transform duration-300 hover:-translate-y-1">
+            <Link
+              to="/"
+              className="flex h-16 w-16 items-center justify-center rounded-card bg-white/70 p-2 shadow-card transition-transform duration-300 hover:-translate-y-1"
+            >
               <img
                 src={posefit_logo}
                 alt="PoseFit Logo"
@@ -152,24 +236,9 @@ const ResetPassword = () => {
             </p>
           </div>
 
-          <div className="mb-5">
-            <label
-              htmlFor="email"
-              className="mb-2 block text-sm font-semibold text-gray-700"
-            >
-              Email Address
-            </label>
-
-            <input
-              id="email"
-              type="email"
-              value={email}
-              disabled
-              className="w-full cursor-not-allowed rounded-btn border border-gray-200 bg-gray-100 px-4 py-3.5 text-sm text-gray-500 outline-none"
-            />
-          </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
+
             <div>
               <label
                 htmlFor="password"
