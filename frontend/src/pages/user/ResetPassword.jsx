@@ -8,7 +8,10 @@ const ResetPassword = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  const email = searchParams.get("email");
+  // Secure password reset token from URL
+  // Example:
+  // /reset-password?token=abc123...
+  const token = searchParams.get("token");
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -23,12 +26,14 @@ const ResetPassword = () => {
   // =====================================================
 
   useEffect(() => {
-    if (!email || !email.trim()) {
+    if (!token || !token.trim()) {
+      toast.error("Invalid or missing password reset link.");
+
       navigate("/user/login", {
         replace: true,
       });
     }
-  }, [email, navigate]);
+  }, [token, navigate]);
 
   // =====================================================
   // SUBMIT
@@ -37,15 +42,16 @@ const ResetPassword = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const cleanEmail = email?.trim().toLowerCase();
+    const cleanToken = token?.trim();
     const cleanPassword = password.trim();
     const cleanConfirmPassword = confirmPassword.trim();
 
     // =====================================================
-    // EMAIL
+    // TOKEN
     // =====================================================
 
-    if (!cleanEmail) {
+    if (!cleanToken) {
+      toast.error("Invalid or missing password reset link.");
       return;
     }
 
@@ -84,12 +90,10 @@ const ResetPassword = () => {
       // RESET PASSWORD
       // =====================================================
 
-      const { data } = await httpClient.put(
-        `/auth/reset-password/${encodeURIComponent(cleanEmail)}`,
-        {
-          password: cleanPassword,
-        },
-      );
+      const { data } = await httpClient.put("/auth/reset-password", {
+        token: cleanToken,
+        password: cleanPassword,
+      });
 
       // =====================================================
       // SUCCESS
@@ -128,7 +132,7 @@ const ResetPassword = () => {
   // IMPORTANT
   // =====================================================
 
-  if (!email || !email.trim()) {
+  if (!token || !token.trim()) {
     return null;
   }
 
@@ -159,7 +163,10 @@ const ResetPassword = () => {
           ================================================= */}
 
           <div className="mb-7 flex justify-center">
-            <Link className="flex h-16 w-16 items-center justify-center rounded-card bg-white/70 p-2 shadow-card transition-transform duration-300 hover:-translate-y-1">
+            <Link
+              to="/"
+              className="flex h-16 w-16 items-center justify-center rounded-card bg-white/70 p-2 shadow-card transition-transform duration-300 hover:-translate-y-1"
+            >
               <img
                 src={posefit_logo}
                 alt="PoseFit Logo"
@@ -180,27 +187,6 @@ const ResetPassword = () => {
             <p className="mt-2 text-sm text-gray-500">
               Create a new password for your PoseFit account.
             </p>
-          </div>
-
-          {/* =================================================
-              EMAIL
-          ================================================= */}
-
-          <div className="mb-5">
-            <label
-              htmlFor="email"
-              className="mb-2 block text-sm font-semibold text-gray-700"
-            >
-              Email Address
-            </label>
-
-            <input
-              id="email"
-              type="email"
-              value={email}
-              disabled
-              className="w-full cursor-not-allowed rounded-btn border border-gray-200 bg-gray-100 px-4 py-3.5 text-sm text-gray-500 outline-none"
-            />
           </div>
 
           {/* =================================================

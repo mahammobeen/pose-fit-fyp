@@ -1,5 +1,6 @@
 const bcrypt = require("bcryptjs");
 const nodemailer = require("nodemailer");
+const crypto = require("crypto");
 
 const UserModel = require("../../models/userModel");
 const generateToken = require("../../utils/token");
@@ -46,9 +47,13 @@ const signup = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Generate 6-digit verification code
     const verificationCode = Math.floor(
       100000 + Math.random() * 900000,
     ).toString();
+
+    // Verification code expires after 15 minutes
+    const verificationCodeExpires = new Date(Date.now() + 15 * 60 * 1000);
 
     const newUser = new UserModel({
       firstName,
@@ -58,6 +63,7 @@ const signup = async (req, res) => {
       role: "USER",
       isVerified: false,
       verificationCode,
+      verificationCodeExpires,
     });
 
     await newUser.save();
@@ -70,6 +76,7 @@ const signup = async (req, res) => {
       text:
         `Hi ${firstName} ${lastName},\n\n` +
         `Your PoseFit verification code is: ${verificationCode}\n\n` +
+        `This verification code will expire in 15 minutes.\n\n` +
         `Please use this code to verify your email.`,
     });
 
@@ -116,15 +123,22 @@ const verifyEmail = async (req, res) => {
       });
     }
 
-    if (user.verificationCode !== code.toString()) {
+    // Check verification code and expiry
+    if (
+      user.verificationCode !== code.toString() ||
+      !user.verificationCodeExpires ||
+      user.verificationCodeExpires < new Date()
+    ) {
       return res.status(400).json({
         success: false,
-        message: "Invalid verification code",
+        message: "Verification code is invalid or has expired",
       });
     }
 
+    // Verify user
     user.isVerified = true;
     user.verificationCode = undefined;
+    user.verificationCodeExpires = undefined;
 
     await user.save();
 
@@ -193,6 +207,9 @@ const login = async (req, res) => {
 
     delete userData.password;
     delete userData.verificationCode;
+    delete userData.verificationCodeExpires;
+    delete userData.resetPasswordToken;
+    delete userData.resetPasswordTokenExpires;
 
     return res.status(200).json({
       success: true,
@@ -215,45 +232,64 @@ const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
 
-    const isExisted = await UserModel.findOne({ email }).lean();
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is required",
+      });
+    }
+
+    const isExisted = await UserModel.findOne({
+      email: email.toLowerCase(),
+    });
 
     if (!isExisted) {
       return res.status(400).json({
+        success: false,
         message: "Email does not exist",
       });
     }
 
-    const transporter = nodemailer.createTransport({
-      host: "smtp.gmail.com",
-      port: 465,
-      secure: true, // true for 465, false for other ports
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD,
-      },
-    });
+    // Generate secure random password reset token
+    const resetPasswordToken = crypto.randomBytes(32).toString("hex");
+
+    // Reset token expires after 15 minutes
+    const resetPasswordTokenExpires = new Date(Date.now() + 15 * 60 * 1000);
+
+    // Save reset token and expiry in database
+    isExisted.resetPasswordToken = resetPasswordToken;
+    isExisted.resetPasswordTokenExpires = resetPasswordTokenExpires;
+
+    await isExisted.save();
+
+    // Password reset link
+    const resetLink = `http://localhost:5173/reset-password?token=${encodeURIComponent(
+      resetPasswordToken,
+    )}`;
 
     await transporter.sendMail({
-      from: '"PoseFit" <support@posefit.com>',
+      from: `"PoseFit" <${process.env.EMAIL_USER}>`,
       to: email,
       subject: "Reset Your PoseFit Password",
 
-      // Plain-text version of the email
+      // Plain-text version
       text: `Hi ${isExisted.firstName} ${isExisted.lastName},
 
 We received a request to reset your PoseFit password.
 
 Please click the link below to create a new password:
-http://localhost:5173/reset-password?email=${encodeURIComponent(
-        isExisted.email,
-      )}
+
+${resetLink}
+
+IMPORTANT:
+This password reset link will expire in 15 minutes.
 
 If you did not request a password reset, please ignore this email.
 
 Regards,
 PoseFit Team`,
 
-      // HTML version of the email
+      // HTML version
       html: `<!DOCTYPE html>
 <html>
 <head>
@@ -319,6 +355,11 @@ PoseFit Team`,
       text-decoration: none;
       word-break: break-all;
     }
+
+    .expiry {
+      font-weight: bold;
+      color: #d9534f;
+    }
   </style>
 </head>
 
@@ -340,9 +381,7 @@ PoseFit Team`,
       <br><br>
 
       <a
-        href="http://localhost:5173/reset-password?email=${encodeURIComponent(
-          isExisted.email,
-        )}"
+        href="${resetLink}"
         class="button"
       >
         Reset Password
@@ -350,7 +389,10 @@ PoseFit Team`,
 
       <br><br>
 
-      This password reset link will allow you to create a new password.
+      <span class="expiry">
+        This password reset link will expire in 15 minutes.
+      </span>
+
       <br><br>
 
       If you did not request a password reset, please ignore this email.
@@ -367,14 +409,8 @@ PoseFit Team`,
 
       <br><br>
 
-      <a
-        href="http://localhost:5173/reset-password?email=${encodeURIComponent(
-          isExisted.email,
-        )}"
-      >
-        http://localhost:5173/reset-password?email=${encodeURIComponent(
-          isExisted.email,
-        )}
+      <a href="${resetLink}">
+        ${resetLink}
       </a>
 
     </div>
@@ -391,7 +427,7 @@ PoseFit Team`,
         "We have sent a password reset link to your email address. Please check your email.",
     });
   } catch (error) {
-    console.log("Some error occurred:", error);
+    console.error("Forgot password error:", error);
 
     return res.status(500).json({
       success: false,
@@ -402,42 +438,59 @@ PoseFit Team`,
 
 const resetPassword = async (req, res) => {
   try {
-    const { email } = req.params;
+    // Get reset token from URL query
+    // Example:
+    // /reset-password?token=abc123
+    const token = req.query.token || req.body.token || req.params.token;
+
     const { password } = req.body;
 
-    if (!email || !password) {
+    if (!token || !password) {
       return res.status(400).json({
-        message: "Email or password are missing fields",
+        success: false,
+        message: "Reset token or password is missing",
       });
     }
 
+    // Find user using token and check expiry
     const user = await UserModel.findOne({
-      email: email.toLowerCase(),
+      resetPasswordToken: token,
+      resetPasswordTokenExpires: {
+        $gt: new Date(),
+      },
     });
 
     if (!user) {
-      return res.status(404).json({
-        message: "User not found!",
+      return res.status(400).json({
+        success: false,
+        message: "Password reset link is invalid or has expired",
       });
     }
 
+    // Prevent using the same old password
     const isSamePassword = await bcrypt.compare(password, user.password);
 
     if (isSamePassword) {
       return res.status(400).json({
+        success: false,
         message: "New password must be different from old password",
       });
     }
 
     const encryptedPassword = await bcrypt.hash(password, 10);
 
-    await UserModel.findByIdAndUpdate(user._id, {
-      password: encryptedPassword,
-    });
+    // Update password
+    user.password = encryptedPassword;
+
+    // Invalidate reset token after successful password reset
+    user.resetPasswordToken = undefined;
+    user.resetPasswordTokenExpires = undefined;
+
+    await user.save();
 
     return res.status(200).json({
       success: true,
-      message: `Successfully reset password against ${email}`,
+      message: "Password reset successfully",
     });
   } catch (error) {
     console.error("Reset password error:", error);
@@ -449,7 +502,7 @@ const resetPassword = async (req, res) => {
   }
 };
 
-// PROFESSIONAL PROFILE COMPLETION SUPPORT (FOR FUTURE PROFESSIONAL FRONTEND)
+// PROFESSIONAL PROFILE COMPLETION SUPPORT
 const completeProfessionalProfile = async (req, res) => {
   try {
     const professionalId = req.user.userId;
@@ -477,17 +530,41 @@ const completeProfessionalProfile = async (req, res) => {
       availability,
     } = req.body;
 
-    if (profilePhoto) professional.profilePhoto = profilePhoto;
-    if (bio) professional.bio = bio;
-    if (specialization) professional.specialization = specialization;
-    if (experience !== undefined) professional.experience = Number(experience);
-    // professionalType is ADMIN-SET and cannot be modified by the professional
-    if (sessionFee !== undefined) professional.sessionFee = Number(sessionFee);
-    if (credentialDocs) professional.credentialDocs = credentialDocs;
-    if (bankDetails) professional.bankDetails = bankDetails;
-    if (availability) professional.availability = availability;
+    if (profilePhoto) {
+      professional.profilePhoto = profilePhoto;
+    }
 
-    // Transition status to pending_verification upon submission
+    if (bio) {
+      professional.bio = bio;
+    }
+
+    if (specialization) {
+      professional.specialization = specialization;
+    }
+
+    if (experience !== undefined) {
+      professional.experience = Number(experience);
+    }
+
+    // professionalType is ADMIN-SET
+    // and cannot be modified by the professional
+    if (sessionFee !== undefined) {
+      professional.sessionFee = Number(sessionFee);
+    }
+
+    if (credentialDocs) {
+      professional.credentialDocs = credentialDocs;
+    }
+
+    if (bankDetails) {
+      professional.bankDetails = bankDetails;
+    }
+
+    if (availability) {
+      professional.availability = availability;
+    }
+
+    // Transition status to pending_verification
     professional.professionalStatus = "pending_verification";
     professional.rejectionReason = undefined;
     professional.appliedAt = new Date();
@@ -495,6 +572,7 @@ const completeProfessionalProfile = async (req, res) => {
     await professional.save();
 
     const result = professional.toObject();
+
     delete result.password;
 
     return res.status(200).json({

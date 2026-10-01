@@ -187,6 +187,17 @@ const UserSchema = new Schema({
   payoutsEnabled: {
     type: Boolean,
   },
+  verificationCodeExpires: {
+    type: Date,
+  },
+
+  resetPasswordToken: {
+    type: String,
+  },
+
+  resetPasswordTokenExpires: {
+    type: Date,
+  },
 
   maskedBank: {
     type: String,
