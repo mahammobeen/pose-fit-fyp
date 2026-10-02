@@ -15,7 +15,7 @@ const EXERCISES = [
     metric: "Knee Angle Depth",
     target: "Quads, Glutes & Hamstrings",
     description:
-      "Real-time knee flexion & depth analysis. Ensures thighs break parallel while protecting knee joints and lumbar spine.",
+      "Checks how deep you squat and helps you maintain safe knee and back position.",
     image: squatImage,
     badgeColor: "bg-accent-blue/60 text-gray-700 border-accent-blue",
   },
@@ -26,7 +26,7 @@ const EXERCISES = [
     metric: "Spine & Hip Alignment",
     target: "Core & Lower Back",
     description:
-      "Monitors shoulder-hip-ankle line to prevent hip sagging or excessive elevation for maximum core activation.",
+      "Checks your body alignment and helps you keep your hips and back in the correct position.",
     image: plankImage,
     badgeColor: "bg-brand-light/40 text-brand-dark border-brand-light",
   },
@@ -37,7 +37,7 @@ const EXERCISES = [
     metric: "Shoulder Elevation Range",
     target: "Deltoids & Shoulders",
     description:
-      "Tracks bilateral arm elevation symmetry and range of motion without compensatory torso leaning or shoulder shrugging.",
+      "Checks how high you raise your arms and whether both arms move evenly.",
     image: armRaiseImage,
     badgeColor: "bg-accent-pink/60 text-gray-700 border-accent-pink",
   },
@@ -48,7 +48,7 @@ const EXERCISES = [
     metric: "Torso Flexion Angle",
     target: "Obliques & Lateral Spine",
     description:
-      "Measures precise lateral torso tilt and flags rotational twist to maximize oblique engagement with strict angle gating.",
+      "Checks how far you bend to the side and helps you keep your body properly aligned.",
     image: sideBendImage,
     badgeColor:
       "bg-accent-orange/60 text-accent-orange-dark border-accent-orange",
@@ -61,7 +61,6 @@ export default function PostureDetection() {
   return (
     <UserLayout>
       <div className="min-h-screen bg-transparent px-4 py-4 font-sans sm:px-6 md:px-8 md:py-6">
-
         <div className="mx-auto max-w-6xl">
           <h1 className="flex flex-wrap items-center gap-2 text-2xl font-extrabold tracking-tight text-gray-800 sm:text-3xl">
             Select an exercise for
@@ -82,7 +81,6 @@ export default function PostureDetection() {
               key={ex.id}
               className="group flex flex-col justify-between overflow-hidden rounded-card border border-brand-light/50 bg-surface/80 shadow-card backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover"
             >
-
               <div className="relative h-60 w-full overflow-hidden bg-brand-light/20 md:h-64">
                 <img
                   src={ex.image}
@@ -112,7 +110,6 @@ export default function PostureDetection() {
 
               <div className="flex flex-1 flex-col justify-between space-y-4 p-6">
                 <div className="space-y-2.5">
-
                   <div className="flex items-center gap-2">
                     <span
                       className={`flex items-center gap-1.5 rounded-btn border px-3 py-1 text-xs font-bold ${ex.badgeColor}`}

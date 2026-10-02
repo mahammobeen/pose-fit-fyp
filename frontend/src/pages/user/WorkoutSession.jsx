@@ -16,7 +16,6 @@ import {
 import { toast } from "sonner";
 import axios from "axios";
 import UserLayout from "../../components/user/UserLayout";
-
 import squatImage from "../../assets/squate.png";
 import plankImage from "../../assets/plank.png";
 import armRaiseImage from "../../assets/arm_raise.png";
@@ -58,7 +57,6 @@ const POSE_API_URL = (import.meta.env.VITE_POSE_API_URL || "").replace(
 const SAME_MESSAGE_COOLDOWN = 4000;
 const DIFFERENT_MESSAGE_COOLDOWN = 2500;
 const MIN_MESSAGE_LENGTH = 3;
-
 const FEEDBACK_DISPLAY_MIN_GAP = 900;
 
 export default function WorkoutSession() {
@@ -71,18 +69,12 @@ export default function WorkoutSession() {
   };
 
   const sessionIdRef = useRef(
-    "session_" +
-      // eslint-disable-next-line react-hooks/purity
-      Math.random().toString(36).substring(2, 11) +
-      "_" +
-      // eslint-disable-next-line react-hooks/purity
-      Date.now(),
+    "session_" + Math.random().toString(36).substring(2, 11) + "_" + Date.now(),
   );
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
-
   const isActiveRef = useRef(false);
   const frameTimerRef = useRef(null);
   const processingFrameRef = useRef(false);
@@ -100,12 +92,19 @@ export default function WorkoutSession() {
   const [warning, setWarning] = useState("");
   const [displayFeedback, setDisplayFeedback] = useState("Ready to start");
   const [displayWarning, setDisplayWarning] = useState("");
+
   const feedbackDisplayRef = useRef({
     text: "Ready to start",
     time: 0,
     timer: null,
   });
-  const warningDisplayRef = useRef({ text: "", time: 0, timer: null });
+
+  const warningDisplayRef = useRef({
+    text: "",
+    time: 0,
+    timer: null,
+  });
+
   const [direction, setDirection] = useState("none");
   const [serverOnline, setServerOnline] = useState(true);
   const [isMuted, setIsMuted] = useState(false);
@@ -117,6 +116,77 @@ export default function WorkoutSession() {
   });
 
   const speechTimerRef = useRef(null);
+  const speechUnlockedRef = useRef(false);
+  const speechVoicesRef = useRef([]);
+
+  const loadSpeechVoices = () => {
+    if (!("speechSynthesis" in window)) {
+      return [];
+    }
+
+    const voices = window.speechSynthesis.getVoices();
+
+    if (voices.length > 0) {
+      speechVoicesRef.current = voices;
+    }
+
+    return voices;
+  };
+
+  const unlockSpeech = () => {
+    if (!("speechSynthesis" in window)) {
+      return false;
+    }
+
+    try {
+      const synthesis = window.speechSynthesis;
+
+      synthesis.cancel();
+      synthesis.resume();
+      loadSpeechVoices();
+
+      const unlockUtterance = new SpeechSynthesisUtterance(" ");
+
+      unlockUtterance.volume = 0;
+      unlockUtterance.rate = 1;
+      unlockUtterance.pitch = 1;
+      unlockUtterance.lang = "en-US";
+
+      synthesis.speak(unlockUtterance);
+      synthesis.resume();
+
+      speechUnlockedRef.current = true;
+
+      return true;
+    } catch (error) {
+      console.error("Speech unlock error:", error);
+      return false;
+    }
+  };
+
+  useEffect(() => {
+    if (!("speechSynthesis" in window)) {
+      return undefined;
+    }
+
+    loadSpeechVoices();
+
+    const handleVoicesChanged = () => {
+      loadSpeechVoices();
+    };
+
+    window.speechSynthesis.addEventListener(
+      "voiceschanged",
+      handleVoicesChanged,
+    );
+
+    return () => {
+      window.speechSynthesis.removeEventListener(
+        "voiceschanged",
+        handleVoicesChanged,
+      );
+    };
+  }, []);
 
   useEffect(() => {
     axios
@@ -128,26 +198,20 @@ export default function WorkoutSession() {
         setServerOnline(false);
       });
 
-    // eslint-disable-next-line react-hooks/immutability
     return () => cleanupSession();
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     if (isMuted) return;
-    
+
     const msg = (warning || feedback || "").trim();
 
     if (BLOCKED_VOICE_MESSAGES.has(msg)) return;
-
     if (msg.length < MIN_MESSAGE_LENGTH) return;
-
     if (!isActiveRef.current) return;
 
     const now = Date.now();
     const lastSpoken = lastSpokenRef.current;
-
     const isSameMessage = msg === lastSpoken.text;
     const timeSinceLastSpeech = now - lastSpoken.time;
 
@@ -167,6 +231,10 @@ export default function WorkoutSession() {
     const speakMessage = () => {
       if (isMuted || !isActiveRef.current) return;
 
+      if (!("speechSynthesis" in window)) {
+        return;
+      }
+
       const currentTime = Date.now();
 
       if (
@@ -176,21 +244,51 @@ export default function WorkoutSession() {
         return;
       }
 
-      window.speechSynthesis.cancel();
+      try {
+        const synthesis = window.speechSynthesis;
 
-      const utterance = new SpeechSynthesisUtterance(msg);
+        synthesis.cancel();
+        synthesis.resume();
+        loadSpeechVoices();
 
-      utterance.rate = 1.0;
-      utterance.pitch = 1.0;
-      utterance.volume = 1.0;
-      utterance.lang = "en-US";
+        const utterance = new SpeechSynthesisUtterance(msg);
 
-      window.speechSynthesis.speak(utterance);
+        utterance.rate = 1.0;
+        utterance.pitch = 1.0;
+        utterance.volume = 1.0;
+        utterance.lang = "en-US";
 
-      lastSpokenRef.current = {
-        text: msg,
-        time: currentTime,
-      };
+        const voices = speechVoicesRef.current;
+
+        const englishVoice =
+          voices.find(
+            (voice) =>
+              voice.lang?.toLowerCase() === "en-us" && voice.localService,
+          ) ||
+          voices.find((voice) => voice.lang?.toLowerCase().startsWith("en"));
+
+        if (englishVoice) {
+          utterance.voice = englishVoice;
+        }
+
+        utterance.onstart = () => {
+          speechUnlockedRef.current = true;
+        };
+
+        utterance.onerror = (error) => {
+          console.error("Speech synthesis error:", error);
+        };
+
+        synthesis.speak(utterance);
+        synthesis.resume();
+
+        lastSpokenRef.current = {
+          text: msg,
+          time: currentTime,
+        };
+      } catch (error) {
+        console.error("Voice feedback error:", error);
+      }
     };
 
     speechTimerRef.current = setTimeout(speakMessage, 150);
@@ -209,7 +307,9 @@ export default function WorkoutSession() {
       speechTimerRef.current = null;
     }
 
-    window.speechSynthesis.cancel();
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
 
     lastSpokenRef.current = {
       text: "",
@@ -259,7 +359,6 @@ export default function WorkoutSession() {
 
   const sendNextFrame = async () => {
     if (!isActiveRef.current) return;
-
     if (processingFrameRef.current) return;
 
     const video = videoRef.current;
@@ -300,8 +399,11 @@ export default function WorkoutSession() {
       if (isActiveRef.current && res.data) {
         const newFeedback = res.data.feedback || "Ready";
         const newWarning = res.data.warning || "";
+
         const isRepEvent = newFeedback.toLowerCase().includes("counted");
+
         const backendProgress = res.data.progress_percent;
+
         const fallbackProgress = Math.min(
           100,
           Math.round((Math.abs(res.data.angle ?? 0) / 90) * 100),
@@ -309,9 +411,11 @@ export default function WorkoutSession() {
 
         setReps(res.data.reps ?? 0);
         setAngle(res.data.angle ?? 0.0);
+
         setProgress(
           backendProgress !== undefined ? backendProgress : fallbackProgress,
         );
+
         setFeedback(newFeedback);
         setWarning(newWarning);
         setDirection(res.data.direction || "none");
@@ -322,6 +426,7 @@ export default function WorkoutSession() {
           newFeedback,
           isRepEvent,
         );
+
         scheduleDisplayUpdate(
           warningDisplayRef,
           setDisplayWarning,
@@ -367,7 +472,6 @@ export default function WorkoutSession() {
 
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop());
-
       streamRef.current = null;
     }
 
@@ -405,11 +509,14 @@ export default function WorkoutSession() {
 
   const handleStart = async () => {
     if (!hasPermission) {
+      unlockSpeech();
       await requestCamera();
       return;
     }
 
     if (isActiveRef.current) return;
+
+    unlockSpeech();
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -423,7 +530,6 @@ export default function WorkoutSession() {
 
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-
         await videoRef.current.play();
       }
 
@@ -439,7 +545,6 @@ export default function WorkoutSession() {
       setPersonDetected(false);
       setProcessedImage(null);
       setServerOnline(true);
-
       setReps(0);
       setAngle(0.0);
       setProgress(0);
@@ -450,16 +555,25 @@ export default function WorkoutSession() {
       if (feedbackDisplayRef.current.timer) {
         clearTimeout(feedbackDisplayRef.current.timer);
       }
+
       if (warningDisplayRef.current.timer) {
         clearTimeout(warningDisplayRef.current.timer);
       }
+
       feedbackDisplayRef.current = {
         text: "Position yourself in front of the camera",
         time: Date.now(),
         timer: null,
       };
-      warningDisplayRef.current = { text: "", time: Date.now(), timer: null };
+
+      warningDisplayRef.current = {
+        text: "",
+        time: Date.now(),
+        timer: null,
+      };
+
       setDisplayFeedback("Position yourself in front of the camera");
+
       setDisplayWarning("");
 
       lastSpokenRef.current = {
@@ -477,7 +591,6 @@ export default function WorkoutSession() {
       processingFrameRef.current = false;
 
       setIsActive(false);
-
       stopSpeech();
 
       if (frameTimerRef.current) {
@@ -487,7 +600,6 @@ export default function WorkoutSession() {
 
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((track) => track.stop());
-
         streamRef.current = null;
       }
 
@@ -517,7 +629,6 @@ export default function WorkoutSession() {
 
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop());
-
       streamRef.current = null;
     }
 
@@ -543,15 +654,23 @@ export default function WorkoutSession() {
     if (feedbackDisplayRef.current.timer) {
       clearTimeout(feedbackDisplayRef.current.timer);
     }
+
     if (warningDisplayRef.current.timer) {
       clearTimeout(warningDisplayRef.current.timer);
     }
+
     feedbackDisplayRef.current = {
       text: "Session stopped",
       time: Date.now(),
       timer: null,
     };
-    warningDisplayRef.current = { text: "", time: Date.now(), timer: null };
+
+    warningDisplayRef.current = {
+      text: "",
+      time: Date.now(),
+      timer: null,
+    };
+
     setDisplayFeedback("Session stopped");
     setDisplayWarning("");
 
@@ -577,15 +696,23 @@ export default function WorkoutSession() {
       if (feedbackDisplayRef.current.timer) {
         clearTimeout(feedbackDisplayRef.current.timer);
       }
+
       if (warningDisplayRef.current.timer) {
         clearTimeout(warningDisplayRef.current.timer);
       }
+
       feedbackDisplayRef.current = {
         text: "Ready to start",
         time: Date.now(),
         timer: null,
       };
-      warningDisplayRef.current = { text: "", time: Date.now(), timer: null };
+
+      warningDisplayRef.current = {
+        text: "",
+        time: Date.now(),
+        timer: null,
+      };
+
       setDisplayFeedback("Ready to start");
       setDisplayWarning("");
 
@@ -595,9 +722,23 @@ export default function WorkoutSession() {
     }
   };
 
+  const handleVoiceToggle = () => {
+    const next = !isMuted;
+
+    if (!next) {
+      unlockSpeech();
+    }
+
+    setIsMuted(next);
+
+    if (next) {
+      stopSpeech();
+    }
+  };
+
   const absAngle = Math.abs(angle);
-  
   const percentage = Math.min(100, Math.max(0, Math.round(progress)));
+
   const isPerfect = percentage >= 100 && !warning;
 
   if (!hasPermission) {
@@ -670,15 +811,7 @@ export default function WorkoutSession() {
 
             <div className="flex flex-wrap items-center gap-3">
               <button
-                onClick={() => {
-                  const next = !isMuted;
-
-                  setIsMuted(next);
-
-                  if (next) {
-                    stopSpeech();
-                  }
-                }}
+                onClick={handleVoiceToggle}
                 className={`flex items-center gap-2 rounded-btn border px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all ${
                   isMuted
                     ? "border-rose-200 bg-rose-50 text-rose-600"
@@ -723,7 +856,7 @@ export default function WorkoutSession() {
           )}
 
           <div className="mx-auto grid max-w-6xl grid-cols-1 items-stretch gap-6 lg:grid-cols-12">
-            <div className="relative flex min-h-[460px] flex-col justify-center overflow-hidden rounded-card border border-brand-light/50 bg-surface/70 shadow-card backdrop-blur-xl lg:col-span-8 md:min-h-[520px]">
+            <div className="relative flex min-h-[460px] flex-col justify-center overflow-hidden rounded-card border border-brand-light/50 bg-surface/70 shadow-card backdrop-blur-xl md:min-h-[520px] lg:col-span-8">
               <video
                 ref={videoRef}
                 playsInline
@@ -771,7 +904,7 @@ export default function WorkoutSession() {
                   <button
                     onClick={handleStart}
                     disabled={!serverOnline}
-                    className="btn-primary flex items-center gap-2 py-3 px-8 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="btn-primary flex items-center gap-2 px-8 py-3 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <Play size={14} />
                     Start Detection
@@ -781,95 +914,97 @@ export default function WorkoutSession() {
             </div>
 
             <div className="flex flex-col justify-between gap-4 lg:col-span-4">
-              <div className="rounded-card border border-brand-light/50 bg-surface/80 p-6 text-center shadow-card backdrop-blur-xl">
-                <span className="text-[10px] font-extrabold uppercase tracking-widest text-brand-dark">
-                  {exerciseId === "plank"
-                    ? "Hold Time (Seconds)"
-                    : "Total Repetitions"}
-                </span>
+              <div className="grid grid-cols-2 gap-3 lg:flex lg:flex-col lg:gap-4">
+                <div className="rounded-card border border-brand-light/50 bg-surface/80 p-4 text-center shadow-card backdrop-blur-xl lg:p-6">
+                  <span className="text-[9px] font-extrabold uppercase tracking-widest text-brand-dark lg:text-[10px]">
+                    {exerciseId === "plank"
+                      ? "Hold Time (Seconds)"
+                      : "Total Repetitions"}
+                  </span>
 
-                <div className="text-7xl font-extrabold tracking-tight text-gray-800">
-                  {reps}
-                </div>
-
-                <span className="inline-block rounded-btn bg-brand-light/40 px-4 py-1 text-xs font-bold uppercase text-brand-dark">
-                  {currentEx.name}
-                </span>
-              </div>
-
-              <div className="flex flex-col items-center space-y-4 rounded-card border border-brand-light/50 bg-surface/80 p-6 shadow-card backdrop-blur-xl">
-                <span className="text-[10px] font-extrabold uppercase tracking-widest text-brand-dark">
-                  Form & Angle
-                </span>
-
-                <div className="relative flex h-28 w-28 items-center justify-center">
-                  <svg
-                    className="h-full w-full -rotate-90"
-                    viewBox="0 0 100 100"
-                  >
-                    <circle
-                      cx="50"
-                      cy="50"
-                      r="40"
-                      stroke="#e5e7eb"
-                      strokeWidth="8"
-                      fill="transparent"
-                    />
-
-                    <circle
-                      cx="50"
-                      cy="50"
-                      r="40"
-                      stroke={warning ? "#ef4444" : "#16845b"}
-                      strokeWidth="8"
-                      fill="transparent"
-                      strokeDasharray={251.2}
-                      strokeDashoffset={251.2 - (251.2 * percentage) / 100}
-                      strokeLinecap="round"
-                      className="transition-all duration-300"
-                    />
-                  </svg>
-
-                  <div className="absolute flex flex-col items-center">
-                    <span className="text-2xl font-extrabold text-gray-800">
-                      {absAngle}°
-                    </span>
-
-                    <span
-                      className={`text-[9px] font-bold uppercase ${
-                        isPerfect ? "text-brand-dark" : "text-gray-400"
-                      }`}
-                    >
-                      {isPerfect
-                        ? "Perfect!"
-                        : direction !== "none"
-                        ? direction
-                        : "tilt"}
-                    </span>
+                  <div className="text-5xl font-extrabold tracking-tight text-gray-800 lg:text-7xl">
+                    {reps}
                   </div>
+
+                  <span className="inline-block rounded-btn bg-brand-light/40 px-3 py-1 text-[10px] font-bold uppercase text-brand-dark lg:px-4 lg:text-xs">
+                    {currentEx.name}
+                  </span>
                 </div>
 
-                <div className="w-full text-center">
-                  {displayWarning ? (
-                    <div className="flex items-center justify-center gap-2 rounded-btn border border-rose-200 bg-rose-50 p-3 text-xs font-bold text-rose-600">
-                      <AlertTriangle size={15} />
-                      <span>{displayWarning}</span>
+                <div className="flex flex-col items-center space-y-3 rounded-card border border-brand-light/50 bg-surface/80 p-3 shadow-card backdrop-blur-xl lg:space-y-4 lg:p-6">
+                  <span className="text-[9px] font-extrabold uppercase tracking-widest text-brand-dark lg:text-[10px]">
+                    Form & Angle
+                  </span>
+
+                  <div className="relative flex h-24 w-24 items-center justify-center lg:h-28 lg:w-28">
+                    <svg
+                      className="h-full w-full -rotate-90"
+                      viewBox="0 0 100 100"
+                    >
+                      <circle
+                        cx="50"
+                        cy="50"
+                        r="40"
+                        stroke="#e5e7eb"
+                        strokeWidth="8"
+                        fill="transparent"
+                      />
+
+                      <circle
+                        cx="50"
+                        cy="50"
+                        r="40"
+                        stroke={warning ? "#ef4444" : "#16845b"}
+                        strokeWidth="8"
+                        fill="transparent"
+                        strokeDasharray={251.2}
+                        strokeDashoffset={251.2 - (251.2 * percentage) / 100}
+                        strokeLinecap="round"
+                        className="transition-all duration-300"
+                      />
+                    </svg>
+
+                    <div className="absolute flex flex-col items-center">
+                      <span className="text-xl font-extrabold text-gray-800 lg:text-2xl">
+                        {absAngle}°
+                      </span>
+
+                      <span
+                        className={`text-[8px] font-bold uppercase lg:text-[9px] ${
+                          isPerfect ? "text-brand-dark" : "text-gray-400"
+                        }`}
+                      >
+                        {isPerfect
+                          ? "Perfect!"
+                          : direction !== "none"
+                            ? direction
+                            : "tilt"}
+                      </span>
                     </div>
-                  ) : isActive && !personDetected ? (
-                    <div className="flex items-center justify-center gap-2 rounded-btn border border-accent-orange bg-accent-orange/40 p-3 text-xs font-bold text-accent-orange-dark">
-                      <AlertTriangle size={15} />
-                      <span>Position yourself in front of camera</span>
-                    </div>
-                  ) : direction !== "none" || isPerfect ? (
-                    <div className="flex items-center justify-center gap-2 rounded-btn border border-brand-light bg-brand-light/30 p-3 text-xs font-bold text-brand-dark">
-                      <CheckCircle2 size={15} />
-                      <span>{displayFeedback}</span>
-                    </div>
-                  ) : (
-                    <div className="rounded-btn border border-gray-200 bg-white/60 p-3 text-xs font-bold text-gray-600">
-                      {displayFeedback}
-                    </div>
-                  )}
+                  </div>
+
+                  <div className="w-full text-center">
+                    {displayWarning ? (
+                      <div className="flex items-center justify-center gap-1 rounded-btn border border-rose-200 bg-rose-50 p-2 text-[10px] font-bold text-rose-600 lg:gap-2 lg:p-3 lg:text-xs">
+                        <AlertTriangle size={13} />
+                        <span>{displayWarning}</span>
+                      </div>
+                    ) : isActive && !personDetected ? (
+                      <div className="flex items-center justify-center gap-1 rounded-btn border border-accent-orange bg-accent-orange/40 p-2 text-[10px] font-bold text-accent-orange-dark lg:gap-2 lg:p-3 lg:text-xs">
+                        <AlertTriangle size={13} />
+                        <span>Position yourself in front of camera</span>
+                      </div>
+                    ) : direction !== "none" || isPerfect ? (
+                      <div className="flex items-center justify-center gap-1 rounded-btn border border-brand-light bg-brand-light/30 p-2 text-[10px] font-bold text-brand-dark lg:gap-2 lg:p-3 lg:text-xs">
+                        <CheckCircle2 size={13} />
+                        <span>{displayFeedback}</span>
+                      </div>
+                    ) : (
+                      <div className="rounded-btn border border-gray-200 bg-white/60 p-2 text-[10px] font-bold text-gray-600 lg:p-3 lg:text-xs">
+                        {displayFeedback}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 

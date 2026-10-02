@@ -77,19 +77,13 @@ export default function UserRegister() {
   });
 
   const [showPassword, setShowPassword] = useState(false);
-
   const [userId, setUserId] = useState("");
   const [code, setCode] = useState("");
-
   const [loading, setLoading] = useState(false);
-
   const [toast, setToast] = useState(null);
 
   const showToast = useCallback((type, message) => {
-    setToast({
-      type,
-      message,
-    });
+    setToast({ type, message });
 
     setTimeout(() => {
       setToast(null);
@@ -132,6 +126,8 @@ export default function UserRegister() {
         role: "USER",
       });
 
+      console.log("REGISTER RESPONSE:", res.data);
+
       if (!res.data?.success) {
         showToast(
           "error",
@@ -140,7 +136,16 @@ export default function UserRegister() {
         return;
       }
 
+      if (!res.data?.userId) {
+        showToast(
+          "error",
+          "Registration succeeded but user ID was not received.",
+        );
+        return;
+      }
+
       setUserId(res.data.userId);
+      setCode("");
 
       showToast(
         "success",
@@ -149,6 +154,9 @@ export default function UserRegister() {
       );
 
       setStep(2);
+
+      console.log("STEP CHANGED TO:", 2);
+      console.log("USER ID:", res.data.userId);
     } catch (err) {
       console.error("Registration error:", err);
 
@@ -194,6 +202,8 @@ export default function UserRegister() {
         userId,
         code: trimmedCode,
       });
+
+      console.log("VERIFY RESPONSE:", verifyRes.data);
 
       if (!verifyRes.data?.success) {
         showToast(
@@ -256,17 +266,12 @@ export default function UserRegister() {
       localStorage.removeItem("pose-fit-user");
 
       localStorage.setItem("pose-fit", token);
-
       localStorage.setItem("pose-fit-user", JSON.stringify(normalizedUser));
-
       localStorage.setItem("pose-fit-email", loginEmail);
 
       console.log("REGISTER LOGIN RESPONSE:", loginRes.data);
-
       console.log("SAVED TOKEN:", token);
-
       console.log("SAVED USER:", normalizedUser);
-
       console.log("SAVED USER ID:", normalizedUser._id);
 
       const from = location.state?.from?.pathname || "/user/dashboard";
@@ -288,6 +293,56 @@ export default function UserRegister() {
     }
   };
 
+  const handleResendCode = async () => {
+    if (!userId) {
+      showToast(
+        "error",
+        "Registration session expired. Please register again.",
+      );
+
+      setStep(1);
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const res = await httpClient.post("/auth/resend-verification", {
+        userId,
+      });
+
+      console.log("RESEND RESPONSE:", res.data);
+
+      if (!res.data?.success) {
+        showToast(
+          "error",
+          res.data?.message ||
+            "Failed to resend verification code. Please try again.",
+        );
+        return;
+      }
+
+      setCode("");
+
+      showToast(
+        "success",
+        res.data.message ||
+          "A new verification code has been sent to your email.",
+      );
+    } catch (err) {
+      console.error("Resend verification code error:", err);
+
+      showToast(
+        "error",
+        err?.response?.data?.message ||
+          err?.response?.data?.error ||
+          "Failed to resend verification code. Please try again.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleBack = () => {
     setStep(1);
     setCode("");
@@ -299,7 +354,7 @@ export default function UserRegister() {
 
       <div className="pointer-events-none absolute -bottom-24 -right-24 h-80 w-80 rounded-full bg-accent-blue/60 blur-3xl" />
 
-      <div className="pointer-events-none absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent-orange/20 blur-3xl" />
+      <div className="pointer-events-none absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 -translate-x-1/2 -translate-y-1/2 bg-accent-orange/20 blur-3xl" />
 
       {toast && (
         <div
@@ -331,7 +386,10 @@ export default function UserRegister() {
       <div className="relative z-10 w-full max-w-md">
         <div className="rounded-card border border-brand-light/70 bg-surface/80 p-8 shadow-card-hover backdrop-blur-xl sm:p-10">
           <div className="mb-7 flex justify-center">
-            <Link className="flex h-16 w-16 items-center justify-center rounded-card bg-white/70 p-2 shadow-card transition-transform duration-300 hover:-translate-y-1">
+            <Link
+              to="/"
+              className="flex h-16 w-16 items-center justify-center rounded-card bg-white/70 p-2 shadow-card transition-transform duration-300 hover:-translate-y-1"
+            >
               <img
                 src={posefit_logo}
                 alt="PoseFit Logo"
@@ -471,8 +529,8 @@ export default function UserRegister() {
                 </div>
 
                 <p className="mt-1.5 text-xs text-gray-400">
-                  Password must be 8 to 64 characters with uppercase,
-                  lowercase, number, and special character.
+                  Password must be 8 to 64 characters with uppercase, lowercase,
+                  number, and special character.
                 </p>
               </div>
 
@@ -511,9 +569,7 @@ export default function UserRegister() {
                   placeholder="123456"
                   value={code}
                   onChange={(e) => {
-                    const value = e.target.value
-                      .replace(/\D/g, "")
-                      .slice(0, 6);
+                    const value = e.target.value.replace(/\D/g, "").slice(0, 6);
 
                     setCode(value);
                   }}
@@ -541,14 +597,25 @@ export default function UserRegister() {
                 )}
               </button>
 
-              <button
-                type="button"
-                onClick={handleBack}
-                disabled={loading}
-                className="w-full text-sm font-semibold text-gray-500 transition-colors hover:text-brand-dark disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                ← Back to Registration
-              </button>
+              <div className="flex flex-col items-center gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={handleResendCode}
+                  disabled={loading}
+                  className="block cursor-pointer text-sm font-bold text-brand-dark underline underline-offset-4 transition-colors hover:text-brand disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {loading ? "Please wait..." : "Resend Code"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleBack}
+                  disabled={loading}
+                  className="block cursor-pointer text-sm font-semibold text-gray-500 transition-colors hover:text-brand-dark disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  ← Back to Registration
+                </button>
+              </div>
             </form>
           )}
 

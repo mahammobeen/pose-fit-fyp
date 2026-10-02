@@ -327,7 +327,6 @@ export default function UserDashboard() {
   return (
     <UserLayout>
       <main className="relative p-4 sm:p-6 lg:p-8 space-y-8 sm:space-y-10 font-sans bg-stone-50 min-h-full">
-
         <section className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-gray-800">
@@ -338,14 +337,6 @@ export default function UserDashboard() {
               Your fitness information and daily targets.
             </p>
           </div>
-
-          <div className="flex items-center gap-2">
-  <div className="h-2 w-2 rounded-full bg-brand animate-pulse" />
-
-  <span className="text-sm font-medium text-gray-600">
-    Metrics Available
-  </span>
-</div>
         </section>
 
         <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -565,10 +556,10 @@ export default function UserDashboard() {
                 {todayDiet?.isExpired
                   ? "Your 3-day diet plan has expired. Please regenerate your plan."
                   : todayDiet?.meals
-                  ? `Day ${todayDiet.currentDay} Meals • Target: ${Math.round(
-                      todayDiet.targetDailyCalories || 0,
-                    )} kcal`
-                  : "Your personalized meals will appear here."}
+                    ? `Day ${todayDiet.currentDay} Meals • Target: ${Math.round(
+                        todayDiet.targetDailyCalories || 0,
+                      )} kcal`
+                    : "Your personalized meals will appear here."}
               </p>
             </div>
 
@@ -579,8 +570,8 @@ export default function UserDashboard() {
               {todayDiet?.isExpired
                 ? "Regenerate Plan"
                 : todayDiet?.meals
-                ? "Full 3-Day Plan"
-                : "Create Diet Plan"}
+                  ? "Full 3-Day Plan"
+                  : "Create Diet Plan"}
             </Link>
           </div>
 
@@ -609,7 +600,6 @@ export default function UserDashboard() {
               </div>
             </div>
           ) : todayDiet?.meals ? (
-
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {[
                 {
@@ -712,7 +702,6 @@ export default function UserDashboard() {
               })}
             </div>
           ) : (
-
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {dietData.map((item) => (
