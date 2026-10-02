@@ -286,10 +286,11 @@ export default function AdminLayout({ children }) {
           <button
             type="button"
             onClick={toggleSidebar}
-            className={`dashboard-sidebar-toggle ${
-              sidebarOpen ? "right-3" : "left-1/2 -translate-x-1/2"
-            }`}
-            title={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+            title={sidebarOpen ? "Close sidebar" : "Open sidebar"}
+            className={`
+              dashboard-sidebar-toggle
+              ${sidebarOpen ? "right-3" : "right-1"}
+            `}
           >
             {sidebarOpen ? (
               <PanelLeft className="h-[17px] w-[17px]" />
@@ -299,9 +300,10 @@ export default function AdminLayout({ children }) {
           </button>
 
           <div
-            className={`dashboard-brand-wrapper ${
-              sidebarOpen ? "mt-4 gap-3" : "mt-8 justify-center"
-            }`}
+            className={`
+              dashboard-brand-wrapper
+              ${sidebarOpen ? "mt-4 gap-3" : "mt-8 justify-center"}
+            `}
           >
             <div className="dashboard-logo border border-brand-light/60 bg-white/80 shadow-card">
               <img
@@ -312,7 +314,7 @@ export default function AdminLayout({ children }) {
             </div>
 
             {sidebarOpen && (
-              <div className="min-w-0">
+              <div className="min-w-0 overflow-hidden whitespace-nowrap">
                 <p className="dashboard-brand-name">
                   Pose
                   <span className="dashboard-brand-highlight">Fit</span>
@@ -369,14 +371,21 @@ export default function AdminLayout({ children }) {
         </nav>
 
         <div
-          className={`dashboard-sidebar-footer shrink-0 border-brand-light/50 bg-white/30 ${
-            sidebarOpen ? "p-3" : "p-2"
-          }`}
+          className={`
+            dashboard-sidebar-footer
+            shrink-0
+            border-brand-light/50
+            bg-white/30
+            ${sidebarOpen ? "p-3" : "p-2"}
+          `}
         >
           <div
-            className={`dashboard-user-wrapper transition-all duration-300 ${
-              sidebarOpen ? "mb-3 gap-3 px-1" : "mb-2 justify-center"
-            }`}
+            className={`
+              dashboard-user-wrapper
+              transition-all
+              duration-300
+              ${sidebarOpen ? "mb-3 gap-3 px-1" : "mb-2 justify-center"}
+            `}
           >
             <div className="dashboard-logo h-10 w-10 border border-brand-light/60 bg-white/80 shadow-card">
               <img
@@ -432,7 +441,6 @@ export default function AdminLayout({ children }) {
           "
         >
           <div className="flex min-w-0 items-center gap-3">
-
             <button
               type="button"
               onClick={() => setMobileMenuOpen(true)}

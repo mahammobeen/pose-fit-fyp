@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { z } from "zod";
 import { httpClient } from "../../lib/http";
@@ -68,12 +68,14 @@ export default function UserRegister() {
   const location = useLocation();
 
   const [step, setStep] = useState(1);
+
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
     email: "",
     password: "",
   });
+
   const [showPassword, setShowPassword] = useState(false);
   const [userId, setUserId] = useState("");
   const [code, setCode] = useState("");
@@ -82,7 +84,16 @@ export default function UserRegister() {
 
   const showToast = useCallback((type, message) => {
     setToast({ type, message });
-    setTimeout(() => setToast(null), 4000);
+
+    setTimeout(() => {
+      setToast(null);
+    }, 4000);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      setToast(null);
+    };
   }, []);
 
   const handleChange = (e) => {
@@ -102,18 +113,20 @@ export default function UserRegister() {
       return;
     }
 
+    const validatedData = validation.data;
+
     try {
       setLoading(true);
 
-      const { firstName, lastName, email, password } = validation.data;
-
       const res = await httpClient.post("/auth/register", {
-        firstName,
-        lastName,
-        email: email.toLowerCase(),
-        password,
+        firstName: validatedData.firstName,
+        lastName: validatedData.lastName,
+        email: validatedData.email.toLowerCase(),
+        password: validatedData.password,
         role: "USER",
       });
+
+      console.log("REGISTER RESPONSE:", res.data);
 
       if (!res.data?.success) {
         showToast(
@@ -126,20 +139,27 @@ export default function UserRegister() {
       if (!res.data?.userId) {
         showToast(
           "error",
-          "Registration succeeded, but verification session could not be created.",
+          "Registration succeeded but user ID was not received.",
         );
         return;
       }
 
       setUserId(res.data.userId);
-      setStep(2);
+      setCode("");
 
       showToast(
         "success",
         res.data.message ||
           "Registration successful. Verification code sent to your email.",
       );
+
+      setStep(2);
+
+      console.log("STEP CHANGED TO:", 2);
+      console.log("USER ID:", res.data.userId);
     } catch (err) {
+      console.error("Registration error:", err);
+
       showToast(
         "error",
         err?.response?.data?.message ||
@@ -154,54 +174,114 @@ export default function UserRegister() {
   const handleVerifySubmit = async (e) => {
     e.preventDefault();
 
-    const validation = verificationSchema.safeParse({ code });
+    const validation = verificationSchema.safeParse({
+      code,
+    });
 
     if (!validation.success) {
       showToast("error", validation.error.issues[0].message);
       return;
     }
 
+    const trimmedCode = validation.data.code;
+
     if (!userId) {
       showToast(
         "error",
         "Registration session expired. Please register again.",
       );
+
       setStep(1);
-      setCode("");
       return;
     }
 
     try {
       setLoading(true);
 
-      const res = await httpClient.post("/auth/verify-email", {
+      const verifyRes = await httpClient.post("/auth/verify-email", {
         userId,
-        code: validation.data.code,
+        code: trimmedCode,
       });
 
-      if (!res.data?.success) {
+      console.log("VERIFY RESPONSE:", verifyRes.data);
+
+      if (!verifyRes.data?.success) {
         showToast(
           "error",
-          res.data?.message || "Verification failed. Please check the code.",
+          verifyRes.data?.message ||
+            "Verification failed. Please check the code.",
         );
         return;
       }
 
-      showToast(
-        "success",
-        "Email verified successfully. Please login to continue.",
-      );
+      showToast("success", "Email verified successfully. Logging you in...");
 
-      setTimeout(() => {
-        navigate("/user/login", {
-          replace: true,
-          state: {
-            email: form.email.trim().toLowerCase(),
-            from: location.state?.from,
-          },
-        });
-      }, 1200);
+      const loginEmail = form.email.trim().toLowerCase();
+
+      const loginRes = await httpClient.post("/auth/login", {
+        email: loginEmail,
+        password: form.password,
+      });
+
+      const { success, token, user } = loginRes.data;
+
+      if (!success || !token || !user) {
+        showToast(
+          "error",
+          "Email verified successfully, but automatic login failed. Please login manually.",
+        );
+
+        setTimeout(() => {
+          navigate("/user/login", {
+            state: {
+              from: location.state?.from,
+            },
+          });
+        }, 1500);
+
+        return;
+      }
+
+      if (user.role !== "USER") {
+        showToast(
+          "error",
+          "Invalid account role. Please use the appropriate portal.",
+        );
+        return;
+      }
+
+      const normalizedUser = {
+        ...user,
+        _id: user._id || user.id || user.userId,
+      };
+
+      const userIdFromResponse = user?._id || user?.id || user?.userId;
+
+      if (!userIdFromResponse) {
+        showToast("error", "User ID was not received from server.");
+        return;
+      }
+
+      localStorage.removeItem("pose-fit");
+      localStorage.removeItem("pose-fit-user");
+
+      localStorage.setItem("pose-fit", token);
+      localStorage.setItem("pose-fit-user", JSON.stringify(normalizedUser));
+      localStorage.setItem("pose-fit-email", loginEmail);
+
+      console.log("REGISTER LOGIN RESPONSE:", loginRes.data);
+      console.log("SAVED TOKEN:", token);
+      console.log("SAVED USER:", normalizedUser);
+      console.log("SAVED USER ID:", normalizedUser._id);
+
+      const from = location.state?.from?.pathname || "/user/dashboard";
+
+      navigate(from, {
+        replace: true,
+      });
     } catch (err) {
+      console.error("Verification/Login error:", err);
+
       showToast(
         "error",
         err?.response?.data?.message ||
@@ -213,9 +293,57 @@ export default function UserRegister() {
     }
   };
 
-  const handleBack = () => {
-    if (loading) return;
+  const handleResendCode = async () => {
+    if (!userId) {
+      showToast(
+        "error",
+        "Registration session expired. Please register again.",
+      );
 
+      setStep(1);
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const res = await httpClient.post("/auth/resend-verification", {
+        userId,
+      });
+
+      console.log("RESEND RESPONSE:", res.data);
+
+      if (!res.data?.success) {
+        showToast(
+          "error",
+          res.data?.message ||
+            "Failed to resend verification code. Please try again.",
+        );
+        return;
+      }
+
+      setCode("");
+
+      showToast(
+        "success",
+        res.data.message ||
+          "A new verification code has been sent to your email.",
+      );
+    } catch (err) {
+      console.error("Resend verification code error:", err);
+
+      showToast(
+        "error",
+        err?.response?.data?.message ||
+          err?.response?.data?.error ||
+          "Failed to resend verification code. Please try again.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBack = () => {
     setStep(1);
     setCode("");
   };
@@ -226,7 +354,7 @@ export default function UserRegister() {
 
       <div className="pointer-events-none absolute -bottom-24 -right-24 h-80 w-80 rounded-full bg-accent-blue/60 blur-3xl" />
 
-      <div className="pointer-events-none absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent-orange/20 blur-3xl" />
+      <div className="pointer-events-none absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 -translate-x-1/2 -translate-y-1/2 bg-accent-orange/20 blur-3xl" />
 
       {toast && (
         <div
@@ -440,9 +568,11 @@ export default function UserRegister() {
                   maxLength={6}
                   placeholder="123456"
                   value={code}
-                  onChange={(e) =>
-                    setCode(e.target.value.replace(/\D/g, "").slice(0, 6))
-                  }
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, "").slice(0, 6);
+
+                    setCode(value);
+                  }}
                   disabled={loading}
                   className="w-full rounded-btn border border-gray-200 bg-white/70 px-4 py-3.5 text-center text-lg font-bold tracking-[0.35em] text-gray-800 outline-none transition-all placeholder:tracking-normal placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand-light/60 disabled:cursor-not-allowed disabled:opacity-60"
                 />
@@ -463,18 +593,29 @@ export default function UserRegister() {
                     Verifying...
                   </span>
                 ) : (
-                  "Verify Email & Continue"
+                  "Verify Code & Log In"
                 )}
               </button>
 
-              <button
-                type="button"
-                onClick={handleBack}
-                disabled={loading}
-                className="w-full text-sm font-semibold text-gray-500 transition-colors hover:text-brand-dark disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                ← Back to Registration
-              </button>
+              <div className="flex flex-col items-center gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={handleResendCode}
+                  disabled={loading}
+                  className="block cursor-pointer text-sm font-bold text-brand-dark underline underline-offset-4 transition-colors hover:text-brand disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {loading ? "Please wait..." : "Resend Code"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleBack}
+                  disabled={loading}
+                  className="block cursor-pointer text-sm font-semibold text-gray-500 transition-colors hover:text-brand-dark disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  ← Back to Registration
+                </button>
+              </div>
             </form>
           )}
 

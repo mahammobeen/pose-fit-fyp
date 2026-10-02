@@ -214,6 +214,7 @@ export default function UserDashboard() {
         const response = await httpClient.get(`/user/user-metrics/${userId}`);
 
         const metricsData = response?.data?.data;
+        console.log("Metrics API response:", metricsData);
 
         if (!metricsData) {
           setMetrics(null);
@@ -339,13 +340,6 @@ export default function UserDashboard() {
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
-  <div className="h-2 w-2 rounded-full bg-brand animate-pulse" />
-
-  <span className="text-sm font-medium text-gray-600">
-    Metrics Available
-  </span>
-</div>
         </section>
 
         <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -430,7 +424,7 @@ export default function UserDashboard() {
               </div>
 
               <p className="text-4xl font-extrabold text-gray-800">
-                {metrics?.bmi ?? "--"}
+                {metrics?.bmiValue ?? "--"}
               </p>
 
               <p className="text-sm text-gray-500 mt-2">

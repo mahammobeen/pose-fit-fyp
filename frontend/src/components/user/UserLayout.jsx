@@ -112,38 +112,6 @@ export default function UserLayout({ children }) {
         <div className="absolute left-[45%] top-[20%] h-72 w-72 rounded-full bg-white/40 blur-3xl" />
       </div>
 
-      <button
-        type="button"
-        onClick={() => setMobileMenuOpen(true)}
-        aria-label="Open menu"
-        aria-expanded={mobileMenuOpen}
-        className="
-          fixed
-          left-4
-          top-4
-          z-[60]
-          flex
-          h-11
-          w-11
-          items-center
-          justify-center
-          rounded-btn
-          border
-          border-brand-light/60
-          bg-surface/95
-          text-brand-dark
-          shadow-card
-          backdrop-blur-xl
-          transition-all
-          duration-200
-          hover:bg-brand-light/30
-          active:scale-95
-          md:hidden
-        "
-      >
-        <Menu className="h-5 w-5" />
-      </button>
-
       {mobileMenuOpen && (
         <div
           onClick={() => setMobileMenuOpen(false)}
@@ -482,7 +450,82 @@ export default function UserLayout({ children }) {
 
       <div className="dashboard-main-wrapper relative z-10 min-w-0 flex-1 overflow-y-auto">
 
-        <div className="md:hidden h-14" />
+        <header
+          className="
+            sticky
+            top-0
+            z-[50]
+            flex
+            h-14
+            items-center
+            justify-between
+            border-b
+            border-brand-light/50
+            bg-surface/90
+            px-4
+            backdrop-blur-xl
+            md:hidden
+          "
+        >
+          <div className="flex min-w-0 items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(true)}
+              className="
+                flex
+                h-10
+                w-10
+                shrink-0
+                items-center
+                justify-center
+                rounded-btn
+                border
+                border-brand-light/60
+                bg-surface/95
+                text-brand-dark
+                shadow-card
+                transition-all
+                duration-200
+                hover:bg-brand-light/30
+                active:scale-95
+              "
+              aria-label="Open menu"
+              aria-expanded={mobileMenuOpen}
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+
+            <div className="min-w-0">
+              <h1 className="truncate text-base font-bold text-gray-800">
+                Customer Portal
+              </h1>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="
+              flex
+              shrink-0
+              items-center
+              gap-2
+              rounded-btn
+              px-2
+              py-2
+              text-sm
+              font-semibold
+              text-gray-600
+              transition
+              hover:bg-brand-light/30
+              hover:text-brand-dark
+            "
+          >
+            <LogOut className="h-4 w-4" />
+
+            <span className="hidden sm:inline">Logout</span>
+          </button>
+        </header>
 
         <main className="dashboard-content bg-transparent">{children}</main>
       </div>

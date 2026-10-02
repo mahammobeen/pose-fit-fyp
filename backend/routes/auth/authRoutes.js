@@ -8,6 +8,7 @@ const {
   forgotPassword,
   resetPassword,
   completeProfessionalProfile,
+  resendVerificationCode,
 } = require("../../controllers/auth/authController");
 
 const router = express.Router();
@@ -15,8 +16,13 @@ const router = express.Router();
 router.post("/register", signup);
 router.post("/login", login);
 router.post("/verify-email", verifyEmail);
+router.post("/resend-verification", resendVerificationCode);
 router.post("/forgot-password", forgotPassword);
 router.put("/reset-password/", resetPassword);
-router.put("/complete-professional-profile",authMiddleware,completeProfessionalProfile,);
+router.put(
+  "/complete-professional-profile",
+  authMiddleware,
+  completeProfessionalProfile,
+);
 
 module.exports = router;

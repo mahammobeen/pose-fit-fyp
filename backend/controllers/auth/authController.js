@@ -151,6 +151,70 @@ const verifyEmail = async (req, res) => {
   }
 };
 
+const resendVerificationCode = async (req, res) => {
+  try {
+    const { userId } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "User ID is required",
+      });
+    }
+
+    const user = await UserModel.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    if (user.isVerified) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is already verified",
+      });
+    }
+
+    const verificationCode = Math.floor(
+      100000 + Math.random() * 900000,
+    ).toString();
+
+    const verificationCodeExpires = new Date(Date.now() + 15 * 60 * 1000);
+
+    user.verificationCode = verificationCode;
+    user.verificationCodeExpires = verificationCodeExpires;
+
+    await user.save();
+
+    await transporter.sendMail({
+      from: `"PoseFit" <${process.env.EMAIL_USER}>`,
+      to: user.email,
+      subject: "PoseFit Email Verification",
+      text:
+        `Hi ${user.firstName} ${user.lastName},\n\n` +
+        `Your new PoseFit verification code is: ${verificationCode}\n\n` +
+        `This verification code will expire in 15 minutes.\n\n` +
+        `Please use this code to verify your email.`,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "A new verification code has been sent to your email",
+    });
+  } catch (error) {
+    console.error("Resend verification code error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Something went wrong while resending verification code",
+      error: error.message,
+    });
+  }
+};
+
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -506,6 +570,7 @@ const completeProfessionalProfile = async (req, res) => {
       experience,
       sessionFee,
       credentialDocs,
+      // bankDetails,
       availability,
     } = req.body;
 
@@ -532,6 +597,10 @@ const completeProfessionalProfile = async (req, res) => {
     if (credentialDocs) {
       professional.credentialDocs = credentialDocs;
     }
+
+    // if (bankDetails) {
+    //   professional.bankDetails = bankDetails;
+    // }
 
     if (availability) {
       professional.availability = availability;
@@ -568,5 +637,6 @@ module.exports = {
   login,
   forgotPassword,
   resetPassword,
+  resendVerificationCode,
   completeProfessionalProfile,
 };
