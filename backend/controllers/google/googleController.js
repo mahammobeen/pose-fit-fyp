@@ -1,11 +1,4 @@
 const { google } = require("googleapis");
-const fs = require("fs");
-const path = require("path");
-
-const TOKEN_PATH = path.join(
-  __dirname,
-  "../../google-token.json"
-);
 
 const getOAuth2Client = () => {
   const clientId = process.env.GOOGLE_CLIENT_ID;
@@ -13,9 +6,7 @@ const getOAuth2Client = () => {
   const redirectUri = process.env.GOOGLE_REDIRECT_URI;
 
   if (!clientId || !clientSecret || !redirectUri) {
-    throw new Error(
-      "Google OAuth credentials are not configured"
-    );
+    throw new Error("Google OAuth credentials are not configured");
   }
 
   return new google.auth.OAuth2(
@@ -69,10 +60,7 @@ const googleCallback = async (req, res) => {
       );
     }
 
-    fs.writeFileSync(
-      TOKEN_PATH,
-      JSON.stringify(tokens, null, 2)
-    );
+    const tokenJson = JSON.stringify(tokens);
 
     return res.send(`
       <html>
@@ -84,12 +72,26 @@ const googleCallback = async (req, res) => {
           <h2>Google Calendar Connected Successfully</h2>
 
           <p>
-            PoseFit can now create Google Calendar events
-            and Google Meet links.
+            Copy the token JSON below and add it to Vercel
+            as <strong>GOOGLE_TOKEN_JSON</strong>.
+          </p>
+
+          <textarea
+            style="
+              width: 100%;
+              height: 220px;
+              font-family: monospace;
+              font-size: 14px;
+            "
+            readonly
+          >${tokenJson}</textarea>
+
+          <p>
+            After copying the token, close this tab.
           </p>
 
           <p>
-            You can close this tab.
+            Do not share this token with anyone.
           </p>
         </body>
       </html>

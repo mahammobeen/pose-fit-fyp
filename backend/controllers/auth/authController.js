@@ -34,18 +34,11 @@ const signup = async (req, res) => {
       });
     }
 
+    const normalizedEmail = email.toLowerCase().trim();
+
     const existingUser = await UserModel.findOne({
-      email: email.toLowerCase(),
+      email: normalizedEmail,
     });
-
-    if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        message: "Email already exists",
-      });
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
 
     const verificationCode = Math.floor(
       100000 + Math.random() * 900000,
@@ -53,10 +46,48 @@ const signup = async (req, res) => {
 
     const verificationCodeExpires = new Date(Date.now() + 15 * 60 * 1000);
 
+    if (existingUser) {
+      if (existingUser.isVerified) {
+        return res.status(400).json({
+          success: false,
+          message: "Email already exists",
+        });
+      }
+
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      existingUser.firstName = firstName;
+      existingUser.lastName = lastName;
+      existingUser.password = hashedPassword;
+      existingUser.verificationCode = verificationCode;
+      existingUser.verificationCodeExpires = verificationCodeExpires;
+
+      await existingUser.save();
+
+      await transporter.sendMail({
+        from: `"PoseFit" <${process.env.EMAIL_USER}>`,
+        to: normalizedEmail,
+        subject: "PoseFit Email Verification",
+        text:
+          `Hi ${firstName} ${lastName},\n\n` +
+          `Your PoseFit verification code is: ${verificationCode}\n\n` +
+          `This verification code will expire in 15 minutes.\n\n` +
+          `Please use this code to verify your email.`,
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: "Verification code sent to your email.",
+        userId: existingUser._id,
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
     const newUser = new UserModel({
       firstName,
       lastName,
-      email: email.toLowerCase(),
+      email: normalizedEmail,
       password: hashedPassword,
       role: "USER",
       isVerified: false,
@@ -65,9 +96,10 @@ const signup = async (req, res) => {
     });
 
     await newUser.save();
+
     await transporter.sendMail({
       from: `"PoseFit" <${process.env.EMAIL_USER}>`,
-      to: email,
+      to: normalizedEmail,
       subject: "PoseFit Email Verification",
       text:
         `Hi ${firstName} ${lastName},\n\n` +

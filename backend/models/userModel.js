@@ -224,9 +224,6 @@ UserSchema.pre("save", function () {
 
     this.professionalStatus = undefined;
     this.rejectionReason = undefined;
-    this.verificationMeetingLink = undefined;
-    this.verificationMeetingTime = undefined;
-    this.verificationNotes = undefined;
     this.appliedAt = undefined;
 
     this.stripeAccountId = undefined;

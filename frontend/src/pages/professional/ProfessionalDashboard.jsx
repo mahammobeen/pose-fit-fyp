@@ -235,13 +235,18 @@ export default function ProfessionalDashboard() {
                   </span>
                 </p>
 
-                <p className="mt-0.5 text-xs font-medium text-gray-500">
+                {/* <p className="mt-0.5 text-xs font-medium text-gray-500">
                   {stripe?.payoutsEnabled
                     ? `Direct payouts active ${
                         stripe?.maskedBank ? `(${stripe.maskedBank})` : ""
                       }`
                     : "Connect your bank account via Stripe Connect to receive your 80% session payouts."}
-                </p>
+                </p> */}
+                <p className="mt-0.5 text-xs font-medium text-gray-500">
+  {stripe?.payoutsEnabled
+    ? "Direct payouts active"
+    : "Connect your bank account via Stripe Connect to receive your 80% session payouts."}
+</p>
               </div>
             </div>
 

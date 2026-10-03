@@ -293,11 +293,11 @@ export default function AdminPayments() {
                             <p className="text-xs text-gray-400 font-medium">
                               {payment.professional?.email}
 
-                              {payment.professional?.maskedBank && (
+                              {/* {payment.professional?.maskedBank && (
                                 <span className="block text-[11px] text-gray-500 font-semibold mt-0.5">
                                   Bank: {payment.professional.maskedBank}
                                 </span>
-                              )}
+                              )} */}
                             </p>
                           </div>
                         </td>

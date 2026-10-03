@@ -354,7 +354,7 @@ export default function WorkoutSession() {
 
     frameTimerRef.current = setTimeout(() => {
       sendNextFrame();
-    }, 50);
+    }, 100);
   };
 
   const sendNextFrame = async () => {
@@ -370,11 +370,9 @@ export default function WorkoutSession() {
     }
 
     processingFrameRef.current = true;
-
     try {
-      const width = video.videoWidth || 640;
-      const height = video.videoHeight || 480;
-
+      const width = 480;
+      const height = 360;
       canvas.width = width;
       canvas.height = height;
 
@@ -388,7 +386,7 @@ export default function WorkoutSession() {
 
       ctx.drawImage(video, 0, 0, width, height);
 
-      const base64Image = canvas.toDataURL("image/jpeg", 0.6);
+      const base64Image = canvas.toDataURL("image/jpeg", 0.5);
 
       const res = await axios.post(`${POSE_API_URL}/process_frame`, {
         session_id: sessionIdRef.current,
