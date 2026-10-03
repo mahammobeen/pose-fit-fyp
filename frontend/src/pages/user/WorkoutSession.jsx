@@ -59,6 +59,14 @@ const DIFFERENT_MESSAGE_COOLDOWN = 2500;
 const MIN_MESSAGE_LENGTH = 3;
 const FEEDBACK_DISPLAY_MIN_GAP = 900;
 
+const CAMERA_CONSTRAINTS = {
+  video: {
+    facingMode: "user",
+    width: { ideal: 640 },
+    height: { ideal: 480 },
+  },
+};
+
 export default function WorkoutSession() {
   const { exerciseId } = useParams();
   const navigate = useNavigate();
@@ -372,7 +380,10 @@ export default function WorkoutSession() {
     processingFrameRef.current = true;
     try {
       const width = 480;
-      const height = 360;
+      const height =
+        video.videoWidth && video.videoHeight
+          ? Math.round(width * (video.videoHeight / video.videoWidth))
+          : 360;
       canvas.width = width;
       canvas.height = height;
 
@@ -486,12 +497,8 @@ export default function WorkoutSession() {
 
   const requestCamera = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          width: 640,
-          height: 480,
-        },
-      });
+      const stream =
+        await navigator.mediaDevices.getUserMedia(CAMERA_CONSTRAINTS);
 
       stream.getTracks().forEach((track) => track.stop());
 
@@ -517,12 +524,8 @@ export default function WorkoutSession() {
     unlockSpeech();
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          width: 640,
-          height: 480,
-        },
-      });
+      const stream =
+        await navigator.mediaDevices.getUserMedia(CAMERA_CONSTRAINTS);
 
       streamRef.current = stream;
 
@@ -860,7 +863,7 @@ export default function WorkoutSession() {
                 playsInline
                 muted
                 autoPlay
-                className={`aspect-video h-full w-full object-cover ${
+                className={`h-full w-full object-contain ${
                   isActive && !processedImage ? "block" : "hidden"
                 }`}
               />
@@ -873,7 +876,7 @@ export default function WorkoutSession() {
                     <img
                       src={processedImage}
                       alt="Camera Stream"
-                      className="aspect-video h-full w-full object-cover"
+                      className="h-full w-full object-contain"
                     />
                   )}
                 </>
