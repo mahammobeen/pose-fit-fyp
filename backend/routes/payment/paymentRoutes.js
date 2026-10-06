@@ -16,6 +16,7 @@ const {
   getConnectDashboardLink,
   cancelPayment,
   verifySession,
+  sendBookingReminders,
 } = require("../../controllers/payment/paymentController");
 
 const router = express.Router();
@@ -31,6 +32,7 @@ router.get("/verify-session", authMiddleware, verifySession);
 router.get("/booked-slots/:id", authMiddleware, getProfessionalBookedSlots);
 router.get("/my-payments", authMiddleware, getUserPayments);
 router.get("/admin/payments", authMiddleware, adminMiddleware, getAdminPayments);
+router.get("/send-reminders", sendBookingReminders);
 router.get("/:id", authMiddleware, getPayment);
 router.delete("/admin/payments/:id", authMiddleware, adminMiddleware, deleteAdminPayment);
 router.delete("/professional/payments/:id", authMiddleware, deleteProfessionalPayment);
