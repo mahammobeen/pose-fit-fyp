@@ -173,13 +173,18 @@ export default function ProfessionalEarnings() {
                   </span>
                 </p>
 
-                <p className="mt-0.5 text-xs font-medium text-gray-500">
+                {/* <p className="mt-0.5 text-xs font-medium text-gray-500">
                   {stripe?.connected
                     ? `Account ID: ${stripe.stripeAccountId}${
                         stripe?.maskedBank ? ` • Bank: ${stripe.maskedBank}` : ""
                       }`
                     : "Connect your bank account via Stripe Express to receive direct payouts."}
-                </p>
+                </p> */}
+                <p className="mt-0.5 text-xs font-medium text-gray-500">
+  {stripe?.connected
+    ? "Your Stripe Express payout account is connected and active."
+    : "Connect your bank account via Stripe Express to receive direct payouts."}
+</p>
               </div>
             </div>
 
