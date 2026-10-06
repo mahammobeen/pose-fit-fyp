@@ -1377,7 +1377,7 @@ export default function ProfessionalDetails() {
           <section className="rounded-card border border-brand-light/50 bg-surface/85 shadow-card backdrop-blur-xl">
             <div className="p-6 sm:p-8">
               <div className="flex flex-col gap-7 lg:flex-row lg:items-start lg:justify-between">
-                <div className="flex min-w-0 items-start gap-5">
+  <div className="flex min-w-0 flex-col items-start gap-5 sm:flex-row sm:items-start">
                   {profilePhoto ? (
                     <img
                       src={profilePhoto}
@@ -1399,7 +1399,7 @@ export default function ProfessionalDetails() {
                     </div>
                   )}
 
-                  <div className="min-w-0 pt-1">
+                  <div className="min-w-0 pt-1 text-center sm:text-left">
                     <div className="flex flex-wrap items-center gap-2.5">
                       <h1 className="text-2xl font-black tracking-tight text-gray-800 sm:text-3xl">
                         {pro.firstName} {pro.lastName}
